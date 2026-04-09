@@ -22,7 +22,7 @@ interface UserData {
   loginId: string; 
   ingameName: string; 
   role: string; 
-  isBanned: boolean; // 💡 [패치] 밴 상태 추가
+  isBanned: boolean; 
   reputationScore: number;
   successfulTrades: number;
 }
@@ -63,6 +63,15 @@ export default function AdminDashboard() {
   const [supportInput, setSupportInput] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
 
+  /**
+   * 🛠️ [이미지 경로 패치]
+   * http로 된 주소를 https로 강제 변환하여 Mixed Content 에러를 방지합니다.
+   */
+  const getSecureUrl = (url: string) => {
+    if (!url) return "";
+    return url.replace("http://", "https://");
+  };
+
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
       window.navigator.vibrate(10);
@@ -74,7 +83,6 @@ export default function AdminDashboard() {
     setUsers(Array.isArray(data) ? data : []);
   }, []);
 
-  // 💡 [패치] 유저 역할 변경 함수
   const changeUserRole = async (id: number, newRole: string) => {
     triggerHaptic();
     const data = await request(`/api/admin/users/${id}/role`, { 
@@ -84,7 +92,6 @@ export default function AdminDashboard() {
     if (data) fetchUsers();
   };
 
-  // 💡 [패치] 유저 밴/해제 함수
   const toggleUserBan = async (id: number, currentBanStatus: boolean) => {
     triggerHaptic();
     const action = currentBanStatus ? "해제" : "차단";
@@ -132,8 +139,15 @@ export default function AdminDashboard() {
     setIsAdmin(true);
     setAdminId(user.id);
 
-    const newSocket = io("https://ddingtion-back.onrender.com");
+    /**
+     * 🛠️ [소켓 주소 패치]
+     * 하드코딩된 주소 대신 환경 변수를 사용합니다. 
+     * 환경변수가 없으면 기존 Render 주소를 폴백으로 사용합니다.
+     */
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
+    const newSocket = io(BACKEND_URL);
     setSocket(newSocket);
+    
     newSocket.on("new_message", (msg) => {
       setSupportMessages((prev) => (prev.length > 0 && prev[0].roomId === msg.roomId ? [...prev, msg] : prev));
       fetchSupportRooms();
@@ -295,7 +309,6 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-5 font-black text-zinc-300">{u.ingameName}</td>
                             <td className="px-6 py-5">
-                              {/* 💡 [패치] 권한 선택 셀렉트 박스 */}
                               <select 
                                 value={u.role} 
                                 onChange={(e) => changeUserRole(u.id, e.target.value)}
@@ -413,7 +426,8 @@ export default function AdminDashboard() {
                     {auctions.map((a) => (
                       <div key={a.id} className="bg-white/[0.01] border border-white/5 p-6 rounded-[32px] flex items-center gap-6 group hover:bg-white/[0.03] transition-all">
                         <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center p-3 border border-white/5 shrink-0 overflow-hidden">
-                           <img src={a.item.iconUrl} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
+                           {/* 🛠️ [이미지 경로 패치 적용] */}
+                           <img src={getSecureUrl(a.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-black text-sm truncate text-zinc-100 uppercase italic tracking-tighter">{a.item.name}</h3>

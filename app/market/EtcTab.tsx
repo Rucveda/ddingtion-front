@@ -3,12 +3,24 @@
 import { motion } from "framer-motion";
 
 export default function EtcTab({ items }: { items: any[] }) {
-  // 💡 기존 필터 로직 유지 (WILD, RPG, ISLAND가 아닌 모든 아이템)
-  const etcItems = items.filter(i => 
-    !i.category.toUpperCase().includes("WILD") && 
-    !i.category.toUpperCase().includes("RPG") && 
-    !i.category.toUpperCase().includes("ISLAND")
-  );
+  /**
+   * 🛠️ [이미지 보안 패치]
+   */
+  const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
+
+  /**
+   * 🛠️ [필터 로직 패치]
+   * WILD, RPG, ISLAND 카테고리가 아닌 모든 아이템을 가져옵니다.
+   * 카테고리 값이 없거나(null) 빈 문자열인 아이템도 안전하게 "기타" 탭에 포함시킵니다.
+   */
+  const etcItems = items.filter(i => {
+    const cat = (i.category || "").toUpperCase(); // 카테고리가 없으면 빈 문자열 처리
+    return (
+      !cat.includes("WILD") && 
+      !cat.includes("RPG") && 
+      !cat.includes("ISLAND")
+    );
+  });
 
   return (
     <motion.div 
@@ -18,7 +30,6 @@ export default function EtcTab({ items }: { items: any[] }) {
       transition={{ duration: 0.4 }}
       className="space-y-8"
     >
-      {/* 💡 헤더 섹션: 한글화 및 미니멀 인디케이터 */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <div className="w-1 h-4 bg-blue-600 rounded-full" />
@@ -38,19 +49,21 @@ export default function EtcTab({ items }: { items: any[] }) {
           >
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/5 shrink-0">
+                {/* 🛠️ [패치 적용] 이미지 보안 경로 처리 */}
                 <img 
-                  src={item.iconUrl} 
+                  src={getSecureUrl(item.iconUrl)} 
                   className="w-7 h-7 [image-rendering:pixelated] group-hover:scale-110 transition-transform" 
-                  alt="" 
+                  alt={item.name} 
                 />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-xs text-zinc-200 group-hover:text-white transition-colors">{item.name}</span>
-                <span className="text-[9px] text-zinc-600 font-black uppercase tracking-tighter mt-0.5">분류: {item.category || "기타"}</span>
+                <span className="text-[9px] text-zinc-600 font-black uppercase tracking-tighter mt-0.5">
+                  분류: {item.category || "기타"}
+                </span>
               </div>
             </div>
             
-            {/* 💡 Uplink 대신 직관적인 상태 표시 */}
             <div className="flex flex-col items-end">
               <span className="text-blue-500 font-black text-[9px] uppercase tracking-tighter">데이터 연결됨</span>
               <div className="w-4 h-[1px] bg-blue-500/30 mt-1" />

@@ -29,6 +29,15 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState({ category: "ALL" });
   const filterRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * 🛠️ [패치 1] 이미지 보안 처리 함수
+   * http 주소를 https로 변환하여 Mixed Content 에러를 방지합니다.
+   */
+  const getSecureUrl = (url: string) => {
+    if (!url) return "";
+    return url.replace("http://", "https://");
+  };
+
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
       window.navigator.vibrate(10);
@@ -106,7 +115,6 @@ export default function Home() {
   };
 
   return (
-    // 💡 flex flex-col 및 min-h-screen으로 하단 푸터 밀림 방지
     <div className="min-h-screen flex flex-col bg-[#010101] text-zinc-100 font-sans select-none overflow-x-hidden relative selection:bg-white selection:text-black">
       
       <style jsx global>{`
@@ -132,7 +140,6 @@ export default function Home() {
 
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-10">
-          {/* 좌측 로고 영역 */}
           <Link href="/" onClick={() => { triggerHaptic(); setActiveTab("MARKET"); }} className="flex items-center group shrink-0">
             <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
               <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
@@ -143,9 +150,7 @@ export default function Home() {
             </span>
           </Link>
 
-          {/* 💡 [패치] 중앙/우측 통합 네비게이션 정렬 */}
           <div className="flex items-center gap-10 font-bold text-sm">
-            {/* 메인 서비스 탭 */}
             <div className="flex items-center gap-8 border-r border-white/10 pr-10">
               <button 
                 onClick={() => { triggerHaptic(); setActiveTab("MARKET"); }}
@@ -161,7 +166,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* 유틸리티 메뉴 */}
             <div className="flex items-center gap-8">
               <Link href="/market" onClick={triggerHaptic} className="flex items-center gap-2 group">
                 <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
@@ -190,7 +194,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* 💡 [패치] flex-1을 부여하여 컨텐츠가 없어도 푸터를 아래로 고정, 밝기 문제 방지 */}
       <main className="flex-1 relative z-10">
         <AnimatePresence mode="wait">
           {activeTab === "MARKET" ? (
@@ -225,7 +228,7 @@ export default function Home() {
                       <span className="ml-4">을 거래하는</span><br />
                       <motion.span className="prism-text-overlay italic relative cursor-pointer" data-text="가장 현명한 방법." whileHover={{ scale: 1.01 }}>가장 현명한 방법.</motion.span>
                     </h1>
-                    <p className="text-zinc-500 max-w-xl font-medium text-lg leading-relaxed shadow-lg relative z-10">실시간 시세를 반영한 예측 엔진, 유저가 직접 시세를 입력하는 계산기와 함께<br />거래에 오랜시간이 걸리는 고가치 아이템들의 실시간 경매를 지금 시작하세요.</p>
+                    <p className="text-zinc-500 max-w-xl font-medium text-lg leading-relaxed shadow-lg relative z-10">예측 엔진과 시뮬레이터를 통해<br />고가치 전리품의 실시간 경매를 지금 시작하세요.</p>
                   </motion.div>
                 </div>
               </header>
@@ -269,7 +272,8 @@ export default function Home() {
                         <div className="relative bg-[#0d0d0f]/70 backdrop-blur-md border border-white/5 rounded-[36px] overflow-hidden group-hover:bg-[#121214]/80 transition-all duration-500 group-hover:-translate-y-3 shadow-2xl">
                           <div className="aspect-square bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative p-12 border-b border-white/5">
                             {auction.item.iconUrl ? (
-                              <img src={auction.item.iconUrl} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700 ease-out" alt="" />
+                              /* 🛠️ [패치 적용] 경매 카드의 아이콘 URL 보안 처리 */
+                              <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700 ease-out" alt="" />
                             ) : (
                               <span className="text-8xl">📦</span>
                             )}

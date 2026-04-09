@@ -20,6 +20,12 @@ export default function MarketIntelligence() {
   const [activeTab, setActiveTab] = useState<"SEARCH" | "CALC" | "ETC" | "ADMIN">("SEARCH");
   const [userRole, setUserRole] = useState<string>("USER");
 
+  /**
+   * 🛠️ [이미지 보안 패치]
+   * http 주소를 https로 강제 변환하여 Mixed Content 에러를 방지합니다.
+   */
+  const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
+
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
       window.navigator.vibrate(10);
@@ -27,16 +33,22 @@ export default function MarketIntelligence() {
   }, []);
 
   useEffect(() => {
+    // 아이템 리스트 로드
     request("/api/auctions/items").then(data => {
       if (Array.isArray(data)) {
         setDbItems(data);
       }
     });
 
+    // 유저 권한 확인
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
-      const { role } = JSON.parse(savedUser);
-      setUserRole(role || "USER");
+      try {
+        const { role } = JSON.parse(savedUser);
+        setUserRole(role || "USER");
+      } catch (e) {
+        setUserRole("USER");
+      }
     }
   }, []);
 
@@ -54,9 +66,7 @@ export default function MarketIntelligence() {
     <MarketProvider>
       <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative overflow-x-hidden">
         <style jsx global>{`
-          html {
-            scrollbar-gutter: stable;
-          }
+          html { scrollbar-gutter: stable; }
           .premium-abyss-bg {
             position: fixed; inset: -15%; z-index: 0;
             background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
@@ -109,7 +119,7 @@ export default function MarketIntelligence() {
                 {userRole === "ADMIN" && (
                   <button 
                     onClick={() => { triggerHaptic(); setActiveTab("ADMIN"); }} 
-                    className={`ml-1 px-5 py-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${activeTab === "ADMIN" ? "bg-red-600 text-white" : "text-red-500/60 hover:text-red-400"}`}
+                    className={`ml-1 px-5 py-2 rounded-lg text-xs font-black transition-all whitespace-nowrap ${activeTab === "ADMIN" ? "bg-red-600 text-white shadow-lg" : "text-red-500/60 hover:text-red-400"}`}
                   >
                     아이템 DB 관리
                   </button>
@@ -123,7 +133,6 @@ export default function MarketIntelligence() {
         <main className="max-w-7xl mx-auto py-8 px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* 좌측 사이드바: 고정 너비감 유지 */}
             <aside className="lg:col-span-3 w-full sticky top-28">
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
@@ -148,7 +157,8 @@ export default function MarketIntelligence() {
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border ${selectedItem?.id === item.id ? "bg-blue-600/10 border-blue-500/50 text-white" : "bg-white/[0.03] border-transparent text-zinc-500 hover:bg-white/10"}`}
                     >
                       <div className="w-8 h-8 flex items-center justify-center shrink-0">
-                        <img src={item.iconUrl} className="w-full h-full object-contain pixel-art" alt="" />
+                        {/* 🛠️ [이미지 보안 패치 적용] */}
+                        <img src={getSecureUrl(item.iconUrl)} className="w-full h-full object-contain pixel-art" alt="" />
                       </div>
                       <span className="font-bold text-xs truncate flex-1 text-left tracking-tight">{item.name}</span>
                     </button>
@@ -160,7 +170,6 @@ export default function MarketIntelligence() {
               </motion.div>
             </aside>
 
-            {/* 우측 메인 콘텐츠: 최소 높이 및 비율 유지 */}
             <div className="lg:col-span-9 w-full min-w-0">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -177,7 +186,12 @@ export default function MarketIntelligence() {
                         {activeTab === "SEARCH" && <SearchTab selectedItem={selectedItem} />}
                         {activeTab === "CALC" && <CalcTab selectedItem={selectedItem} />}
                         {activeTab === "ETC" && <EtcTab items={dbItems} />}
-                        {activeTab === "ADMIN" && <AdminTab items={dbItems} />}
+                        {/* 🛠️ [관리자 탭 2차 보안 강화] */}
+                        {activeTab === "ADMIN" && userRole === "ADMIN" ? (
+                          <AdminTab items={dbItems} />
+                        ) : activeTab === "ADMIN" ? (
+                          <div className="flex-1 flex items-center justify-center">권한이 없습니다.</div>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="flex-1 flex flex-col items-center justify-center opacity-30 py-20">

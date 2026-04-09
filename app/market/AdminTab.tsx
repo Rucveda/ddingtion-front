@@ -43,13 +43,21 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "" , type: "" }]
   });
 
+  /**
+   * 🛠️ [패치 1] 이미지 경로 보안 처리
+   * http 주소를 https로 강제 변환하여 Mixed Content 에러를 방지합니다.
+   */
+  const getSecureUrl = (url: string) => {
+    if (!url) return "";
+    return url.replace("http://", "https://");
+  };
+
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
       window.navigator.vibrate(10);
     }
   }, []);
 
-  // 💡 현재 선택된 무기의 전용 스킬셋 추출
   const currentWeaponSkillConfig = useMemo(() => {
     if (!selectedItem) return null;
     const weaponGroup = Object.keys(RPG_SKILL_SYSTEM).find(key => selectedItem.name.includes(key));
@@ -166,7 +174,11 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     
     setIsLoading(true);
     try {
-      const res = await fetch("https://ddingtion-back.onrender.com/api/admin/items", {
+      /**
+       * 🛠️ [패치 2] 백엔드 주소 환경변수화
+       */
+      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
+      const res = await fetch(`${BACKEND_URL}/api/admin/items`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
         body: formData
@@ -192,7 +204,6 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     fetchItems();
   };
 
-  // 💡 거래 기록 영구 삭제 로직
   const purgeHistory = async (historyId: number) => {
     triggerHaptic();
     if (!confirm("해당 거래 기록을 영구적으로 삭제하시겠습니까? 엔진 분석 결과가 달라질 수 있습니다.")) return;
@@ -227,7 +238,6 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
 
   return (
     <div className="space-y-10">
-      {/* 관리자 상단 탭 */}
       <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 w-fit mx-auto gap-1">
         {[{ id: "ENGINE", label: "시세 엔진 & 주입" }, { id: "DATABASE", label: "아이템 관리" }, { id: "HISTORY", label: "거래 기록" }].map(tab => (
           <button key={tab.id} onClick={() => setActiveManageTab(tab.id as any)} className={`px-8 py-2.5 rounded-xl text-xs font-black transition-all ${activeManageTab === tab.id ? "bg-white text-black" : "text-zinc-500 hover:text-zinc-200"}`}>
@@ -239,7 +249,6 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
       <AnimatePresence mode="wait">
         {activeManageTab === "ENGINE" && (
           <motion.div key="engine" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-            {/* 시세 변수 컨트롤러 */}
             <section className="bg-white/[0.02] border border-blue-500/20 p-8 rounded-[40px] backdrop-blur-md">
               <div className="flex justify-between items-center mb-8 px-2">
                 <h3 className="text-sm font-black text-blue-400 uppercase tracking-widest flex items-center gap-3">
@@ -286,8 +295,8 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
                   </div>
                 </div>
                 <div className="space-y-2">
-                   <label className="text-[10px] font-black text-zinc-700 uppercase ml-1">Trade Price</label>
-                   <input type="text" placeholder="0" className="w-full bg-black/40 border border-white/10 p-6 rounded-2xl text-4xl font-black font-mono text-yellow-500 outline-none" value={form.price} onChange={e => setForm({...form, price: e.target.value.replace(/[^0-9]/g, '')})} />
+                    <label className="text-[10px] font-black text-zinc-700 uppercase ml-1">Trade Price</label>
+                    <input type="text" placeholder="0" className="w-full bg-black/40 border border-white/10 p-6 rounded-2xl text-4xl font-black font-mono text-yellow-500 outline-none" value={form.price} onChange={e => setForm({...form, price: e.target.value.replace(/[^0-9]/g, '')})} />
                 </div>
                 <button onClick={handleSubmitHistory} disabled={isLoading} className="w-full py-5 bg-red-600 hover:bg-red-500 text-white font-black rounded-2xl text-sm transition-all disabled:opacity-50 shadow-xl shadow-red-900/20">
                   {isLoading ? "분석 중..." : "엔진 데이터 강제 주입"}
@@ -355,10 +364,12 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-600 uppercase ml-1">Category</label>
-                    <select value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className="w-full bg-zinc-900/50 border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none">
+                    {/* 🛠️ [패치 3] 기타(ETC) 카테고리 옵션 추가 */}
+                    <select value={newItem.category} onChange={e => setNewItem({...newItem, category: e.target.value})} className="w-full bg-zinc-900/50 border border-white/5 p-3 rounded-xl text-xs font-bold text-white outline-none focus:border-cyan-500/50">
                       <option value="WILD">야생 (WILD)</option>
                       <option value="ISLAND">아일랜드 (ISLAND)</option>
                       <option value="RPG">RPG 무기</option>
+                      <option value="ETC">기타 아이템 (ETC)</option> 
                     </select>
                   </div>
                   <button 
@@ -373,23 +384,24 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
             </AnimatePresence>
 
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-               {items.map(item => (
-                 <div key={item.id} className="bg-black/40 p-4 rounded-2xl flex justify-between items-center border border-white/5 group hover:bg-white/[0.02] transition-colors">
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center p-2 border border-white/5">
-                        <img src={item.iconUrl} className="w-full h-full object-contain pixel-art" alt="" />
-                     </div>
-                     <div>
-                       <div className="font-black text-sm text-zinc-200 uppercase">{item.name}</div>
-                       <div className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">{item.category}</div>
-                     </div>
-                   </div>
-                   <div className="flex items-center gap-4">
-                     <span className="text-[10px] font-mono text-zinc-800">UID: #{item.id}</span>
-                     <button onClick={() => purgeItem(item.id)} className="text-[10px] font-black text-zinc-800 group-hover:text-red-500 transition-colors px-4 py-2 bg-white/5 rounded-lg border border-white/5">DELETE</button>
-                   </div>
-                 </div>
-               ))}
+                {items.map(item => (
+                  <div key={item.id} className="bg-black/40 p-4 rounded-2xl flex justify-between items-center border border-white/5 group hover:bg-white/[0.02] transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-zinc-900 rounded-xl flex items-center justify-center p-2 border border-white/5">
+                        {/* 🛠️ [이미지 경로 패치 적용] */}
+                        <img src={getSecureUrl(item.iconUrl)} className="w-full h-full object-contain pixel-art" alt={item.name} />
+                      </div>
+                      <div>
+                        <div className="font-black text-sm text-zinc-200 uppercase">{item.name}</div>
+                        <div className="text-[9px] text-zinc-600 font-black uppercase tracking-widest">{item.category}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[10px] font-mono text-zinc-800">UID: #{item.id}</span>
+                      <button onClick={() => purgeItem(item.id)} className="text-[10px] font-black text-zinc-800 group-hover:text-red-500 transition-colors px-4 py-2 bg-white/5 rounded-lg border border-white/5">DELETE</button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </motion.div>
         )}

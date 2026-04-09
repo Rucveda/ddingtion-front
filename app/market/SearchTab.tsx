@@ -40,10 +40,24 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
     if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(intensity);
   }, []);
 
+  /**
+   * 🛠️ [패치 1] 이미지 보안 처리
+   */
+  const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
+
+  /**
+   * 🛠️ [패치 2] 골드 포맷팅 가독성 강화
+   */
   const formatGold = (num: number) => {
-    const safeNum = num || 0;
-    if (safeNum >= 100000000) return `${Math.floor(safeNum/100000000)}억 ${Math.floor((safeNum%100000000)/10000)}만`;
-    if (safeNum >= 10000) return `${Math.floor(safeNum/10000).toLocaleString()}만`;
+    const safeNum = Math.abs(Math.round(num || 0));
+    if (safeNum >= 100000000) {
+      const uk = Math.floor(safeNum / 100000000);
+      const man = Math.floor((safeNum % 100000000) / 10000);
+      return `${uk}억 ${man > 0 ? man.toLocaleString() + '만' : ''}`;
+    }
+    if (safeNum >= 10000) {
+      return `${Math.floor(safeNum / 10000).toLocaleString()}만`;
+    }
     return safeNum.toLocaleString();
   };
   
@@ -146,6 +160,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
         enchantments: JSON.stringify(filters.enchantments), imprints: JSON.stringify(filters.imprints),
         skills: JSON.stringify(filters.skills), runes: JSON.stringify(filters.runes),
       });
+      // 🛠️ [패치 3] 주소 경로 명확화
       const data = await request(`/api/auctions/market-analysis/${selectedItem.id}?${params.toString()}`);
       if (data) setAnalysis(data);
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
@@ -176,30 +191,30 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-         <div className="xl:col-span-4 space-y-4">
+          <div className="xl:col-span-4 space-y-4">
             <div className="bg-blue-600 p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
               <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3">AI 적정 시세</p>
-              <h2 className="text-4xl font-black text-white tracking-tighter tabular-nums mb-1">{formatGold(analysis?.fairPrice || 0)} G</h2>
-              <p className="text-[9px] text-white/40 italic">실제 거래된 시세 반영</p>
+              <h2 className="text-4xl font-black text-white tracking-tighter tabular-nums mb-1">{formatGold(Number(analysis?.fairPrice || 0))} G</h2>
+              <p className="text-[9px] text-white/40 italic">실제 거래 데이터 엔진 기반</p>
             </div>
             <div className="bg-white/[0.03] border border-blue-500/20 p-8 rounded-[40px] backdrop-blur-md relative overflow-hidden">
               <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-3">수학적 제작 원가</p>
               <h2 className="text-4xl font-black text-zinc-100 tracking-tighter tabular-nums mb-2">{formatGold(theoreticalValue)} G</h2>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${theoreticalValue > (analysis?.avgPrice || 0) ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-green-500/30 text-green-400 bg-green-500/5'}`}>
-                  평균가 대비 {theoreticalValue > 0 ? (theoreticalValue / (analysis?.avgPrice || 1) * 100).toFixed(0) : 0}% 효율
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${theoreticalValue > (Number(analysis?.avgPrice) || 0) ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-green-500/30 text-green-400 bg-green-500/5'}`}>
+                  평균가 대비 {theoreticalValue > 0 ? (theoreticalValue / (Number(analysis?.avgPrice) || 1) * 100).toFixed(0) : 0}% 효율
                 </span>
               </div>
             </div>
             <div className="bg-white/[0.02] border border-white/5 p-8 rounded-[40px]">
               <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-3">최근 평균 거래가</p>
-              <h2 className="text-3xl font-black text-zinc-400 tracking-tighter tabular-nums">{formatGold(analysis?.avgPrice || 0)} G</h2>
+              <h2 className="text-3xl font-black text-zinc-400 tracking-tighter tabular-nums">{formatGold(Number(analysis?.avgPrice || 0))} G</h2>
             </div>
-         </div>
-         <div className="xl:col-span-8 bg-white/[0.02] border border-white/5 p-10 rounded-[48px] backdrop-blur-md relative">
+          </div>
+          <div className="xl:col-span-8 bg-white/[0.02] border border-white/5 p-10 rounded-[48px] backdrop-blur-md relative">
             <div className="absolute top-10 right-10 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">시세 트래킹</p>
+                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic">시세 변동성 분석</p>
             </div>
             <div ref={containerRef} className="w-full h-[320px]">
               {chartSize.width > 0 && analysis?.history && analysis.history.length > 0 ? (
@@ -209,23 +224,24 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                     <CartesianGrid strokeDasharray="3 3" stroke="#ffffff03" vertical={false} />
                     <XAxis dataKey="tradeDate" stroke="#333" fontSize={10} tickFormatter={(d) => new Date(d).toLocaleDateString([], {month:'numeric', day:'numeric'})} tickLine={false} axisLine={false} />
                     <YAxis hide domain={['auto', 'auto']} />
-                    <Tooltip contentStyle={{ backgroundColor: '#0a0a0b', border: '1px solid #ffffff10', borderRadius: '16px' }} formatter={(val: any) => [`${formatGold(val)} G`, "가격"]} />
-                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={4} fill="url(#blueGrad)" isAnimationActive={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#0a0a0b', border: '1px solid #ffffff10', borderRadius: '16px' }} formatter={(val: any) => [`${formatGold(Number(val))} G`, "가격"]} />
+                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={4} fill="url(#blueGrad)" isAnimationActive={true} />
                   </AreaChart>
                 </ResponsiveContainer>
-              ) : <div className="h-full flex items-center justify-center text-zinc-800 font-black uppercase text-xs tracking-widest">데이터 부족</div>}
+              ) : <div className="h-full flex items-center justify-center text-zinc-800 font-black uppercase text-xs tracking-widest">분석 데이터 로딩 중...</div>}
             </div>
-         </div>
+          </div>
       </div>
 
       <div className="bg-white/[0.02] border border-white/5 p-8 md:p-12 rounded-[56px] shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-6 mb-10 border-b border-white/5 pb-8">
           <div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0">
-            <img src={selectedItem.iconUrl} className="w-8 h-8 pixel-art" alt="" />
+            {/* 🛠️ [이미지 보안 패치 적용] */}
+            <img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" />
           </div>
           <div>
             <h3 className="text-2xl font-black uppercase tracking-tighter">{selectedItem.name}</h3>
-            <p className="text-blue-500 font-black text-[10px] uppercase tracking-widest mt-1">상세 검색 조건 필터</p>
+            <p className="text-blue-500 font-black text-[10px] uppercase tracking-widest mt-1">정밀 분석 필터 구성</p>
           </div>
         </div>
 
