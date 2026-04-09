@@ -8,7 +8,7 @@ export const request = async (url: string, options: RequestInit = {}) => {
   };
 
   try {
-    const response = await fetch(`http://localhost:8080${url}`, { 
+    const response = await fetch(`https://ddingtion-back.onrender.com${url}`, { 
       ...options, 
       headers 
     });

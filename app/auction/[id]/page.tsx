@@ -70,7 +70,7 @@ export default function AuctionDetail() {
     };
     initData();
 
-    const newSocket = io("http://localhost:8080");
+    const newSocket = io("https://ddingtion-back.onrender.com");
     setSocket(newSocket);
     newSocket.emit("join_auction", id);
     newSocket.on("bid_updated", (data) => {

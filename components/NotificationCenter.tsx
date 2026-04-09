@@ -37,7 +37,7 @@ export default function NotificationCenter() {
 
     fetchLogs();
 
-    const socket = io("http://localhost:8080");
+    const socket = io("https://ddingtion-back.onrender.com");
     socket.emit("setup_notifications", user.id);
     
     socket.on("outbid_notification", () => {

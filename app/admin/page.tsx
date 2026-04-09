@@ -132,7 +132,7 @@ export default function AdminDashboard() {
     setIsAdmin(true);
     setAdminId(user.id);
 
-    const newSocket = io("http://localhost:8080");
+    const newSocket = io("https://ddingtion-back.onrender.com");
     setSocket(newSocket);
     newSocket.on("new_message", (msg) => {
       setSupportMessages((prev) => (prev.length > 0 && prev[0].roomId === msg.roomId ? [...prev, msg] : prev));

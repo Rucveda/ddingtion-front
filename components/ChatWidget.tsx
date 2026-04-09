@@ -116,7 +116,7 @@ export default function ChatWidget() {
     const token = localStorage.getItem("token");
     if (!userStr || !token) return;
 
-    const newSocket = io("http://localhost:8080");
+    const newSocket = io("https://ddingtion-back.onrender.com");
     setSocket(newSocket);
     fetchRooms();
 

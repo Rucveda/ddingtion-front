@@ -166,7 +166,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/admin/items", {
+      const res = await fetch("https://ddingtion-back.onrender.com/api/admin/items", {
         method: "POST",
         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
         body: formData
