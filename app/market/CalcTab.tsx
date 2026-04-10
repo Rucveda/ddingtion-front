@@ -3,12 +3,12 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { 
-  ISLAND_ENHANCE_TABLE, 
-  RPG_ENHANCE_DATA, 
-  RPG_MAT_LIST, 
-  WILD_BASE, 
-  WILD_SPECIAL, 
+import {
+  ISLAND_ENHANCE_TABLE,
+  RPG_ENHANCE_DATA,
+  RPG_MAT_LIST,
+  WILD_BASE,
+  WILD_SPECIAL,
   ISLAND_IMPRINTS,
   RUNE_GRADES,
   RUNE_TYPES,
@@ -20,17 +20,17 @@ import {
 import { useMarket } from "./MarketContext";
 
 export default function CalcTab({ selectedItem }: { selectedItem: any }) {
-  const { prices, enchantPrices, updateEnchantPrice, saveAllPrices, updatePrice } = useMarket();
+  const { prices, enchantPrices, updateEnchantPrice, saveAllPrices, updatePrice, setCalcResult } = useMarket();
   const [rpgRank, setRpgRank] = useState("입문");
   const [activeRuneSlot, setActiveRuneSlot] = useState<number | null>(null);
-  
+
   const [isPriceFeedbackActive, setIsPriceFeedbackActive] = useState(false);
   const [isFilterFeedbackActive, setIsFilterFeedbackActive] = useState(false);
 
-  const initialFilters = { 
-    enhancementLevel: 0, 
-    enchantments: {} as Record<string, number>, 
-    imprints: {} as Record<string, number>, 
+  const initialFilters = {
+    enhancementLevel: 0,
+    enchantments: {} as Record<string, number>,
+    imprints: {} as Record<string, number>,
     skills: {} as Record<string, number>,
     runes: [{ grade: "루키", type: "" }, { grade: "루키", type: "" }, { grade: "루키", type: "" }]
   };
@@ -84,7 +84,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
   };
 
   const category = selectedItem?.category.toUpperCase().includes("WILD") ? "WILD" : selectedItem?.category.toUpperCase().includes("ISLAND") ? "ISLAND" : selectedItem?.category.toUpperCase().includes("RPG") ? "RPG" : "OTHER";
-  
+
   const weaponType = useMemo(() => {
     if (category !== "RPG") return null;
     return ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t)) || null;
@@ -116,7 +116,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         }
         current[name] = 1;
       }
-      // 🛠️ [패치] 상급 인챈트 레벨 확장에 대응 (효율 10 등)
       else if (current[name] < maxTier) current[name] += 1;
       else delete current[name];
       return { ...prev, [type]: current };
@@ -137,38 +136,33 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     let items: any[] = [];
     let cumulative = 0;
 
-    // 1. 야생 카테고리 (한계 돌파 로직 적용)
     if (category === "WILD") {
       Object.entries(filters.enchantments).forEach(([name, level]) => {
         const HIGH_LIMITS: Record<string, number> = { "날카로움": 5, "미끼": 3, "보호": 4, "약탈": 3, "행운": 3, "효율": 5 };
         const normalMax = HIGH_LIMITS[name] || 5;
-        
         const rawNormalPrice = enchantPrices[name]?.price || "0";
         const normalPrice = Number(rawNormalPrice);
-        
+
         if (level <= normalMax) {
           const unitCost = Math.round(normalPrice * 10 * (level as number));
           cumulative += unitCost;
           items.push({ name, subText: `인챈트 Lv.${level} (10% 기댓값)`, cost: unitCost });
         } else {
-          // 일반 구간 기댓값 합산
           const normalRangeCost = Math.round(normalPrice * 10 * normalMax);
           cumulative += normalRangeCost;
           items.push({ name, subText: `일반 구간 Lv.${normalMax} 누적`, cost: normalRangeCost });
 
-          // 상급 구간 기댓값 합산
           const highBookPrice = Number(prices[`MAT_HIGH_BOOK_${name}`] || 0);
           const highRate = Number(prices[`MAT_HIGH_RATE_${name}`] || 10);
           const highLevelCost = Math.round(highBookPrice / (highRate / 100));
-          
+
           const extraLevels = (level as number) - normalMax;
           const totalHighCost = highLevelCost * extraLevels;
           cumulative += totalHighCost;
-          items.push({ name: `상급 ${name}`, subText: `상급 Lv.${extraLevels} (확률 ${highRate}% 기댓값)`, cost: totalHighCost });
+          items.push({ name: `상급 ${name}`, subText: `상급 Lv.${extraLevels} (${highRate}% 기댓값)`, cost: totalHighCost });
         }
       });
-    } 
-    // 2. 아일랜드 카테고리
+    }
     else if (category === "ISLAND") {
       const contractPrice = Number(prices.MAT_ISLAND_CONTRACT || 0);
       const usageMap: Record<number, number> = { 1: 5, 2: 10, 3: 15, 4: 20, 5: 25 };
@@ -190,7 +184,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         }
       }
     }
-    // 3. RPG 카테고리 (무기 종류 매칭 적용)
     else if (category === "RPG") {
       const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
       const base = Number(prices[`MAT_RPG_BASE_${wType}`] || prices[`MAT_RPG_BASE_${selectedItem.name}`] || 0);
@@ -206,11 +199,11 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
         let totalSealNeeded = 0;
         for (let i = 0; i < skillCount; i++) totalSealNeeded += SKILL_SLOT_SEAL_COSTS[i];
-        
+
         if (totalSealNeeded > 0) {
           const totalSealCost = totalSealNeeded * sealPrice;
           cumulative += totalSealCost;
-          items.push({ name: `스킬 슬롯 해금 (${skillCount}개)`, subText: `해방의 인장 ${totalSealNeeded}개 누적 비용`, cost: totalSealCost });
+          items.push({ name: `스킬 슬롯 해금 (${skillCount}개)`, subText: `해방의 인장 ${totalSealNeeded}개 누적`, cost: totalSealCost });
         }
 
         skillEntries.forEach(([skillName, level]) => {
@@ -218,12 +211,12 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           if (info) {
             const unlockCost = (info.emblem * emblemPrice) + info.unlockGold;
             cumulative += unlockCost;
-            items.push({ name: skillName, subText: `스킬 활성화 (개방의 문장 ${info.emblem}개)`, cost: unlockCost });
+            items.push({ name: skillName, subText: `스킬 활성화 (문장 ${info.emblem}개)`, cost: unlockCost });
             for (let i = 0; i < level; i++) {
               const tryCost = info.enhanceGold[i] + awakenStonePrice;
               const expectedValue = Math.round(tryCost * (100 / RPG_SKILL_COMMON_RATES[i]));
               cumulative += expectedValue;
-              items.push({ name: `${skillName} +${i+1}`, subText: `성공률 ${RPG_SKILL_COMMON_RATES[i]}% 기댓값`, cost: expectedValue });
+              items.push({ name: `${skillName} +${i + 1}`, subText: `${RPG_SKILL_COMMON_RATES[i]}% 기댓값`, cost: expectedValue });
             }
           }
         });
@@ -245,7 +238,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           Object.entries(step.mats).forEach(([mName, count]: any) => matCost += (Number(prices[`MAT_RPG_${mName}`] || 0) * count));
           const unitCost = step.gold + matCost;
           cumulative += unitCost;
-          items.push({ name: `강화 +${i + 1}`, subText: `${rpgRank} 등급 강화비 (재료 포함)`, cost: unitCost });
+          items.push({ name: `강화 +${i + 1}`, subText: `${rpgRank} 등급 강화비`, cost: unitCost });
         }
       }
     }
@@ -259,11 +252,17 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     return data.length > 0 ? [...initial, ...data] : initial;
   }, [receiptData]);
 
+  // 🛠️ [공유 패치] 계산된 최종 결과를 Context를 통해 SearchTab으로 전송
+  useEffect(() => {
+    if (receiptData.total !== undefined) {
+      setCalcResult(receiptData.total);
+    }
+  }, [receiptData.total, setCalcResult]);
+
   if (!selectedItem) return null;
 
   return (
     <div className="space-y-6">
-      {/* 비용 차트 및 영수증 */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section className="lg:col-span-7 bg-white/[0.02] border border-white/5 p-6 rounded-[40px] shadow-2xl flex flex-col h-[380px] backdrop-blur-md relative overflow-hidden">
           <div className="flex items-center gap-3 mb-6 px-2"><div className="w-1.5 h-3.5 bg-blue-600 rounded-full" /><h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest">비용 성장 시뮬레이션</h3></div>
@@ -293,7 +292,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         </section>
       </div>
 
-      {/* 시세 수정 섹션 */}
       <section className="bg-blue-600/[0.03] border border-blue-500/20 p-8 rounded-[40px] shadow-xl backdrop-blur-md">
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-sm font-black text-zinc-300 uppercase tracking-widest">실시간 시세 동기화</h3></div>
@@ -323,7 +321,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                   <span className="text-[9px] font-black text-zinc-600 uppercase">{name} (10%)</span>
                   <input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={enchantPrices[name]?.price || ""} onChange={e => updateEnchantPrice(name, e.target.value.replace(/[^0-9]/g, ''), "10")} placeholder="0" />
                 </div>
-                {/* 🛠️ [패치] 한계 돌파 시 상급 시세/확률 필드 노출 */}
                 {isHighAvailable && (
                   <>
                     <div className="bg-black/60 p-4 rounded-2xl border border-orange-500/30 flex flex-col gap-2">
@@ -342,7 +339,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         </div>
       </section>
 
-      {/* 필터 설정 섹션 */}
       <section className="bg-white/[0.02] border border-white/5 p-8 md:p-10 rounded-[48px] shadow-2xl backdrop-blur-md">
         <div className="flex items-center justify-between mb-10 border-b border-white/5 pb-8 px-2">
           <div className="flex items-center gap-6"><div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner"><img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" /></div><div><h3 className="text-xl font-black uppercase tracking-tighter">{selectedItem.name}</h3><p className="text-blue-500 font-black text-[10px] uppercase tracking-widest mt-1">아이템 커스텀 설정</p></div></div>
@@ -358,7 +354,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                   <div className="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
                     {["입문", "견습", "정예", "영웅"].map(rank => (<button key={rank} onClick={() => setRpgRank(rank)} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black transition-all ${rpgRank === rank ? "bg-cyan-600 text-white shadow-md" : "text-zinc-600 hover:text-zinc-400"}`}>{rank}</button>))}
                   </div>
-                  <div className="flex items-center bg-black/40 p-5 rounded-2xl border border-white/5 mt-2"><input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => setFilters({...filters, enhancementLevel: parseInt(e.target.value)})} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-cyan-500 cursor-pointer" /></div>
+                  <div className="flex items-center bg-black/40 p-5 rounded-2xl border border-white/5 mt-2"><input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) })} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-cyan-500 cursor-pointer" /></div>
                 </div>
 
                 <div className="space-y-4">
@@ -409,19 +405,28 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           {category === "WILD" && (
             <div className="space-y-12">
               <div className="space-y-6">
-                <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest border-l-4 border-blue-500 pl-4">인챈트 구성 (한계 돌파 포함)</div>
+                <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest border-l-4 border-blue-500 pl-4">일반 인챈트 구성 (한계 돌파 포함)</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                   {WILD_BASE.map(([name, max]: any) => {
-                    // 🛠️ [패치] 효율 등 6종은 최대 레벨을 10으로 확장 표시
                     const HIGH_LIMITS: Record<string, number> = { "효율": 10, "날카로움": 7, "보호": 6, "미끼": 5, "약탈": 5, "행운": 5 };
                     const currentMax = HIGH_LIMITS[name] || max;
-                    
                     return (
                       <button key={name} onClick={() => toggleOption('enchantments', name, currentMax)} className={`p-4 rounded-xl border text-xs font-bold transition-all ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
                         {name} {filters.enchantments[name] && <span className="bg-white/20 px-1.5 py-0.5 rounded ml-1 text-[9px]">Lv.{filters.enchantments[name]}</span>}
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="text-[11px] font-black text-red-500 uppercase tracking-widest border-l-4 border-red-500 pl-4">특수 인챈트 선택</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {WILD_SPECIAL.map(([name, max]: any) => (
+                    <button key={name} onClick={() => toggleOption('enchantments', name, max)} className={`p-4 rounded-xl border text-xs font-bold transition-all ${filters.enchantments[name] ? "bg-red-600 border-red-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
+                      {name} {filters.enchantments[name] && <span className="bg-white/20 px-1.5 py-0.5 rounded ml-1 text-[9px]">Lv.{filters.enchantments[name]}</span>}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

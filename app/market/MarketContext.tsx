@@ -21,6 +21,9 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   const [imprintPrices, setImprintPrices] = useState<Record<string, string>>({});
   const [isSaved, setIsSaved] = useState(true);
 
+  // 🛠️ [패치] 유저가 CalcTab에서 계산한 최종 결과값을 저장하는 전역 상태
+  const [calcResult, setCalcResult] = useState<number>(0);
+
   useEffect(() => {
     const saved = localStorage.getItem("ddingtion_market_total_data");
     if (saved) {
@@ -56,7 +59,10 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     <MarketContext.Provider value={{ 
       prices, enchantPrices, imprintPrices, 
       updatePrice, updateEnchantPrice, updateImprintPrice, 
-      saveAllPrices, isSaved 
+      saveAllPrices, isSaved,
+      // 🛠️ [패치] 공유 변수 및 설정 함수 노출
+      calcResult, 
+      setCalcResult 
     }}>
       {children}
     </MarketContext.Provider>
