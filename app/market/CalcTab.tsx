@@ -186,6 +186,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     }
     else if (category === "RPG") {
       const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
+      // 🛠️ [패치] 무기 종류별 순정가를 전역 변수에서 가져옴
       const base = Number(prices[`MAT_RPG_BASE_${wType}`] || prices[`MAT_RPG_BASE_${selectedItem.name}`] || 0);
       cumulative = base;
       items.push({ name: selectedItem.name, subText: `순정 ${wType || ""} 본체 시세`, cost: base });
@@ -252,7 +253,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     return data.length > 0 ? [...initial, ...data] : initial;
   }, [receiptData]);
 
-  // 🛠️ [공유 패치] 계산된 최종 결과를 Context를 통해 SearchTab으로 전송
   useEffect(() => {
     if (receiptData.total !== undefined) {
       setCalcResult(receiptData.total);
@@ -303,6 +303,26 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {category === "RPG" && (
             <>
+              {/* 🛠️ [패치] 순정 본체 시세 입력칸 추가 */}
+              {(() => {
+                const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
+                const baseKey = `MAT_RPG_BASE_${wType || selectedItem.name}`;
+                return (
+                  <div className="bg-black/60 p-4 rounded-2xl border border-cyan-500/30 flex flex-col gap-2 shadow-lg shadow-cyan-500/5">
+                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">순정 본체 시세 ({wType || "기본"})</span>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" 
+                        value={prices[baseKey] || ""} 
+                        onChange={e => updatePrice(baseKey, e.target.value.replace(/[^0-9]/g, ''))} 
+                        placeholder="0" 
+                      />
+                      <span className="text-[10px] font-bold text-zinc-700">G</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              
               <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">해방의 인장 (슬롯용)</span><input className="bg-transparent text-sm font-black font-mono text-cyan-400 outline-none w-full" value={prices["MAT_RPG_해방의 인장"] || ""} onChange={e => updatePrice("MAT_RPG_해방의 인장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
               <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">개방의 문장 (스킬용)</span><input className="bg-transparent text-sm font-black font-mono text-purple-400 outline-none w-full" value={prices["MAT_RPG_개방의 문장"] || ""} onChange={e => updatePrice("MAT_RPG_개방의 문장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
               {skillConfig && (<div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">{skillConfig.material}</span><input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_RPG_${skillConfig.material}`] || ""} onChange={e => updatePrice(`MAT_RPG_${skillConfig.material}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>)}
