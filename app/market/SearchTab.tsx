@@ -40,14 +40,8 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
     if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(intensity);
   }, []);
 
-  /**
-   * 🛠️ [패치 1] 이미지 보안 처리
-   */
   const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
 
-  /**
-   * 🛠️ [패치 2] 골드 포맷팅 가독성 강화
-   */
   const formatGold = (num: number) => {
     const safeNum = Math.abs(Math.round(num || 0));
     if (safeNum >= 100000000) {
@@ -70,14 +64,28 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
 
   const skillConfig = weaponType ? RPG_SKILL_SYSTEM[weaponType] : null;
 
+  // 🛠️ [패치] 수학적 제작 원가 로직 최신화
   const theoreticalValue = useMemo(() => {
     if (!selectedItem) return 0;
     let cost = 0;
 
     if (category === "WILD") {
       Object.entries(filters.enchantments).forEach(([name, level]) => {
+        const HIGH_LIMITS: Record<string, number> = { "날카로움": 5, "미끼": 3, "보호": 4, "약탈": 3, "행운": 3, "효율": 5 };
+        const normalMax = HIGH_LIMITS[name] || 5;
         const setting = enchantPrices[name] || { price: "0" };
-        cost += (Number(setting.price) * 10) * (level as number);
+
+        if (level <= normalMax) {
+          cost += (Number(setting.price) * 10) * (level as number);
+        } else {
+          // 일반 구간 기댓값 합산
+          cost += (Number(setting.price) * 10) * normalMax;
+          // 상급 구간 기댓값 합산
+          const highBookPrice = Number(prices[`MAT_HIGH_BOOK_${name}`] || 0);
+          const highRate = Number(prices[`MAT_HIGH_RATE_${name}`] || 10);
+          const highLevelCost = highBookPrice / (highRate / 100);
+          cost += highLevelCost * ((level as number) - normalMax);
+        }
       });
     }
     else if (category === "ISLAND") {
@@ -96,7 +104,10 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
       }
     }
     else if (category === "RPG") {
-      cost += Number(prices[`MAT_RPG_BASE_${selectedItem.name}`] || 0);
+      // 🛠️ 무기 종류별 순정가 매칭 우선
+      const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
+      const basePrice = Number(prices[`MAT_RPG_BASE_${wType}`] || prices[`MAT_RPG_BASE_${selectedItem.name}`] || 0);
+      cost += basePrice;
 
       if (skillConfig) {
         const skillEntries = Object.entries(filters.skills);
@@ -106,9 +117,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
         const awakenStonePrice = Number(prices[`MAT_RPG_${skillConfig.material}`] || 0);
 
         let totalSealNeeded = 0;
-        for (let i = 0; i < skillCount; i++) {
-          totalSealNeeded += (SKILL_SLOT_SEAL_COSTS[i] || 0);
-        }
+        for (let i = 0; i < skillCount; i++) totalSealNeeded += (SKILL_SLOT_SEAL_COSTS[i] || 0);
         cost += (totalSealNeeded * sealPrice);
 
         skillEntries.forEach(([skillName, level]) => {
@@ -160,7 +169,6 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
         enchantments: JSON.stringify(filters.enchantments), imprints: JSON.stringify(filters.imprints),
         skills: JSON.stringify(filters.skills), runes: JSON.stringify(filters.runes),
       });
-      // 🛠️ [패치 3] 주소 경로 명확화
       const data = await request(`/api/auctions/market-analysis/${selectedItem.id}?${params.toString()}`);
       if (data) setAnalysis(data);
     } catch (err) { console.error(err); } finally { setIsLoading(false); }
@@ -190,6 +198,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+      {/* AI 분석 요약 패널 */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           <div className="xl:col-span-4 space-y-4">
             <div className="bg-blue-600 p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
@@ -211,6 +220,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
               <h2 className="text-3xl font-black text-zinc-400 tracking-tighter tabular-nums">{formatGold(Number(analysis?.avgPrice || 0))} G</h2>
             </div>
           </div>
+          {/* 차트 영역 */}
           <div className="xl:col-span-8 bg-white/[0.02] border border-white/5 p-10 rounded-[48px] backdrop-blur-md relative">
             <div className="absolute top-10 right-10 flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
@@ -233,10 +243,10 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
           </div>
       </div>
 
+      {/* 분석 필터 설정 */}
       <div className="bg-white/[0.02] border border-white/5 p-8 md:p-12 rounded-[56px] shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-6 mb-10 border-b border-white/5 pb-8">
-          <div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0">
-            {/* 🛠️ [이미지 보안 패치 적용] */}
+          <div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
             <img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" />
           </div>
           <div>
@@ -249,14 +259,20 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
           {category === "WILD" && (
             <div className="space-y-12">
               <div className="space-y-6">
-                <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest border-l-4 border-blue-500 pl-4">일반 인챈트 선택</div>
+                <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest border-l-4 border-blue-500 pl-4">인챈트 구성 (한계 돌파 포함)</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {WILD_BASE.map(([name, max]) => (
-                    <button key={name as string} onClick={() => toggleOption('enchantments', name as string, max as number)} className={`p-4 rounded-xl border transition-all flex justify-between items-center ${filters.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
-                      <span className="font-bold text-xs">{name as string}</span>
-                      {filters.enchantments[name as string] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name as string]}</span>}
-                    </button>
-                  ))}
+                  {WILD_BASE.map(([name, max]: any) => {
+                    // 🛠️ 상급 인챈트 한계치 확장 (효율 10 등)
+                    const HIGH_LIMITS: Record<string, number> = { "효율": 10, "날카로움": 7, "보호": 6, "미끼": 5, "약탈": 5, "행운": 5 };
+                    const currentMax = HIGH_LIMITS[name as string] || (max as number);
+
+                    return (
+                      <button key={name as string} onClick={() => toggleOption('enchantments', name as string, currentMax)} className={`p-4 rounded-xl border transition-all flex justify-between items-center ${filters.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
+                        <span className="font-bold text-xs">{name as string}</span>
+                        {filters.enchantments[name as string] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name as string]}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="space-y-6">
@@ -275,7 +291,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
           
           {category === "ISLAND" && (
             <div className="space-y-12">
-               <div className="max-w-xs space-y-4">
+                <div className="max-w-xs space-y-4">
                   <div className="text-[11px] font-black text-yellow-500 uppercase tracking-widest px-1">장비 강화 수치 (+{filters.enhancementLevel})</div>
                   <div className="bg-black/40 p-6 rounded-2xl flex items-center border border-white/5">
                     <input 
@@ -284,8 +300,8 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                       className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-yellow-500 cursor-pointer" 
                     />
                   </div>
-               </div>
-               <div className="space-y-6">
+                </div>
+                <div className="space-y-6">
                   <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest ml-1">각인 활성화</div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {ISLAND_IMPRINTS.map(name => (
@@ -295,7 +311,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                       </button>
                     ))}
                   </div>
-               </div>
+                </div>
             </div>
           )}
           
@@ -366,7 +382,6 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                         {filters.skills[name] && <span className="font-black text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{filters.skills[name]}</span>}
                       </button>
                     ))}
-                    {!skillConfig && <div className="text-[10px] text-zinc-600">무기 종류를 인식할 수 없어 스킬 목록을 불러올 수 없습니다.</div>}
                   </div>
                </div>
             </div>
