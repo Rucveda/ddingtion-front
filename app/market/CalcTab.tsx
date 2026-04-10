@@ -96,11 +96,8 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     if (category !== "RPG") return [];
     const needed = new Set<string>();
     const steps = RPG_ENHANCE_DATA[rpgRank] || [];
-    const maxLevelToCheck = filters.enhancementLevel > 0 ? filters.enhancementLevel : 1;
-    for (let i = 0; i < maxLevelToCheck; i++) {
-      if (steps[i]) {
-        Object.keys(steps[i].mats).forEach(m => needed.add(m));
-      }
+    for (let i = 0; i < filters.enhancementLevel; i++) {
+      if (steps[i]) Object.keys(steps[i].mats).forEach(m => needed.add(m));
     }
     return Array.from(needed);
   }, [category, rpgRank, filters.enhancementLevel]);
@@ -140,15 +137,17 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
       Object.entries(filters.enchantments).forEach(([name, level]) => {
         const HIGH_LIMITS: Record<string, number> = { "날카로움": 5, "미끼": 3, "보호": 4, "약탈": 3, "행운": 3, "효율": 5 };
         const normalMax = HIGH_LIMITS[name] || 5;
-        const rawNormalPrice = enchantPrices[name]?.price || "0";
-        const normalPrice = Number(rawNormalPrice);
+
+        const enchant = enchantPrices[name] || { price: "0", rate: "10" };
+        const normalPrice = Number(enchant.price);
+        const normalRate = Number(enchant.rate) || 10;
 
         if (level <= normalMax) {
-          const unitCost = Math.round(normalPrice * 10 * (level as number));
+          const unitCost = Math.round((normalPrice / (normalRate / 100)) * (level as number));
           cumulative += unitCost;
-          items.push({ name, subText: `인챈트 Lv.${level} (10% 기댓값)`, cost: unitCost });
+          items.push({ name, subText: `인챈트 Lv.${level} (${normalRate}% 기댓값)`, cost: unitCost });
         } else {
-          const normalRangeCost = Math.round(normalPrice * 10 * normalMax);
+          const normalRangeCost = Math.round((normalPrice / (normalRate / 100)) * normalMax);
           cumulative += normalRangeCost;
           items.push({ name, subText: `일반 구간 Lv.${normalMax} 누적`, cost: normalRangeCost });
 
@@ -165,10 +164,14 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     }
     else if (category === "ISLAND") {
       const contractPrice = Number(prices.MAT_ISLAND_CONTRACT || 0);
+      const lowStone = Number(prices.MAT_STONE_LOW || 0);
+      const midStone = Number(prices.MAT_STONE_MID || 0);
+      const highStone = Number(prices.MAT_STONE_HIGH || 0);
       const usageMap: Record<number, number> = { 1: 5, 2: 10, 3: 15, 4: 20, 5: 25 };
+
       Object.entries(filters.imprints).forEach(([name, level]) => {
-        const rawStonePrice = prices[`MAT_SCROLL_투박한_${name}`] || "0";
-        const unitCost = Math.round((Number(rawStonePrice) + (usageMap[level as number] * contractPrice)) * 20);
+        const stonePrice = Number(prices[`MAT_SCROLL_투박한_${name}`] || 0);
+        const unitCost = Math.round((stonePrice + (usageMap[level as number] * contractPrice)) * 20);
         if (unitCost > 0) {
           cumulative += unitCost;
           items.push({ name, subText: `각인 Lv.${level} 제작 비용`, cost: unitCost });
@@ -177,7 +180,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
       for (let i = 1; i <= filters.enhancementLevel; i++) {
         const step = ISLAND_ENHANCE_TABLE[i - 1];
         if (step) {
-          const tryCost = step.gold + (step.mats.low * Number(prices.LOW_LIFE || 0)) + (step.mats.mid * Number(prices.MID_LIFE || 0)) + (step.mats.high * Number(prices.HIGH_LIFE || 0));
+          const tryCost = step.gold + (step.mats.low * lowStone) + (step.mats.mid * midStone) + (step.mats.high * highStone);
           const unitCost = Math.round(tryCost * (100 / step.rate));
           cumulative += unitCost;
           items.push({ name: `강화 +${i}`, subText: `성공률 ${step.rate}% 기댓값`, cost: unitCost });
@@ -186,10 +189,9 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     }
     else if (category === "RPG") {
       const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
-      // 🛠️ [패치] 무기 종류별 순정가를 전역 변수에서 가져옴
       const base = Number(prices[`MAT_RPG_BASE_${wType}`] || prices[`MAT_RPG_BASE_${selectedItem.name}`] || 0);
       cumulative = base;
-      items.push({ name: selectedItem.name, subText: `순정 ${wType || ""} 본체 시세`, cost: base });
+      items.push({ name: selectedItem.name, subText: `순정 본체 시세`, cost: base });
 
       if (skillConfig) {
         const skillEntries = Object.entries(filters.skills);
@@ -303,31 +305,35 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {category === "RPG" && (
             <>
-              {/* 🛠️ [패치] 순정 본체 시세 입력칸 추가 */}
               {(() => {
                 const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
                 const baseKey = `MAT_RPG_BASE_${wType || selectedItem.name}`;
                 return (
-                  <div className="bg-black/60 p-4 rounded-2xl border border-cyan-500/30 flex flex-col gap-2 shadow-lg shadow-cyan-500/5">
+                  <div className="bg-black/60 p-4 rounded-2xl border border-cyan-500/30 flex flex-col gap-2">
                     <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">순정 본체 시세 ({wType || "기본"})</span>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" 
-                        value={prices[baseKey] || ""} 
-                        onChange={e => updatePrice(baseKey, e.target.value.replace(/[^0-9]/g, ''))} 
-                        placeholder="0" 
-                      />
-                      <span className="text-[10px] font-bold text-zinc-700">G</span>
-                    </div>
+                    <input className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" value={prices[baseKey] || ""} onChange={e => updatePrice(baseKey, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
                   </div>
                 );
               })()}
-              
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">해방의 인장 (슬롯용)</span><input className="bg-transparent text-sm font-black font-mono text-cyan-400 outline-none w-full" value={prices["MAT_RPG_해방의 인장"] || ""} onChange={e => updatePrice("MAT_RPG_해방의 인장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">개방의 문장 (스킬용)</span><input className="bg-transparent text-sm font-black font-mono text-purple-400 outline-none w-full" value={prices["MAT_RPG_개방의 문장"] || ""} onChange={e => updatePrice("MAT_RPG_개방의 문장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">해방의 인장</span><input className="bg-transparent text-sm font-black font-mono text-cyan-400 outline-none w-full" value={prices["MAT_RPG_해방의 인장"] || ""} onChange={e => updatePrice("MAT_RPG_해방의 인장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">개방의 문장</span><input className="bg-transparent text-sm font-black font-mono text-purple-400 outline-none w-full" value={prices["MAT_RPG_개방의 문장"] || ""} onChange={e => updatePrice("MAT_RPG_개방의 문장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
               {skillConfig && (<div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">{skillConfig.material}</span><input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_RPG_${skillConfig.material}`] || ""} onChange={e => updatePrice(`MAT_RPG_${skillConfig.material}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>)}
               {activeNeededMaterials.map(m => (
                 <div key={m} className="bg-black/60 p-4 rounded-2xl border border-blue-500/20 flex flex-col gap-2"><span className="text-[9px] font-black text-blue-400 uppercase">{m}</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices[`MAT_RPG_${m}`] || ""} onChange={e => updatePrice(`MAT_RPG_${m}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              ))}
+            </>
+          )}
+          {category === "ISLAND" && (
+            <>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-yellow-500 uppercase">각인 계약서</span><input className="bg-transparent text-sm font-black font-mono text-yellow-500 outline-none w-full" value={prices.MAT_ISLAND_CONTRACT || ""} onChange={e => updatePrice("MAT_ISLAND_CONTRACT", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(하)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_LOW || ""} onChange={e => updatePrice("MAT_STONE_LOW", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(중)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_MID || ""} onChange={e => updatePrice("MAT_STONE_MID", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(상)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_HIGH || ""} onChange={e => updatePrice("MAT_STONE_HIGH", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              {Object.keys(filters.imprints).map(name => (
+                <div key={name} className="bg-black/60 p-4 rounded-2xl border border-yellow-500/20 flex flex-col gap-2">
+                  <span className="text-[9px] font-black text-yellow-600 uppercase">{name} 각인서</span>
+                  <input className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" value={prices[`MAT_SCROLL_투박한_${name}`] || ""} onChange={e => updatePrice(`MAT_SCROLL_투박한_${name}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
+                </div>
               ))}
             </>
           )}
@@ -338,8 +344,11 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
             return (
               <div key={name} className="contents">
                 <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2">
-                  <span className="text-[9px] font-black text-zinc-600 uppercase">{name} (10%)</span>
-                  <input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={enchantPrices[name]?.price || ""} onChange={e => updateEnchantPrice(name, e.target.value.replace(/[^0-9]/g, ''), "10")} placeholder="0" />
+                  <span className="text-[9px] font-black text-blue-400 uppercase">{name} 가격 / 확률(%)</span>
+                  <div className="flex gap-2">
+                    <input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={enchantPrices[name]?.price || ""} onChange={e => updateEnchantPrice(name, e.target.value, enchantPrices[name]?.rate || "10")} placeholder="0" />
+                    <input className="bg-transparent text-sm font-black font-mono text-blue-500 outline-none w-12 text-center border-l border-white/10" value={enchantPrices[name]?.rate || ""} onChange={e => updateEnchantPrice(name, enchantPrices[name]?.price || "0", e.target.value)} placeholder="10" />
+                  </div>
                 </div>
                 {isHighAvailable && (
                   <>
@@ -438,7 +447,6 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                   })}
                 </div>
               </div>
-
               <div className="space-y-6">
                 <div className="text-[11px] font-black text-red-500 uppercase tracking-widest border-l-4 border-red-500 pl-4">특수 인챈트 선택</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -454,16 +462,16 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
           {category === "ISLAND" && (
             <div className="space-y-12">
-              <div className="max-w-xs space-y-4">
-                <div className="flex justify-between items-center px-1"><div className="text-[11px] font-black text-yellow-500 uppercase tracking-widest">장비 강화 단계</div><div className="text-xl font-black text-white italic">+{filters.enhancementLevel}</div></div>
-                <div className="bg-black/40 p-6 rounded-2xl border border-white/5 relative group">
-                  <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 h-1 bg-zinc-800 rounded-full overflow-hidden"><div className="h-full bg-yellow-500 transition-all duration-300" style={{ width: `${(filters.enhancementLevel / 15) * 100}%` }} /></div>
-                  <input type="range" min="0" max="15" step="1" value={filters.enhancementLevel} onChange={(e) => { const val = parseInt(e.target.value); if (val !== filters.enhancementLevel) { triggerHaptic(5); setFilters(prev => ({ ...prev, enhancementLevel: val })); } }} className="relative z-10 w-full h-1 bg-transparent appearance-none cursor-pointer accent-yellow-500" style={{ WebkitAppearance: 'none', outline: 'none' }} />
-                  <div className="flex justify-between mt-4 px-1">{[0, 5, 10, 15].map(tick => (<span key={tick} className="text-[9px] font-black text-zinc-700">{tick}</span>))}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="space-y-4">
+                  <div className="text-[11px] font-black text-yellow-500 uppercase tracking-widest border-l-4 border-yellow-500 pl-4">장비 강화 단계 (+{filters.enhancementLevel})</div>
+                  <div className="flex items-center bg-black/40 p-5 rounded-2xl border border-white/5 mt-2">
+                    <input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => { triggerHaptic(5); setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) }); }} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-yellow-500 cursor-pointer" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-6">
-                <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest ml-1">각인 활성화</div>
+                <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest border-l-4 border-white/10 pl-4">각인 활성화</div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{ISLAND_IMPRINTS.map(name => (<button key={name} onClick={() => toggleOption('imprints', name, 5)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${filters.imprints[name] ? "bg-yellow-600 border-yellow-400 text-black shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}><span className="font-bold text-xs">{name}</span>{filters.imprints[name] && <span className="font-black text-[9px] bg-black/10 px-1.5 py-0.5 rounded">Lv.{filters.imprints[name]}</span>}</button>))}</div>
               </div>
             </div>
