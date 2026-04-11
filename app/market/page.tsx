@@ -167,7 +167,7 @@ export default function MarketIntelligence({ initialTab = "SEARCH" }: MarketTabP
         </main>
 
         <footer className="mt-20 border-t border-white/5 py-12 opacity-20 text-center">
-          <p className="text-[9px] font-black uppercase tracking-[0.5em]">System Protocol // Intelligence Data Analysis 2026</p>
+          <p className="text-[9px] font-black uppercase tracking-[0.5em]">DDINGTION CALCULATOR 2026</p>
         </footer>
       </div>
     </MarketProvider>

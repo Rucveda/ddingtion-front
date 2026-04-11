@@ -133,12 +133,12 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           <div className="xl:col-span-4 space-y-4">
             <div className="bg-blue-600 p-8 rounded-[40px] shadow-2xl relative overflow-hidden">
-              <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3">AI 적정 시세 (서버 공식)</p>
+              <p className="text-[10px] font-black text-white/50 uppercase tracking-widest mb-3">띵션 예측 엔진 (BETA)</p>
               <h2 className="text-4xl font-black text-white tracking-tighter tabular-nums mb-1">{formatGold(Number(analysis?.fairPrice || 0))} G</h2>
-              <p className="text-[9px] text-white/40 italic">실제 거래 데이터 엔진 기반</p>
+              <p className="text-[9px] text-white/40 italic">실제 거래 데이터 및 기댓값 계산</p>
             </div>
             <div className="bg-white/[0.03] border border-blue-500/20 p-8 rounded-[40px] backdrop-blur-md relative overflow-hidden">
-              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-3">나의 커스텀 제작 원가 (계산기)</p>
+              <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-3">나의 시뮬레이션</p>
               <h2 className="text-4xl font-black text-zinc-100 tracking-tighter tabular-nums mb-2">{formatGold(theoreticalValue)} G</h2>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${theoreticalValue > (Number(analysis?.avgPrice) || 0) ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-green-500/30 text-green-400 bg-green-500/5'}`}>

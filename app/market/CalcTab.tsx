@@ -267,7 +267,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section className="lg:col-span-7 bg-white/[0.02] border border-white/5 p-6 rounded-[40px] shadow-2xl flex flex-col h-[380px] backdrop-blur-md relative overflow-hidden">
-          <div className="flex items-center gap-3 mb-6 px-2"><div className="w-1.5 h-3.5 bg-blue-600 rounded-full" /><h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest">비용 성장 시뮬레이션</h3></div>
+          <div className="flex items-center gap-3 mb-6 px-2"><div className="w-1.5 h-3.5 bg-blue-600 rounded-full" /><h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest">기댓값 시뮬레이션</h3></div>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -296,7 +296,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
       <section className="bg-blue-600/[0.03] border border-blue-500/20 p-8 rounded-[40px] shadow-xl backdrop-blur-md">
         <div className="flex items-center justify-between mb-8 px-2">
-          <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-sm font-black text-zinc-300 uppercase tracking-widest">실시간 시세 동기화</h3></div>
+          <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-sm font-black text-zinc-300 uppercase tracking-widest">시세 입력</h3></div>
           <button onClick={handleSavePrices} className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all active:scale-95 ${isPriceFeedbackActive ? "bg-green-600 text-white shadow-lg" : "bg-blue-600 text-white shadow-lg"}`}>
             {isPriceFeedbackActive ? "✓ 시세 저장됨" : "현재 시세 저장"}
           </button>
@@ -310,7 +310,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                 const baseKey = `MAT_RPG_BASE_${wType || selectedItem.name}`;
                 return (
                   <div className="bg-black/60 p-4 rounded-2xl border border-cyan-500/30 flex flex-col gap-2">
-                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">순정 본체 시세 ({wType || "기본"})</span>
+                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">순정 시세 ({wType || "기본"})</span>
                     <input className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" value={prices[baseKey] || ""} onChange={e => updatePrice(baseKey, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
                   </div>
                 );
@@ -343,6 +343,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
             return (
               <div key={name} className="contents">
+                {/* 일반 인챈트 시세 / 확률 */}
                 <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2">
                   <span className="text-[9px] font-black text-blue-400 uppercase">{name} 가격 / 확률(%)</span>
                   <div className="flex gap-2">
@@ -350,17 +351,26 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                     <input className="bg-transparent text-sm font-black font-mono text-blue-500 outline-none w-12 text-center border-l border-white/10" value={enchantPrices[name]?.rate || ""} onChange={e => updateEnchantPrice(name, enchantPrices[name]?.price || "0", e.target.value)} placeholder="10" />
                   </div>
                 </div>
+
+                {/* 상급 인챈트 시세 / 확률 (통합형) */}
                 {isHighAvailable && (
-                  <>
-                    <div className="bg-black/60 p-4 rounded-2xl border border-orange-500/30 flex flex-col gap-2">
-                      <span className="text-[9px] font-black text-orange-500 uppercase">상급 {name} 시세</span>
-                      <input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_HIGH_BOOK_${name}`] || ""} onChange={e => updatePrice(`MAT_HIGH_BOOK_${name}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
+                  <div className="bg-black/60 p-4 rounded-2xl border border-orange-500/30 flex flex-col gap-2">
+                    <span className="text-[9px] font-black text-orange-500 uppercase">상급 {name} 가격 / 확률(%)</span>
+                    <div className="flex gap-2">
+                      <input
+                        className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full"
+                        value={prices[`MAT_HIGH_BOOK_${name}`] || ""}
+                        onChange={e => updatePrice(`MAT_HIGH_BOOK_${name}`, e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="0"
+                      />
+                      <input
+                        className="bg-transparent text-sm font-black font-mono text-orange-500 outline-none w-12 text-center border-l border-white/10"
+                        value={prices[`MAT_HIGH_RATE_${name}`] || ""}
+                        onChange={e => updatePrice(`MAT_HIGH_RATE_${name}`, e.target.value.replace(/[^0-9]/g, ''))}
+                        placeholder="10"
+                      />
                     </div>
-                    <div className="bg-black/60 p-4 rounded-2xl border border-orange-500/30 flex flex-col gap-2">
-                      <span className="text-[9px] font-black text-orange-500 uppercase">상급 확률(%)</span>
-                      <input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_HIGH_RATE_${name}`] || ""} onChange={e => updatePrice(`MAT_HIGH_RATE_${name}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="10" />
-                    </div>
-                  </>
+                  </div>
                 )}
               </div>
             );

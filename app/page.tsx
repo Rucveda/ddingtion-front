@@ -250,15 +250,15 @@ function HomeComponent() {
             <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-40">
               <div className="max-w-3xl">
                 <h1 className="text-7xl font-black mb-8 tracking-tighter leading-tight">
-                  하이테크 <span className="text-blue-500">경매 하우스</span>,<br />띵션에 오신 것을 환영합니다.
+                  띵타이쿤 <span className="text-blue-500">강화 계산기</span>,<br />띵션에 오신 것을 환영합니다.
                 </h1>
                 <p className="text-zinc-400 text-xl font-medium leading-relaxed mb-12">
-                  우리는 게임 내 가치 있는 아이템들의 시세를 실시간으로 분석하고,<br />
-                  정교한 강화 시뮬레이터를 통해 당신의 소중한 자산을 가장 현명하게 관리할 수 있도록 돕습니다.
+                  가치 있는 장비들의 시세를 계산 및 분석하고,<br />
+                  경매를 통한 최적의 거래 기회를 찾아드립니다.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">거래소 입장하기</button>
-                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화 시뮬레이터</button>
+                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">경매 BETA</button>
+                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화   계산기</button>
                 </div>
               </div>
             </motion.div>

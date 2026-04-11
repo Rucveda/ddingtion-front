@@ -91,7 +91,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     // 1. RPG 섹션: 무기 종류별 순정가 및 랭크별 최저가
     if (activeVarTab === "RPG") {
 
-      // 1. 🛠️ 인장 및 문장 변수 추가 (이 부분이 누락되었습니다)
+      // 1. 🛠️ 인장 및 문장 변수
       keys.push({ key: "MAT_RPG_해방의 인장", label: "해방의 인장 (슬롯용) 단가", category: "RPG" });
       keys.push({ key: "MAT_RPG_개방의 문장", label: "개방의 문장 (스킬용) 단가", category: "RPG" });
       const weaponTypes = ["스태프", "망치", "총", "활", "창", "대검"];
@@ -131,7 +131,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
         keys.push({ key: `MAT_BOOK_${name}`, label: `${name} (일반 10%)`, category: "WILD" });
       });
 
-      // 상급 인챈트가 존재하는 특정 6종만 추가
+      // 상급 인챈트가 존재하는 6종
       const HIGH_BOOKS = [
         { name: "날카로움", label: "상급 날카로움 (5→7)" },
         { name: "미끼", label: "상급 미끼 (3→5)" },
