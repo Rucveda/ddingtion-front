@@ -193,9 +193,9 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="bg-gradient-to-b from-black/40 to-transparent"
+                  className="w-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none"
                 >
-                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-8">
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-8 pointer-events-auto">
                     <Link 
                       href="/sell" 
                       className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-cyan-400 transition-all duration-200"
@@ -219,9 +219,9 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="bg-gradient-to-b from-black/40 to-transparent"
+                  className="w-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none"
                 >
-                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-3">
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-3 pointer-events-auto">
                     {[
                       { id: "SEARCH", label: "시세 정밀 분석" },
                       { id: "CALC", label: "강화 시뮬레이터" },
