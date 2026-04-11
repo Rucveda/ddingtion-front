@@ -120,7 +120,7 @@ export default function SellItem() {
           buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null 
         }),
       });
-      router.push("/");
+      router.push("/?tab=AUCTION");
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
 
@@ -158,7 +158,7 @@ export default function SellItem() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/" onClick={triggerHaptic} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white border border-white/5 transition-all">✕</Link>
+            <Link href="/?tab=AUCTION" onClick={triggerHaptic} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white border border-white/5 transition-all">✕</Link>
           </div>
         </div>
       </nav>

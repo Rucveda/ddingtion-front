@@ -27,6 +27,8 @@ export default function AuctionDetail() {
   const [isError, setIsError] = useState(false);
   const GAME_MAX_PRICE = 10000000000; 
 
+  const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
+
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
       window.navigator.vibrate(10); 
@@ -47,7 +49,6 @@ export default function AuctionDetail() {
   const currentUser = userStr ? JSON.parse(userStr) : null;
   const isSeller = auction && currentUser && Number(auction.sellerId) === Number(currentUser.id);
 
-  // 💡 카테고리 판정 보조
   const category = useMemo(() => {
     if (!auction?.item?.category) return null;
     const cat = auction.item.category.toUpperCase();
@@ -78,7 +79,7 @@ export default function AuctionDetail() {
     });
     newSocket.on("auction_finished", (data) => {
       alert(`경매 종료. 낙찰자: ${data.winner}`);
-      router.replace("/"); 
+      router.replace("/?tab=AUCTION"); 
     });
     return () => { newSocket.close(); };
   }, [id, router]);
@@ -89,10 +90,10 @@ export default function AuctionDetail() {
       const now = new Date().getTime();
       const end = new Date(auction.endTime).getTime();
       const distance = end - now;
-      if (distance < 0) { setTimeLeft("AUCTION ENDED"); clearInterval(timer); }
+      if (distance < 0) { setTimeLeft("ENDED"); clearInterval(timer); }
       else {
         const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const m = Math.floor((distance % (1000 * 60)) / (1000 * 60));
         const s = Math.floor((distance % (1000 * 60)) / 1000);
         setTimeLeft(`${h}H ${m}M ${s}S`);
       }
@@ -123,115 +124,107 @@ export default function AuctionDetail() {
       if (result?.roomId) {
         socket?.emit('auction_finished', { auctionId: id, winner: currentUser.ingameName });
         localStorage.setItem("openChatId", result.roomId.toString());
-        router.replace("/");
+        router.replace("/?tab=AUCTION");
       }
     } catch (err) { setIsProcessing(false); }
   };
 
-  if (!auction || !auction.item) return <div className="min-h-screen bg-[#010101] text-white flex items-center justify-center font-black italic text-3xl animate-pulse uppercase">Uplinking...</div>;
+  if (!auction || !auction.item) return <div className="min-h-screen bg-[#010101] text-zinc-500 flex items-center justify-center font-light text-xl animate-pulse uppercase tracking-widest">loading...</div>;
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none overflow-x-hidden relative selection:bg-white selection:text-black">
       <style jsx global>{`
-        .premium-abyss-bg { position: fixed; inset: -15%; z-index: 0; background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(239, 68, 68, 0.05) 0%, transparent 40%), #010101; filter: blur(80px); pointer-events: none; }
+        .premium-abyss-bg { position: fixed; inset: -15%; z-index: 0; background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(239, 68, 68, 0.04) 0%, transparent 40%), #010101; filter: blur(80px); pointer-events: none; }
         .pixel-art { image-rendering: pixelated; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .shake-active { animation: shake 0.5s ease-in-out; border-color: #ef4444 !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
       `}</style>
       <div className="premium-abyss-bg" />
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <header className="flex justify-between items-center py-12 mb-8">
-          <Link href="/" className="text-3xl font-black tracking-tighter transition-transform hover:scale-105">DDINGTION</Link>
-          <button onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-black/40 text-zinc-500 hover:text-white transition-all">✕</button>
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <header className="flex justify-between items-center py-8">
+          {/* 🛠️ [패치] 메인 페이지와 동일한 멀티컬러 로고로 변경 */}
+          <Link href="/" className="flex items-center group shrink-0">
+            <span className="text-2xl font-black tracking-tighter transition-transform group-hover:scale-105">
+              <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
+              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
+              <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
+              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
+              <span className="text-[#ef4444]">N</span>
+            </span>
+          </Link>
+          <Link 
+            href="/?tab=AUCTION" 
+            onClick={triggerHaptic}
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-white/5 bg-white/5 text-zinc-500 hover:text-white transition-all shadow-lg active:scale-90"
+          >
+            <span className="text-lg font-light leading-none">✕</span>
+          </Link>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-24 items-start">
-          {/* --- 좌측: 아이템 비주얼 및 상세 옵션 --- */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-            <div className="relative bg-[#0d0d0f]/60 backdrop-blur-3xl border border-white/5 p-16 rounded-[46px] flex flex-col items-center justify-center shadow-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-              
-              {/* 강화 수치 오버레이 */}
-              <div className="absolute top-10 right-10 flex flex-col items-end">
-                <span className="text-7xl font-black italic text-white/5 select-none leading-none">+{auction.enhancementLevel}</span>
-                {auction.enhancementRank && <span className="text-[10px] font-black text-cyan-500 uppercase tracking-widest mt-2">{auction.enhancementRank} RANK</span>}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mt-4 mb-20 items-start">
+          {/* --- 좌측: 상세 정보 (크기 대폭 축소) --- */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="relative bg-[#0d0d0f]/40 backdrop-blur-2xl border border-white/5 p-10 rounded-[32px] flex flex-col items-center justify-center shadow-2xl overflow-hidden">
+              <div className="absolute top-8 right-8 flex flex-col items-end">
+                <span className="text-5xl font-black text-white/5 select-none leading-none">+{auction.enhancementLevel}</span>
+                {auction.enhancementRank && <span className="text-[9px] font-bold text-cyan-500/60 uppercase tracking-widest mt-1">{auction.enhancementRank}</span>}
               </div>
 
-              <div className="w-64 h-64 mb-12 flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-blue-500/10 blur-[80px] rounded-full" />
-                <img src={auction.item.iconUrl || "/default.png"} className="w-full h-full object-contain pixel-art drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] relative z-10" alt="" />
+              <div className="w-40 h-40 mb-8 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-blue-500/5 blur-[60px] rounded-full" />
+                <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art drop-shadow-2xl relative z-10" alt="" />
               </div>
               
               <div className="text-center w-full relative z-10">
-                <span className="bg-white/5 border border-white/10 text-zinc-500 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-4 inline-block">{auction.item.category}</span>
-                <h1 className="text-6xl font-black mb-10 tracking-tighter leading-none uppercase italic">
-                  {auction.item.name}
-                  <span className="text-blue-500 ml-4">+{auction.enhancementLevel}</span>
+                <span className="bg-white/5 border border-white/5 text-zinc-500 text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3 inline-block">{auction.item.category}</span>
+                <h1 className="text-3xl font-light mb-8 tracking-tight uppercase text-zinc-200">
+                  {auction.item.name} <span className="text-blue-500 font-medium">+{auction.enhancementLevel}</span>
                 </h1>
                 
-                {/* 💡 [패치] 카테고리별 상세 옵션 출력 엔진 */}
-                <div className="w-full bg-black/40 border border-white/5 rounded-[32px] p-8 text-left space-y-8">
-                  {/* 야생 장비 인챈트 */}
+                <div className="w-full bg-black/20 border border-white/5 rounded-2xl p-6 text-left space-y-6">
                   {category === "WILD" && auction.enchantments && (
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest border-l-2 border-blue-500 pl-3">Active Inscriptions</p>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="space-y-3">
+                      <p className="text-[9px] font-bold text-blue-500/70 uppercase tracking-widest border-l border-blue-500/50 pl-2">Enchantments</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {Object.entries(auction.enchantments).map(([name, lv]: any) => (
-                          <div key={name} className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                            <span className="text-[11px] font-bold text-zinc-300">{name}</span>
-                            <span className="text-[10px] font-black text-blue-400">{lv}</span>
+                          <div key={name} className="bg-white/5 border border-white/5 px-2.5 py-1 rounded-md flex items-center gap-2">
+                            <span className="text-[10px] font-medium text-zinc-400">{name}</span>
+                            <span className="text-[9px] font-bold text-blue-400">{lv}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* 아일랜드 각인 */}
                   {category === "ISLAND" && auction.imprint && (
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black text-yellow-500 uppercase tracking-widest border-l-2 border-yellow-500 pl-3">Sigil Augmentation</p>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="space-y-3">
+                      <p className="text-[9px] font-bold text-yellow-500/70 uppercase tracking-widest border-l border-yellow-500/50 pl-2">Sigils</p>
+                      <div className="flex flex-wrap gap-1.5">
                         {Object.entries(auction.imprint).map(([name, lv]: any) => (
-                          <div key={name} className="bg-yellow-500/10 border border-yellow-500/20 px-4 py-2 rounded-xl flex items-center gap-3">
-                            <span className="text-xs font-bold text-yellow-200">{name}</span>
-                            <span className="text-[10px] font-black bg-yellow-500 text-black px-1.5 rounded">LV.{lv}</span>
+                          <div key={name} className="bg-yellow-500/5 border border-yellow-500/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                            <span className="text-[10px] font-medium text-yellow-200/80">{name}</span>
+                            <span className="text-[9px] font-bold text-yellow-500">LV.{lv}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* RPG 룬 & 스킬 */}
                   {category === "RPG" && (
-                    <div className="space-y-8">
-                      {/* 룬 슬롯 시각화 */}
+                    <div className="space-y-6">
                       {auction.runes && (
-                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest border-l-2 border-orange-500 pl-3">룬</p>
-                          <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-3">
+                          <p className="text-[9px] font-bold text-orange-500/70 uppercase tracking-widest border-l border-orange-500/50 pl-2">Runes</p>
+                          <div className="grid grid-cols-3 gap-2">
                             {auction.runes.map((rune: any, i: number) => (
-                              <div key={i} className={`p-3 rounded-2xl border flex flex-col items-center justify-center text-center h-20 ${rune.type ? 'bg-orange-500/5 border-orange-500/30' : 'bg-white/5 border-white/5'}`}>
+                              <div key={i} className={`p-2 rounded-xl border flex flex-col items-center justify-center text-center h-14 ${rune.type ? 'bg-orange-500/5 border-orange-500/20' : 'bg-white/5 border-white/5'}`}>
                                 {rune.type ? (
                                   <>
-                                    <span className="text-[8px] font-black text-orange-600 uppercase mb-1">{rune.grade}</span>
-                                    <span className="text-[10px] font-bold text-zinc-200 leading-tight">{rune.type}</span>
+                                    <span className="text-[7px] font-bold text-orange-600 uppercase">{rune.grade}</span>
+                                    <span className="text-[9px] font-medium text-zinc-300 leading-tight truncate w-full px-1">{rune.type}</span>
                                   </>
-                                ) : <span className="text-zinc-800 font-black">EMPTY</span>}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* 스킬 목록 */}
-                      {auction.skills && (
-                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest border-l-2 border-purple-500 pl-3">전투 스킬</p>
-                          <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(auction.skills).map(([name, lv]: any) => (
-                              <div key={name} className="bg-purple-500/5 border border-purple-500/20 p-3 rounded-xl flex justify-between items-center">
-                                <span className="text-[11px] font-bold text-purple-200">{name}</span>
-                                <span className="text-[10px] font-black text-white bg-purple-600 px-2 py-0.5 rounded">MAX {lv}</span>
+                                ) : <span className="text-zinc-800 text-[8px] font-bold">EMPTY</span>}
                               </div>
                             ))}
                           </div>
@@ -241,53 +234,73 @@ export default function AuctionDetail() {
                   )}
 
                   <div className="pt-4 border-t border-white/5">
-                    <p className="text-[9px] font-black text-zinc-700 uppercase tracking-widest mb-2">Seller's Note</p>
-                    <p className="text-sm text-zinc-400 font-medium leading-relaxed">{auction.description || "추가 정보가 없습니다."}</p>
+                    <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Description</p>
+                    <p className="text-[12px] text-zinc-500 font-light leading-relaxed">{auction.description || "상세 설명이 없습니다."}</p>
                   </div>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          {/* --- 우측: 입찰 터미널 --- */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col justify-center">
-            <div className="mb-6">
-              <p className="text-red-500 font-black text-[10px] uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_red]" /> Time Remaining
-              </p>
-              <p className="text-4xl font-mono font-black text-zinc-200 tracking-tighter">{timeLeft}</p>
-            </div>
-
-            <div className="mb-12">
-              <p className="text-zinc-500 font-black text-[10px] uppercase tracking-[0.2em] mb-4">현재 최고 입찰가</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-8xl font-black text-yellow-400 font-mono tracking-tighter italic leading-none">{formatGold(Number(auction.currentPrice))}</span>
-                <span className="text-zinc-600 font-black italic text-2xl uppercase tracking-widest">G</span>
+          {/* --- 우측: 입찰 터미널 (UI 크기 최적화) --- */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col">
+            <div className="mb-8 flex justify-between items-end px-2">
+              <div>
+                <p className="text-red-500 font-bold text-[9px] uppercase tracking-[0.3em] mb-1.5 flex items-center gap-2">
+                  <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" /> Time Remaining
+                </p>
+                <p className="text-3xl font-mono font-light text-zinc-200">{timeLeft}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-zinc-500 font-bold text-[9px] uppercase tracking-[0.2em] mb-1.5">Last Bidder</p>
+                <span className="text-cyan-400 font-medium tracking-widest text-xs uppercase italic">{maskName(auction.lastBidder)}</span>
               </div>
             </div>
 
-            <div className="bg-black/40 backdrop-blur-3xl border border-white/5 p-10 rounded-[40px] space-y-10 shadow-2xl relative">
-              <div className="flex justify-between items-center px-4 py-1 border-l-2 border-cyan-500/50 bg-cyan-500/5">
-                <span className="text-zinc-500 text-xs font-bold uppercase tracking-widest">최고 입찰자</span>
-                <span className="text-cyan-400 font-black tracking-[0.1em] uppercase text-sm italic">{maskName(auction.lastBidder)}</span>
-              </div>
-
-              <div className="space-y-6">
-                <div className="relative">
-                  <p className="text-[10px] font-black text-zinc-600 uppercase mb-3 ml-2 tracking-widest">Bid Settlement</p>
-                  <input type="text" inputMode="numeric" disabled={isSeller || isProcessing} value={Number(bidAmount).toLocaleString()} onChange={handleBidChange} className={`w-full bg-black/60 border border-white/10 p-8 rounded-[28px] text-5xl font-mono font-black outline-none transition-all text-white ${isError ? 'shake-active' : 'focus:border-yellow-400/30'} ${(isSeller || isProcessing) ? "opacity-30" : ""}`} />
+            <div className="bg-white/[0.02] border border-white/5 p-8 rounded-[32px] space-y-8 shadow-2xl">
+              <div>
+                <p className="text-zinc-600 font-bold text-[9px] uppercase tracking-[0.2em] mb-3 ml-1">Current Price</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-6xl font-light text-yellow-400 tracking-tighter">{formatGold(Number(auction.currentPrice))}</span>
+                  <span className="text-zinc-700 font-bold text-lg uppercase">G</span>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+              </div>
+
+              <div className="space-y-4">
+                <div className="relative">
+                  <p className="text-[9px] font-bold text-zinc-700 uppercase mb-2 ml-1 tracking-widest">Your Bid</p>
+                  <input 
+                    type="text" 
+                    inputMode="numeric" 
+                    disabled={isSeller || isProcessing} 
+                    value={Number(bidAmount).toLocaleString()} 
+                    onChange={handleBidChange} 
+                    className={`w-full bg-black/40 border border-white/10 p-6 rounded-2xl text-4xl font-mono font-light outline-none transition-all text-white ${isError ? 'shake-active border-red-500' : 'focus:border-blue-500/30'}`} 
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
                   {[10, 20, 50].map(pct => (
-                    <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct/100)).toString())} className="bg-white/5 hover:bg-white/10 text-zinc-400 py-4 rounded-2xl text-[11px] font-black border border-white/5 uppercase active:scale-95 disabled:opacity-10">+{pct}% BOOST</button>
+                    <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct/100)).toString())} className="bg-white/5 hover:bg-white/10 text-zinc-500 py-2.5 rounded-xl text-[10px] font-bold border border-white/5 transition-all">+{pct}%</button>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4">
-                <button disabled={isSeller || isProcessing} onClick={handleBid} className={`w-full font-black py-7 rounded-[28px] text-2xl tracking-tighter transition-all active:scale-95 shadow-xl ${isSeller ? "bg-zinc-800 text-zinc-500" : "bg-[#3b82f6] text-white"}`}>{isSeller ? "본인 경매 입찰불가" : "SUBMIT BID"}</button>
+              <div className="space-y-3 pt-4">
+                <button 
+                  disabled={isSeller || isProcessing} 
+                  onClick={handleBid} 
+                  className={`w-full font-bold py-5 rounded-2xl text-lg tracking-widest transition-all active:scale-95 shadow-xl ${isSeller ? "bg-zinc-900 text-zinc-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-500"}`}
+                >
+                  {isSeller ? "CANNOT BID" : "PLACE BID"}
+                </button>
                 {auction.buyNowPrice && auction.status === 'ACTIVE' && (
-                  <button disabled={isSeller || isProcessing} onClick={handleBuyNow} className={`w-full font-black py-6 rounded-[28px] text-lg tracking-tight transition-all active:scale-95 border border-white/10 ${isSeller ? "bg-zinc-900 text-zinc-700" : "bg-white text-black shadow-lg"}`}>{isProcessing ? "PROCESSING..." : `즉시 구매 : ${formatGold(Number(auction.buyNowPrice))} G`}</button>
+                  <button 
+                    disabled={isSeller || isProcessing} 
+                    onClick={handleBuyNow} 
+                    className="w-full font-medium py-4 rounded-2xl text-[13px] tracking-widest transition-all bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 border border-white/5"
+                  >
+                    {isProcessing ? "PROCESSING..." : `BUY NOW : ${formatGold(Number(auction.buyNowPrice))} G`}
+                  </button>
                 )}
               </div>
             </div>
@@ -297,7 +310,6 @@ export default function AuctionDetail() {
     </div>
   );
 
-  // --- 보조 함수 ---
   function handleBidChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value.replace(/[^0-9]/g, "");
     if (Number(val) > GAME_MAX_PRICE) {

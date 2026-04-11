@@ -80,10 +80,8 @@ export default function MyPage() {
       <div className="premium-abyss-bg" />
       <div className="bg-texture" />
 
-      {/* 💡 상단 네비게이션: 메인화면 로고 + 위젯 스타일 닫기 버튼 통합 */}
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-10">
-          {/* 메인과 동일한 멀티컬러 로고 디자인 */}
           <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
             <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
               <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
@@ -94,9 +92,9 @@ export default function MyPage() {
             </span>
           </Link>
 
-          {/* 💡 돌아가기 대신 알림/채팅 위젯과 동일한 ✕ 버튼 스타일 */}
+          {/* 🛠️ [패치] X 버튼 경로 수정: AUCTION 탭으로 이동 */}
           <Link 
-            href="/" 
+            href="/?tab=AUCTION" 
             onClick={triggerHaptic}
             className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 border border-white/5 transition-all"
           >
@@ -108,7 +106,6 @@ export default function MyPage() {
       <main className="max-w-5xl mx-auto px-6 py-16 relative z-10">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           
-          {/* 유저 프로필 섹션 */}
           <section className="bg-white/[0.02] border border-white/5 p-10 rounded-[40px] mb-10 flex flex-col md:flex-row items-center gap-10 shadow-2xl relative overflow-hidden">
             <div className="w-24 h-24 bg-zinc-900 border border-white/10 rounded-3xl flex items-center justify-center relative shrink-0">
                <div className="w-10 h-10 border-2 border-zinc-700 rotate-45 flex items-center justify-center">
@@ -129,7 +126,6 @@ export default function MyPage() {
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            {/* 좌측 패널 */}
             <div className="md:col-span-4 space-y-6">
               <div className="bg-white/[0.02] border border-white/5 p-8 rounded-[32px] group">
                 <p className="text-[10px] text-zinc-500 font-black uppercase mb-4 tracking-widest">신뢰 점수</p>
@@ -151,7 +147,6 @@ export default function MyPage() {
               </Link>
             </div>
 
-            {/* 우측 리스트 */}
             <div className="md:col-span-8 space-y-4">
               <h2 className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.3em] ml-2 mb-6 flex items-center gap-3">
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 판매 목록 관리
@@ -164,7 +159,7 @@ export default function MyPage() {
                       <div className="flex items-center gap-6">
                         <div className="w-16 h-16 bg-zinc-900/50 rounded-2xl flex items-center justify-center p-3 border border-white/5 shrink-0 overflow-hidden relative">
                           {auction.item.iconUrl ? (
-                            <img src={auction.item.iconUrl} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
+                            <img src={auction.item.iconUrl.replace("http://", "https://")} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
                           ) : (
                             <span className="text-2xl">📦</span>
                           )}
@@ -182,7 +177,7 @@ export default function MyPage() {
                       <div className="flex items-center gap-8">
                         <div className="text-right">
                           <p className="text-[9px] text-zinc-600 font-black mb-1 uppercase tracking-tighter">최고 입찰가</p>
-                          <p className="text-xl font-black text-yellow-500 font-mono tracking-tight">{auction.currentPrice.toLocaleString()} G</p>
+                          <p className="text-xl font-black text-yellow-400 font-mono tracking-tight">{auction.currentPrice.toLocaleString()} G</p>
                         </div>
                         <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 18l6-6-6-6"/></svg>
