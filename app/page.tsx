@@ -184,7 +184,7 @@ export default function Home() {
           </div>
 
           {/* 🛠️ 서브 메뉴 오버레이 (absolute 포지션으로 컨텐츠 위에 덮어씌움) */}
-          <div className="absolute left-0 right-0 top-full overflow-visible pointer-events-none">
+<div className="absolute left-0 right-0 top-full overflow-visible pointer-events-none">
             <AnimatePresence mode="wait">
               {activeTab === "AUCTION" && (
                 <motion.div 
@@ -193,11 +193,21 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="w-full bg-black/80 backdrop-blur-3xl border-b border-white/10 pointer-events-auto shadow-2xl"
+                  className="w-full bg-black/60 backdrop-blur-2xl border-b border-white/5 pointer-events-auto shadow-2xl"
                 >
-                  <div className="max-w-7xl mx-auto px-6 py-4 flex gap-3">
-                    <Link href="/sell" className="px-6 py-2.5 rounded-xl text-[10px] font-black bg-white/5 text-zinc-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all border border-white/5">경매등록</Link>
-                    <Link href="/mypage" className="px-6 py-2.5 rounded-xl text-[10px] font-black bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">마이페이지</Link>
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-8">
+                    <Link 
+                      href="/sell" 
+                      className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-cyan-400 transition-all duration-200"
+                    >
+                      REGISTER
+                    </Link>
+                    <Link 
+                      href="/mypage" 
+                      className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-all duration-200"
+                    >
+                      MY PAGE
+                    </Link>
                   </div>
                 </motion.div>
               )}
@@ -211,7 +221,7 @@ export default function Home() {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="w-full bg-black/80 backdrop-blur-3xl border-b border-white/10 pointer-events-auto shadow-2xl"
                 >
-                  <div className="max-w-7xl mx-auto px-6 py-4 flex gap-2">
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-3">
                     {[
                       { id: "SEARCH", label: "시세 정밀 분석" },
                       { id: "CALC", label: "강화 시뮬레이터" },
