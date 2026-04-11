@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api"; 
 import NoticePopup from "@/components/NoticePopup";
 import PostEditor from "@/app/post/PostEditor";
+import MarketTab from "@/app/market/page"; // 기존 계산기 페이지 컴포넌트 (경로에 맞춰 확인 필요)
 
 interface Auction {
   id: number;
@@ -18,21 +19,20 @@ interface Auction {
 
 interface User { id: number; ingameName: string; role: string; }
 
+// 메인 탭 타입 정의
+type TabType = "HOME" | "NOTICE" | "CALCULATOR" | "AUCTION";
+
 export default function Home() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number }[]>([]);
-  const [activeTab, setActiveTab] = useState<"MARKET" | "WRITE">("MARKET");
+  const [activeTab, setActiveTab] = useState<TabType>("HOME"); // 초기값 HOME
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({ category: "ALL" });
   const filterRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * 🛠️ [패치 1] 이미지 보안 처리 함수
-   * http 주소를 https로 변환하여 Mixed Content 에러를 방지합니다.
-   */
   const getSecureUrl = (url: string) => {
     if (!url) return "";
     return url.replace("http://", "https://");
@@ -140,7 +140,7 @@ export default function Home() {
 
       <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-10">
-          <Link href="/" onClick={() => { triggerHaptic(); setActiveTab("MARKET"); }} className="flex items-center group shrink-0">
+          <button onClick={() => { triggerHaptic(); setActiveTab("HOME"); }} className="flex items-center group shrink-0">
             <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
               <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
               <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
@@ -148,35 +148,44 @@ export default function Home() {
               <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
               <span className="text-[#ef4444]">N</span>
             </span>
-          </Link>
+          </button>
 
           <div className="flex items-center gap-10 font-bold text-sm">
             <div className="flex items-center gap-8 border-r border-white/10 pr-10">
+              {/* 1. NOTICE (위치 변경) */}
               <button 
-                onClick={() => { triggerHaptic(); setActiveTab("MARKET"); }}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "MARKET" ? "text-white" : "text-zinc-600 hover:text-zinc-400"}`}
+                onClick={() => { triggerHaptic(); setActiveTab("NOTICE"); }}
+                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "NOTICE" ? "text-blue-500" : "text-zinc-600 hover:text-zinc-400"}`}
+              >
+                NOTICE
+              </button>
+              {/* 2. CALCULATOR (이름 변경 및 위치 변경) */}
+              <button 
+                onClick={() => { triggerHaptic(); setActiveTab("CALCULATOR"); }}
+                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "CALCULATOR" ? "text-white" : "text-zinc-600 hover:text-zinc-400"}`}
+              >
+                CALCULATOR
+              </button>
+              {/* 3. AUCTION (위치 변경) */}
+              <button 
+                onClick={() => { triggerHaptic(); setActiveTab("AUCTION"); }}
+                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "AUCTION" ? "text-white" : "text-zinc-600 hover:text-zinc-400"}`}
               >
                 AUCTION
-              </button>
-              <button 
-                onClick={() => { triggerHaptic(); setActiveTab("WRITE"); }}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "WRITE" ? "text-blue-500" : "text-zinc-600 hover:text-zinc-400"}`}
-              >
-                COMMUNITY
               </button>
             </div>
 
             <div className="flex items-center gap-8">
-              <Link href="/market" onClick={triggerHaptic} className="flex items-center gap-2 group">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
-                <span className="text-blue-500 group-hover:text-white transition-colors duration-200 uppercase tracking-widest text-[11px] font-black">실시간 시세</span>
-              </Link>
-
               <AnimatePresence mode="wait">
                 {isLoggedIn ? (
-                  <motion.div key="logged-in" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.1 }} className="flex items-center gap-8">
-                    <Link href="/sell" className="text-zinc-400 hover:text-cyan-400 transition-colors duration-200">경매등록</Link>
-                    <Link href="/mypage" className="text-zinc-400 hover:text-white transition-colors duration-200">마이페이지</Link>
+                  <motion.div key="logged-in" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-8">
+                    {/* AUCTION 탭에서만 경매등록, 마이페이지 노출 */}
+                    {activeTab === "AUCTION" && (
+                      <>
+                        <Link href="/sell" className="text-zinc-400 hover:text-cyan-400 transition-colors duration-200">경매등록</Link>
+                        <Link href="/mypage" className="text-zinc-400 hover:text-white transition-colors duration-200">마이페이지</Link>
+                      </>
+                    )}
                     {userRole === "ADMIN" && (
                       <Link href="/admin" onClick={triggerHaptic} className="text-[10px] font-black text-red-500 px-3 py-1.5 border border-red-500/20 bg-red-500/5 rounded-lg tracking-widest leading-none">ADMIN</Link>
                     )}
@@ -196,130 +205,96 @@ export default function Home() {
 
       <main className="flex-1 relative z-10">
         <AnimatePresence mode="wait">
-          {activeTab === "MARKET" ? (
-            <motion.div 
-              key="market-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <header className="relative py-32 overflow-visible z-10">
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                    <div className="inline-flex items-center gap-2 mb-12 overflow-hidden rounded-md border border-white/10 bg-black/70 shadow-2xl relative z-10">
-                      <div className="bg-red-600 px-4 py-2 flex items-center gap-2.5 on-air-glow animate-pulse">
-                        <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_10px_white]" />
-                        <span className="text-[12px] font-black text-white tracking-widest uppercase">LIVE ON-AIR</span>
-                      </div>
-                      <div className="px-5 py-2 text-[11px] font-black text-zinc-400 tracking-widest uppercase relative z-10">Global Auction Server #1</div>
+          {/* HOME: 사이트 설명 메인 페이지 */}
+          {activeTab === "HOME" && (
+            <motion.div key="home-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-32">
+              <div className="max-w-3xl">
+                <h1 className="text-7xl font-black mb-8 tracking-tighter leading-tight">
+                  하이테크 <span className="text-blue-500">경매 하우스</span>,<br />띵션에 오신 것을 환영합니다.
+                </h1>
+                <p className="text-zinc-400 text-xl font-medium leading-relaxed mb-12">
+                  우리는 게임 내 가치 있는 아이템들의 시세를 실시간으로 분석하고,<br /> 
+                  정교한 강화 시뮬레이터를 통해 당신의 소중한 자산을 가장 현명하게 관리할 수 있도록 돕습니다.
+                </p>
+                <div className="flex gap-4">
+                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all">거래소 입장하기</button>
+                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화 시뮬레이터</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* AUCTION: 기존 메인 경매 리스트 */}
+          {activeTab === "AUCTION" && (
+            <motion.div key="auction-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <header className="relative py-20 z-10">
+                <div className="max-w-7xl mx-auto px-6">
+                  <div className="inline-flex items-center gap-2 mb-8 overflow-hidden rounded-md border border-white/10 bg-black/70">
+                    <div className="bg-red-600 px-4 py-1.5 flex items-center gap-2 on-air-glow animate-pulse">
+                      <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />
+                      <span className="text-[10px] font-black text-white tracking-widest uppercase">LIVE ON-AIR</span>
                     </div>
-                    
-                    <h1 className="text-8xl font-black mb-8 tracking-tighter leading-[1.05] text-zinc-100 relative">
-                      <span className="relative inline-block">
-                        <motion.span onHoverStart={triggerGoldExplosion} whileHover={{ color: "#facc15", textShadow: "0px 0px 40px rgba(250, 204, 21, 0.8)", scale: 1.03 }} className="cursor-pointer transition-all duration-300 relative z-20 inline-block">귀중한 아이템</motion.span>
-                        <AnimatePresence>
-                          {particles.map((p) => (
-                            <motion.span key={p.id} initial={{ opacity: 1, x: 0, y: 0, scale: 1 }} animate={{ opacity: 0, x: p.x, y: p.y, scale: 0, rotate: Math.random() * 360 }} exit={{ opacity: 0 }} transition={{ duration: 0.7, ease: [0.1, 0.8, 0.3, 1] }} className="absolute top-1/2 left-1/2 pointer-events-none z-10" style={{ width: p.size, height: p.size }}>
-                              <div className="w-full h-full bg-gradient-to-br from-[#fef3c7] via-[#facc15] to-[#b45309] rounded-full shadow-[0_0_12px_rgba(250,204,21,0.9)]" />
-                            </motion.span>
-                          ))}
-                        </AnimatePresence>
-                      </span>
-                      <span className="ml-4">을 거래하는</span><br />
-                      <motion.span className="prism-text-overlay italic relative cursor-pointer" data-text="가장 현명한 방법." whileHover={{ scale: 1.01 }}>가장 현명한 방법.</motion.span>
-                    </h1>
-                    <p className="text-zinc-500 max-w-xl font-medium text-lg leading-relaxed shadow-lg relative z-10">예측 엔진과 시뮬레이터를 통해<br />고가치 전리품의 실시간 경매를 지금 시작하세요.</p>
-                  </motion.div>
+                  </div>
+                  <h1 className="text-6xl font-black tracking-tighter mb-4">
+                    <span className="relative inline-block" onMouseEnter={triggerGoldExplosion}>귀중한 아이템</span>을 거래하세요.
+                  </h1>
                 </div>
               </header>
 
               <div className="max-w-7xl mx-auto px-6 pb-40">
-                <div className="mt-20 mb-16 flex gap-4 items-center border-b border-white/5 pb-12">
+                <div className="mb-16 flex gap-4 items-center">
                   <div className="relative flex-1">
-                    <input type="text" placeholder="찾으시는 물품의 이름을 입력하세요..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all placeholder:text-zinc-700" />
-                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-30">🔍</span>
+                    <input type="text" placeholder="아이템 검색..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all" />
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 opacity-30">🔍</span>
                   </div>
-
                   <div className="relative" ref={filterRef}>
-                    <button onClick={() => { triggerHaptic(); setIsFilterOpen(!isFilterOpen); }} className={`h-[68px] px-8 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all border ${isFilterOpen || activeFilters.category !== "ALL" ? "bg-white text-black border-white" : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/20"}`}>
-                      <span>FILTER</span>
-                      <span className={`transition-transform duration-300 ${isFilterOpen ? "rotate-180" : ""}`}>▼</span>
-                    </button>
-                    <AnimatePresence>
-                      {isFilterOpen && (
-                        <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-4 w-72 bg-[#121214] border border-white/10 rounded-[32px] p-6 shadow-2xl z-50 backdrop-blur-xl">
-                          {filterOptions.map((group) => (
-                            <div key={group.key} className="space-y-4">
-                              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest px-2">{group.label}</div>
-                              <div className="grid grid-cols-1 gap-2">
-                                {group.options.map((opt) => (
-                                  <button key={opt} onClick={() => { triggerHaptic(); setActiveFilters({ ...activeFilters, [group.key]: opt }); }} className={`text-left px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeFilters.category === opt ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"}`}>{opt}</button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <button onClick={() => setIsFilterOpen(!isFilterOpen)} className={`h-[68px] px-8 rounded-2xl font-black text-xs transition-all border ${isFilterOpen ? "bg-white text-black" : "bg-white/5 text-zinc-500 border-white/5"}`}>FILTER ▼</button>
+                    {isFilterOpen && (
+                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute right-0 mt-4 w-64 bg-[#121214] border border-white/10 rounded-3xl p-4 shadow-2xl z-50">
+                        {filterOptions.map((group) => (
+                          <div key={group.key} className="space-y-2">
+                            {group.options.map((opt) => (
+                              <button key={opt} onClick={() => setActiveFilters({ category: opt })} className={`w-full text-left px-4 py-3 rounded-xl text-xs font-bold ${activeFilters.category === opt ? "bg-cyan-500/10 text-cyan-400" : "text-zinc-500"}`}>{opt}</button>
+                            ))}
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
-                  {filteredAuctions.length > 0 ? (
-                    filteredAuctions.map((auction) => (
-                      <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} key={auction.id} className="group relative">
-                        <div className="absolute -inset-[1px] bg-gradient-to-b from-white/10 to-transparent rounded-[38px] opacity-100" />
-                        <div className="relative bg-[#0d0d0f]/70 backdrop-blur-md border border-white/5 rounded-[36px] overflow-hidden group-hover:bg-[#121214]/80 transition-all duration-500 group-hover:-translate-y-3 shadow-2xl">
-                          <div className="aspect-square bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative p-12 border-b border-white/5">
-                            {auction.item.iconUrl ? (
-                              /* 🛠️ [패치 적용] 경매 카드의 아이콘 URL 보안 처리 */
-                              <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700 ease-out" alt="" />
-                            ) : (
-                              <span className="text-8xl">📦</span>
-                            )}
-                            <div className="absolute top-6 left-6">
-                              <span className="px-3 py-1 bg-white/5 backdrop-blur-md rounded-lg text-[9px] font-black text-zinc-500 border border-white/10 uppercase tracking-widest">{auction.item.category}</span>
-                            </div>
-                          </div>
-                          <div className="p-8 pt-0 mt-10">
-                            <h3 className="text-2xl font-bold mb-3 truncate group-hover:text-cyan-400 transition-colors tracking-tighter">{auction.item.name}</h3>
-                            <div className="flex items-center gap-2 mb-8 opacity-60">
-                              <div className="w-5 h-5 rounded-full bg-zinc-800 flex items-center justify-center text-[8px]">👤</div>
-                              <span className="text-sm font-bold truncate">{auction.seller.ingameName}</span>
-                            </div>
-                            <div className="bg-black/50 p-5 rounded-2xl border border-white/5 shadow-inner">
-                              <div className="flex flex-col gap-3">
-                                <div>
-                                  <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
-                                  <span className="text-2xl font-black text-yellow-400 font-mono italic">{formatGold(auction.currentPrice)}</span>
-                                </div>
-                                <div className="h-[1px] w-full bg-white/5" />
-                                <div className="flex justify-between items-center">
-                                  <p className="text-[9px] font-black text-zinc-600 uppercase">Closing Time</p>
-                                  <p className="text-xs font-bold text-zinc-400 uppercase">{new Date(auction.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                </div>
-                              </div>
-                            </div>
+                  {filteredAuctions.map((auction) => (
+                    <Link href={`/auction/${auction.id}`} key={auction.id} className="group relative">
+                      <div className="relative bg-[#0d0d0f]/70 border border-white/5 rounded-[36px] overflow-hidden group-hover:-translate-y-3 transition-all duration-500 shadow-2xl">
+                        <div className="aspect-square flex items-center justify-center p-12 border-b border-white/5">
+                          <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700" alt="" />
+                        </div>
+                        <div className="p-8">
+                          <h3 className="text-2xl font-bold truncate mb-6">{auction.item.name}</h3>
+                          <div className="bg-black/50 p-5 rounded-2xl border border-white/5">
+                            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
+                            <span className="text-2xl font-black text-yellow-400 font-mono italic">{formatGold(auction.currentPrice)}</span>
                           </div>
                         </div>
-                      </Link>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-40 text-center border-2 border-dashed border-white/5 rounded-[48px] bg-white/[0.01]">
-                      <p className="text-zinc-600 text-lg font-bold italic tracking-widest uppercase opacity-50">{searchQuery ? "검색 결과가 없습니다." : "진행 중인 경매가 없습니다."}</p>
-                    </div>
-                  )}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             </motion.div>
-          ) : (
-            <motion.div 
-              key="write-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="pt-20 pb-40"
-            >
+          )}
+
+          {/* CALCULATOR: 강화 계산기 탭 */}
+          {activeTab === "CALCULATOR" && (
+            <motion.div key="calc-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-10">
+              <MarketTab />
+            </motion.div>
+          )}
+
+          {/* NOTICE: 공지사항 및 글쓰기 탭 */}
+          {activeTab === "NOTICE" && (
+            <motion.div key="notice-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-20 pb-40">
               <PostEditor userRole={userRole || "USER"} />
             </motion.div>
           )}
@@ -329,11 +304,6 @@ export default function Home() {
       <footer className="border-t border-white/5 py-20 bg-black/40 backdrop-blur-md relative z-10 mt-auto">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
           <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.4em]">© 2026 DDINGTION. ELITE AUCTION HOUSE.</p>
-          <div className="flex gap-8 text-zinc-600 text-[10px] font-black uppercase tracking-widest">
-            <span onClick={triggerHaptic} className="hover:text-white cursor-pointer transition-colors">Terms</span>
-            <span onClick={triggerHaptic} className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-            <span onClick={triggerHaptic} className="hover:text-white cursor-pointer transition-colors">Support</span>
-          </div>
         </div>
       </footer>
     </div>
