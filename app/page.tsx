@@ -248,17 +248,18 @@ function HomeComponent() {
         <AnimatePresence mode="wait">
           {activeTab === "HOME" && (
             <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-40">
-              <div className="max-w-3xl">
-                <h1 className="text-7xl font-black mb-8 tracking-tighter leading-tight">
-                  띵타이쿤 <span className="text-blue-500">강화 계산기</span>,<br />띵션에 오신 것을 환영합니다.
+              <div className="max-w-4xl"> {/* 텍스트 폭을 조금 더 넓게 확보 */}
+                <h1 className="text-5xl md:text-7xl font-black mb-8 tracking-tighter leading-tight whitespace-nowrap">
+                  띵타이쿤 <span className="text-blue-500">강화 계산기</span>,<br />
+                  <span className="inline-block">띵션에 오신 것을 환영합니다.</span>
                 </h1>
-                <p className="text-zinc-400 text-xl font-medium leading-relaxed mb-12">
+                <p className="text-zinc-400 text-lg md:text-xl font-medium leading-relaxed mb-12 whitespace-nowrap">
                   가치 있는 장비들의 시세를 계산 및 분석하고,<br />
                   경매를 통한 최적의 거래 기회를 찾아드립니다.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">경매 BETA</button>
-                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화   계산기</button>
+                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20 whitespace-nowrap">경매 BETA</button>
+                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all whitespace-nowrap">강화 계산기</button>
                 </div>
               </div>
             </motion.div>
