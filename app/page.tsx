@@ -27,6 +27,7 @@ export default function Home() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number }[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("HOME");
+  const [marketSubTab, setMarketSubTab] = useState<"SEARCH" | "CALC" | "ETC" | "ADMIN">("SEARCH");
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({ category: "ALL" });
@@ -137,66 +138,109 @@ export default function Home() {
       <div className="bg-texture" />
       <NoticePopup />
 
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-10">
-          <button onClick={() => { triggerHaptic(); setActiveTab("HOME"); }} className="flex items-center group shrink-0">
-            <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
-              <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
-              <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
-              <span className="text-[#ef4444]">N</span>
-            </span>
-          </button>
+      {/* --- 내비게이션 바 --- */}
+      <nav className="sticky top-0 z-[100] border-b border-white/5 bg-black/60 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-6 relative">
+          <div className="h-20 flex justify-between items-center">
+            {/* 로고 */}
+            <button onClick={() => { triggerHaptic(); setActiveTab("HOME"); }} className="flex items-center group shrink-0">
+              <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
+                <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
+                <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
+                <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
+                <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
+                <span className="text-[#ef4444]">N</span>
+              </span>
+            </button>
 
-          <div className="flex items-center gap-10 font-bold text-sm">
-            <div className="flex items-center gap-8 pr-10">
-              <button 
-                onClick={() => { triggerHaptic(); setActiveTab("NOTICE"); }}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "NOTICE" ? "text-blue-500" : "text-zinc-600 hover:text-zinc-400"}`}
-              >
-                NOTICE
-              </button>
-              <button 
-                onClick={() => { triggerHaptic(); setActiveTab("CALCULATOR"); }}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "CALCULATOR" ? "text-white" : "text-zinc-600 hover:text-zinc-400"}`}
-              >
-                CALCULATOR
-              </button>
-              <button 
-                onClick={() => { triggerHaptic(); setActiveTab("AUCTION"); }}
-                className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${activeTab === "AUCTION" ? "text-white" : "text-zinc-600 hover:text-zinc-400"}`}
-              >
-                AUCTION
-              </button>
-            </div>
+            {/* 상단 탭 메뉴 */}
+            <div className="flex items-center gap-10">
+              <div className="flex items-center gap-8">
+                {(["NOTICE", "CALCULATOR", "AUCTION"] as const).map((tab) => (
+                  <button 
+                    key={tab}
+                    onClick={() => { triggerHaptic(); setActiveTab(tab); }}
+                    className={`text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${activeTab === tab ? "text-blue-500 scale-110" : "text-zinc-600 hover:text-zinc-400"}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex items-center gap-8 border-l border-white/10 pl-10">
-              <AnimatePresence mode="wait">
+              {/* 로그인/로그아웃 */}
+              <div className="flex items-center gap-6 border-l border-white/10 pl-10">
                 {isLoggedIn ? (
-                  <motion.div key="logged-in" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-8">
+                  <div className="flex items-center gap-6">
                     {userRole === "ADMIN" && (
                       <Link href="/admin" onClick={triggerHaptic} className="text-[10px] font-black text-red-500 px-3 py-1.5 border border-red-500/20 bg-red-500/5 rounded-lg tracking-widest leading-none">ADMIN</Link>
                     )}
-                    <button onClick={handleLogout} className="text-red-500/60 hover:text-red-400 transition-colors duration-200 font-bold text-xs">LOGOUT</button>
-                  </motion.div>
+                    <button onClick={handleLogout} className="text-red-500/60 hover:text-red-400 text-[10px] font-black tracking-widest">LOGOUT</button>
+                  </div>
                 ) : (
-                  <motion.div key="logged-out" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-6">
-                    <Link href="/login" className="text-xs font-bold text-zinc-400 hover:text-white">로그인</Link>
-                    <Link href="/register" className="bg-white text-black px-6 py-2.5 rounded-xl font-bold text-xs hover:bg-cyan-500 transition-all active:scale-95">회원가입</Link>
-                  </motion.div>
+                  <Link href="/login" className="text-[10px] font-black text-zinc-400 hover:text-white tracking-widest">LOGIN</Link>
                 )}
-              </AnimatePresence>
+              </div>
             </div>
+          </div>
+
+          {/* 🛠️ 서브 메뉴 오버레이 (absolute 포지션으로 컨텐츠 위에 덮어씌움) */}
+          <div className="absolute left-0 right-0 top-full overflow-visible pointer-events-none">
+            <AnimatePresence mode="wait">
+              {activeTab === "AUCTION" && (
+                <motion.div 
+                  key="auction-sub"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="w-full bg-black/80 backdrop-blur-3xl border-b border-white/10 pointer-events-auto shadow-2xl"
+                >
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex gap-3">
+                    <Link href="/sell" className="px-6 py-2.5 rounded-xl text-[10px] font-black bg-white/5 text-zinc-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all border border-white/5">경매등록</Link>
+                    <Link href="/mypage" className="px-6 py-2.5 rounded-xl text-[10px] font-black bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5">마이페이지</Link>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === "CALCULATOR" && (
+                <motion.div 
+                  key="calc-sub"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
+                  className="w-full bg-black/80 backdrop-blur-3xl border-b border-white/10 pointer-events-auto shadow-2xl"
+                >
+                  <div className="max-w-7xl mx-auto px-6 py-4 flex gap-2">
+                    {[
+                      { id: "SEARCH", label: "시세 정밀 분석" },
+                      { id: "CALC", label: "강화 시뮬레이터" },
+                      { id: "ETC", label: "아이템 시세" }
+                    ].map((st) => (
+                      <button 
+                        key={st.id} 
+                        onClick={() => { triggerHaptic(); setMarketSubTab(st.id as any); }}
+                        className={`px-6 py-2 rounded-full text-[10px] font-black transition-all border ${marketSubTab === st.id ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20" : "bg-white/5 border-white/5 text-zinc-500 hover:text-zinc-300"}`}
+                      >
+                        {st.label}
+                      </button>
+                    ))}
+                    {userRole === "ADMIN" && (
+                      <button onClick={() => setMarketSubTab("ADMIN")} className={`px-6 py-2 rounded-full text-[10px] font-black transition-all border ${marketSubTab === "ADMIN" ? "bg-red-600 border-red-500 text-white shadow-lg shadow-red-500/20" : "bg-red-500/10 border-red-500/20 text-red-500/60"}`}>ADMIN DB</button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </nav>
 
+      {/* --- 메인 컨텐츠 영역 --- */}
       <main className="flex-1 relative z-10">
         <AnimatePresence mode="wait">
-          {/* 1. HOME */}
           {activeTab === "HOME" && (
-            <motion.div key="home-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-32">
+            <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-40">
               <div className="max-w-3xl">
                 <h1 className="text-7xl font-black mb-8 tracking-tighter leading-tight">
                   하이테크 <span className="text-blue-500">경매 하우스</span>,<br />띵션에 오신 것을 환영합니다.
@@ -206,106 +250,84 @@ export default function Home() {
                   정교한 강화 시뮬레이터를 통해 당신의 소중한 자산을 가장 현명하게 관리할 수 있도록 돕습니다.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all">거래소 입장하기</button>
+                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">거래소 입장하기</button>
                   <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화 시뮬레이터</button>
                 </div>
               </div>
             </motion.div>
           )}
 
-          {/* 2. AUCTION (버튼 하단 배치 반영) */}
           {activeTab === "AUCTION" && (
             <motion.div key="auction-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <header className="relative py-32 overflow-visible z-10">
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
-                    <div className="inline-flex items-center gap-2 mb-12 overflow-hidden rounded-md border border-white/10 bg-black/70 shadow-2xl relative z-10">
+              <header className="relative py-32 overflow-visible">
+                <div className="max-w-7xl mx-auto px-6">
+                  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+                    <div className="inline-flex items-center gap-2 mb-12 overflow-hidden rounded-md border border-white/10 bg-black/70 shadow-2xl">
                       <div className="bg-red-600 px-4 py-2 flex items-center gap-2.5 on-air-glow animate-pulse">
-                        <div className="w-2.5 h-2.5 rounded-full bg-white shadow-[0_0_10px_white]" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
                         <span className="text-[12px] font-black text-white tracking-widest uppercase">LIVE ON-AIR</span>
                       </div>
-                      <div className="px-5 py-2 text-[11px] font-black text-zinc-400 tracking-widest uppercase relative z-10">Global Auction Server #1</div>
+                      <div className="px-5 py-2 text-[11px] font-black text-zinc-400 tracking-widest uppercase">Global Auction Server #1</div>
                     </div>
                     
-                    <h1 className="text-8xl font-black mb-8 tracking-tighter leading-[1.05] text-zinc-100 relative">
+                    <h1 className="text-8xl font-black mb-8 tracking-tighter leading-[1.05]">
                       <span className="relative inline-block">
-                        <motion.span onHoverStart={triggerGoldExplosion} whileHover={{ color: "#facc15", textShadow: "0px 0px 40px rgba(250, 204, 21, 0.8)", scale: 1.03 }} className="cursor-pointer transition-all duration-300 relative z-20 inline-block">귀중한 아이템</motion.span>
+                        <motion.span onHoverStart={triggerGoldExplosion} whileHover={{ color: "#facc15", scale: 1.03 }} className="cursor-pointer transition-all duration-300 relative z-20">귀중한 아이템</motion.span>
                         <AnimatePresence>
                           {particles.map((p) => (
-                            <motion.span key={p.id} initial={{ opacity: 1, x: 0, y: 0, scale: 1 }} animate={{ opacity: 0, x: p.x, y: p.y, scale: 0, rotate: Math.random() * 360 }} exit={{ opacity: 0 }} transition={{ duration: 0.7, ease: [0.1, 0.8, 0.3, 1] }} className="absolute top-1/2 left-1/2 pointer-events-none z-10" style={{ width: p.size, height: p.size }}>
-                              <div className="w-full h-full bg-gradient-to-br from-[#fef3c7] via-[#facc15] to-[#b45309] rounded-full shadow-[0_0_12px_rgba(250,204,21,0.9)]" />
+                            <motion.span key={p.id} initial={{ opacity: 1, x: 0, y: 0 }} animate={{ opacity: 0, x: p.x, y: p.y, scale: 0 }} transition={{ duration: 0.7 }} className="absolute top-1/2 left-1/2 pointer-events-none z-10" style={{ width: p.size, height: p.size }}>
+                              <div className="w-full h-full bg-[#facc15] rounded-full shadow-[0_0_12px_#facc15]" />
                             </motion.span>
                           ))}
                         </AnimatePresence>
                       </span>
                       <span className="ml-4">을 거래하는</span><br />
-                      <motion.span className="prism-text-overlay italic relative cursor-pointer" data-text="가장 현명한 방법." whileHover={{ scale: 1.01 }}>가장 현명한 방법.</motion.span>
+                      <motion.span className="prism-text-overlay italic" data-text="가장 현명한 방법.">가장 현명한 방법.</motion.span>
                     </h1>
                   </motion.div>
                 </div>
               </header>
 
-              <div className="max-w-7xl mx-auto px-6 pb-40 relative z-10">
-                {/* 🛠️ [패치] 경매등록 & 마이페이지 버튼 하단 배치 */}
-                <div className="flex flex-col gap-8 mb-16">
-                  {isLoggedIn && (
-                    <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5 w-fit">
-                      <Link href="/sell" className="px-6 py-2.5 rounded-xl text-[11px] font-black transition-all bg-white/5 text-zinc-400 hover:text-cyan-400 hover:bg-white/10">경매등록</Link>
-                      <Link href="/mypage" className="px-6 py-2.5 rounded-xl text-[11px] font-black transition-all bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10">마이페이지</Link>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 items-center border-b border-white/5 pb-12">
-                    <div className="relative flex-1">
-                      <input type="text" placeholder="찾으시는 물품의 이름을 입력하세요..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all placeholder:text-zinc-700" />
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-30">🔍</span>
-                    </div>
-
-                    <div className="relative" ref={filterRef}>
-                      <button onClick={() => { triggerHaptic(); setIsFilterOpen(!isFilterOpen); }} className={`h-[68px] px-8 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 transition-all border ${isFilterOpen || activeFilters.category !== "ALL" ? "bg-white text-black border-white" : "bg-white/5 text-zinc-500 border-white/5 hover:border-white/20"}`}>
-                        <span>FILTER</span>
-                        <span className={`transition-transform duration-300 ${isFilterOpen ? "rotate-180" : ""}`}>▼</span>
-                      </button>
-                      <AnimatePresence>
-                        {isFilterOpen && (
-                          <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className="absolute right-0 mt-4 w-72 bg-[#121214] border border-white/10 rounded-[32px] p-6 shadow-2xl z-50 backdrop-blur-xl">
-                            {filterOptions.map((group) => (
-                              <div key={group.key} className="space-y-4">
-                                <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest px-2">{group.label}</div>
-                                <div className="grid grid-cols-1 gap-2">
-                                  {group.options.map((opt) => (
-                                    <button key={opt} onClick={() => { triggerHaptic(); setActiveFilters({ ...activeFilters, [group.key]: opt }); }} className={`text-left px-4 py-3 rounded-xl text-xs font-bold transition-all ${activeFilters.category === opt ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500 hover:bg-white/5 hover:text-zinc-300"}`}>{opt}</button>
-                                  ))}
-                                </div>
+              <div className="max-w-7xl mx-auto px-6 pb-40">
+                <div className="mb-16 flex gap-4 items-center border-b border-white/5 pb-12">
+                  <div className="relative flex-1">
+                    <input type="text" placeholder="아이템 검색..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all" />
+                    <span className="absolute left-6 top-1/2 -translate-y-1/2 opacity-30 text-xl">🔍</span>
+                  </div>
+                  <div className="relative" ref={filterRef}>
+                    <button onClick={() => { triggerHaptic(); setIsFilterOpen(!isFilterOpen); }} className={`h-[68px] px-8 rounded-2xl font-black text-xs transition-all border ${isFilterOpen ? "bg-white text-black" : "bg-white/5 text-zinc-500 border-white/5"}`}>FILTER ▼</button>
+                    <AnimatePresence>
+                      {isFilterOpen && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="absolute right-0 mt-4 w-72 bg-[#121214] border border-white/10 rounded-[32px] p-6 shadow-2xl z-50 backdrop-blur-xl">
+                          {filterOptions.map((group) => (
+                            <div key={group.key} className="space-y-4">
+                              <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">{group.label}</div>
+                              <div className="grid grid-cols-1 gap-2">
+                                {group.options.map((opt) => (
+                                  <button key={opt} onClick={() => { triggerHaptic(); setActiveFilters({ category: opt }); }} className={`text-left px-4 py-3 rounded-xl text-xs font-bold ${activeFilters.category === opt ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "text-zinc-500"}`}>{opt}</button>
+                                ))}
                               </div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
                   {filteredAuctions.map((auction) => (
                     <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} key={auction.id} className="group relative">
-                      <div className="absolute -inset-[1px] bg-gradient-to-b from-white/10 to-transparent rounded-[38px] opacity-100" />
-                      <div className="relative bg-[#0d0d0f]/70 backdrop-blur-md border border-white/5 rounded-[36px] overflow-hidden group-hover:bg-[#121214]/80 transition-all duration-500 group-hover:-translate-y-3 shadow-2xl">
-                        <div className="aspect-square bg-gradient-to-b from-white/[0.02] to-transparent flex items-center justify-center relative p-12 border-b border-white/5">
-                          <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700 ease-out" alt="" />
-                          <div className="absolute top-6 left-6">
-                            <span className="px-3 py-1 bg-white/5 backdrop-blur-md rounded-lg text-[9px] font-black text-zinc-500 border border-white/10 uppercase tracking-widest">{auction.item.category}</span>
-                          </div>
+                      <div className="absolute -inset-[1px] bg-gradient-to-b from-white/10 to-transparent rounded-[38px]" />
+                      <div className="relative bg-[#0d0d0f]/70 backdrop-blur-md border border-white/5 rounded-[36px] overflow-hidden group-hover:-translate-y-3 transition-all duration-500 shadow-2xl">
+                        <div className="aspect-square flex items-center justify-center p-12 border-b border-white/5 bg-white/[0.02]">
+                          <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700" alt="" />
                         </div>
-                        <div className="p-8 pt-0 mt-10">
-                          <h3 className="text-2xl font-bold mb-3 truncate group-hover:text-cyan-400 transition-colors tracking-tighter">{auction.item.name}</h3>
-                          <div className="bg-black/50 p-5 rounded-2xl border border-white/5 shadow-inner">
-                            <div className="flex flex-col gap-3">
-                              <div>
-                                <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
-                                <span className="text-2xl font-black text-yellow-400 font-mono italic">{formatGold(auction.currentPrice)}</span>
-                              </div>
-                            </div>
+                        <div className="p-8">
+                          <h3 className="text-2xl font-bold truncate mb-6 tracking-tighter group-hover:text-cyan-400 transition-colors">{auction.item.name}</h3>
+                          <div className="bg-black/50 p-5 rounded-2xl border border-white/5">
+                            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
+                            <span className="text-2xl font-black text-yellow-400 font-mono italic">{formatGold(auction.currentPrice)}</span>
                           </div>
                         </div>
                       </div>
@@ -316,14 +338,12 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* 3. CALCULATOR */}
           {activeTab === "CALCULATOR" && (
             <motion.div key="calc-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-10 relative z-10">
-              <MarketTab />
+              <MarketTab initialTab={marketSubTab} />
             </motion.div>
           )}
 
-          {/* 4. NOTICE */}
           {activeTab === "NOTICE" && (
             <motion.div key="notice-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-20 pb-40 relative z-10">
               <PostEditor userRole={userRole || "USER"} />
@@ -333,8 +353,8 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-white/5 py-20 bg-black/40 backdrop-blur-md relative z-10 mt-auto">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-          <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.4em]">© 2026 DDINGTION. ELITE AUCTION HOUSE.</p>
+        <div className="max-w-7xl mx-auto px-6">
+          <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.4em] text-center md:text-left">© 2026 DDINGTION. ELITE AUCTION HOUSE.</p>
         </div>
       </footer>
     </div>
