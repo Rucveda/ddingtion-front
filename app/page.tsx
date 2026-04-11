@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +22,10 @@ interface User { id: number; ingameName: string; role: string; }
 
 type TabType = "HOME" | "NOTICE" | "CALCULATOR" | "AUCTION";
 
-export default function Home() {
+/**
+ * 🛠️ [패치] HomeComponent: 실제 로직이 담긴 컴포넌트
+ */
+function HomeComponent() {
   const searchParams = useSearchParams();
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -35,10 +38,6 @@ export default function Home() {
   const [activeFilters, setActiveFilters] = useState({ category: "ALL" });
   const filterRef = useRef<HTMLDivElement>(null);
 
-  /**
-   * 🛠️ [패치] URL 파라미터 연동
-   * ?tab=AUCTION 등이 있을 때 해당 탭을 즉시 활성화합니다.
-   */
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab === "AUCTION" || tab === "NOTICE" || tab === "CALCULATOR") {
@@ -151,7 +150,6 @@ export default function Home() {
       <div className="bg-texture" />
       <NoticePopup />
 
-      {/* --- 내비게이션 바 --- */}
       <nav className="sticky top-0 z-[100] border-b border-white/5 bg-black/60 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="h-20 flex justify-between items-center">
@@ -193,7 +191,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* 🛠️ 서브 메뉴 오버레이 (버튼 클릭 방지 패치 완료) */}
           <div className="absolute left-0 right-0 top-full overflow-visible pointer-events-none">
             <AnimatePresence mode="wait">
               {activeTab === "AUCTION" && (
@@ -206,7 +203,7 @@ export default function Home() {
                   className="w-full bg-gradient-to-b from-black/40 to-transparent pointer-events-none"
                 >
                   <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-8 pointer-events-auto">
-                    <Link href="/sell" className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-cyan-400 transition-all duration-200">LISTING</Link>
+                    <Link href="/sell" className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-cyan-400 transition-all duration-200">REGISTER</Link>
                     <Link href="/mypage" className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-all duration-200">MY PAGE</Link>
                   </div>
                 </motion.div>
@@ -253,15 +250,15 @@ export default function Home() {
             <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-6 py-40">
               <div className="max-w-3xl">
                 <h1 className="text-7xl font-black mb-8 tracking-tighter leading-tight">
-                  띵션에 오신 것을 환영합니다.
+                  하이테크 <span className="text-blue-500">경매 하우스</span>,<br />띵션에 오신 것을 환영합니다.
                 </h1>
                 <p className="text-zinc-400 text-xl font-medium leading-relaxed mb-12">
-                  띵션은 게임 내 가치 있는 아이템들의 시세를 분석하고,<br />
-                  강화 기댓값 계산을 통해 현명한 거래를 할 수 있게 돕습니다.
+                  우리는 게임 내 가치 있는 아이템들의 시세를 실시간으로 분석하고,<br />
+                  정교한 강화 시뮬레이터를 통해 당신의 소중한 자산을 가장 현명하게 관리할 수 있도록 돕습니다.
                 </p>
                 <div className="flex gap-4">
-                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">옥션 둘러보기</button>
-                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">시세 계산기</button>
+                  <button onClick={() => setActiveTab("AUCTION")} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-2xl font-black transition-all shadow-xl shadow-blue-600/20">거래소 입장하기</button>
+                  <button onClick={() => setActiveTab("CALCULATOR")} className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-4 rounded-2xl font-black transition-all">강화 시뮬레이터</button>
                 </div>
               </div>
             </motion.div>
@@ -275,9 +272,9 @@ export default function Home() {
                     <div className="inline-flex items-center gap-2 mb-12 overflow-hidden rounded-md border border-white/10 bg-black/70 shadow-2xl">
                       <div className="bg-red-600 px-4 py-2 flex items-center gap-2.5 on-air-glow animate-pulse">
                         <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                        <span className="text-[12px] font-black text-white tracking-widest uppercase">LIVE</span>
+                        <span className="text-[12px] font-black text-white tracking-widest uppercase">LIVE ON-AIR</span>
                       </div>
-                      <div className="px-5 py-2 text-[11px] font-black text-zinc-400 tracking-widest uppercase">Auction #1</div>
+                      <div className="px-5 py-2 text-[11px] font-black text-zinc-400 tracking-widest uppercase">Global Auction Server #1</div>
                     </div>
 
                     <h1 className="text-8xl font-black mb-8 tracking-tighter leading-[1.05]">
@@ -301,7 +298,7 @@ export default function Home() {
               <div className="max-w-7xl mx-auto px-6 pb-40">
                 <div className="mb-16 flex gap-4 items-center border-b border-white/5 pb-12">
                   <div className="relative flex-1">
-                    <input type="text" placeholder="찾으시는 물품의 이름을 입력하세요..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all" />
+                    <input type="text" placeholder="찾으시는 물품의 이름을 입력하세요..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-2xl text-lg font-bold outline-none focus:border-cyan-500/50 transition-all placeholder:text-zinc-700" />
                     <span className="absolute left-6 top-1/2 -translate-y-1/2 opacity-30 text-xl">🔍</span>
                   </div>
                   <div className="relative" ref={filterRef}>
@@ -368,5 +365,20 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+/**
+ * 🛠️ [패치 2] 최종 export default: Suspense로 감싸 이름 충돌 해결 및 빌드 성공 보장
+ */
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#010101] flex items-center justify-center">
+        <div className="text-white font-black animate-pulse uppercase tracking-widest">Protocol Loading...</div>
+      </div>
+    }>
+      <HomeComponent />
+    </Suspense>
   );
 }
