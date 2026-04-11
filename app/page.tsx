@@ -193,7 +193,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="w-full bg-black/60 backdrop-blur-2xl border-b border-white/5 pointer-events-auto shadow-2xl"
+                  className="bg-gradient-to-b from-black/40 to-transparent"
                 >
                   <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-8">
                     <Link 
@@ -219,7 +219,7 @@ export default function Home() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="w-full bg-black/80 backdrop-blur-3xl border-b border-white/10 pointer-events-auto shadow-2xl"
+                  className="bg-gradient-to-b from-black/40 to-transparent"
                 >
                   <div className="max-w-7xl mx-auto px-6 py-4 flex justify-end gap-3">
                     {[
