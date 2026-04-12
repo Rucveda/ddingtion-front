@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ChatWidget from "@/components/ChatWidget";
-import NotificationOverlay from "@/components/NotificationCenter";
 import NotificationCenter from "@/components/NotificationCenter";
 // 💡 신규 공지사항 팝업 임포트
 import NoticePopup from "@/components/NoticePopup";
@@ -41,13 +40,10 @@ export default function RootLayout({
         {/* 💡 0. 시스템 공지사항 팝업 (좌측 하단 배치 버전) */}
         <NoticePopup />
 
-        {/* 💡 1. 실시간 팝업 알림 (입찰 당했을 때 즉시 튀어나옴) */}
-        <NotificationOverlay />
-
-        {/* 💡 2. 알림 센터 (상시 노출 버튼, 클릭 시 과거 내역 조회) */}
+        {/* 💡 1. 알림 센터 (상시 노출 버튼, 클릭 시 과거 내역 조회) */}
         <NotificationCenter />
 
-        {/* 💡 3. 우하단 채팅 위젯 */}
+        {/* 💡 2. 우하단 채팅 위젯 */}
         <ChatWidget />
       </body>
     </html>

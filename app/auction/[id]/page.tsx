@@ -242,7 +242,7 @@ export default function AuctionDetail() {
                 {category === "WILD" && auction.enchantments && (
                   <div className="space-y-6">
                     <h2 className="text-[12px] font-black text-blue-500 uppercase tracking-[0.2em] flex items-center gap-3">
-                      <div className="w-1 h-4 bg-blue-600 rounded-full" /> 적용된 인챈트 데이터
+                      <div className="w-1 h-4 bg-blue-600 rounded-full" /> 인챈트
                     </h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {Object.entries(auction.enchantments).map(([name, lv]: any) => (
@@ -258,7 +258,7 @@ export default function AuctionDetail() {
                 {category === "ISLAND" && auction.imprint && (
                   <div className="space-y-6">
                     <h2 className="text-[12px] font-black text-yellow-500 uppercase tracking-[0.2em] flex items-center gap-3">
-                      <div className="w-1 h-4 bg-yellow-500 rounded-full" /> 활성화 각인 매트릭스
+                      <div className="w-1 h-4 bg-yellow-500 rounded-full" /> 각인
                     </h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {Object.entries(auction.imprint).map(([name, lv]: any) => (
@@ -277,7 +277,7 @@ export default function AuctionDetail() {
                     {auction.runes && (
                       <div className="space-y-6">
                         <h2 className="text-[12px] font-black text-orange-500 uppercase tracking-[0.2em] flex items-center gap-3">
-                          <div className="w-1 h-4 bg-orange-500 rounded-full" /> 장착된 마법 룬 유닛
+                          <div className="w-1 h-4 bg-orange-500 rounded-full" /> 장착된 룬
                         </h2>
                         <div className="grid grid-cols-3 gap-4">
                           {auction.runes.map((rune: any, i: number) => (
@@ -297,7 +297,7 @@ export default function AuctionDetail() {
                     {auction.skills && (
                       <div className="space-y-6">
                         <h2 className="text-[12px] font-black text-purple-500 uppercase tracking-[0.2em] flex items-center gap-3">
-                          <div className="w-1 h-4 bg-purple-600 rounded-full" /> 전투 스킬 레벨링
+                          <div className="w-1 h-4 bg-purple-600 rounded-full" /> 전투 스킬
                         </h2>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           {Object.entries(auction.skills).map(([name, lv]: any) => (
@@ -314,7 +314,7 @@ export default function AuctionDetail() {
 
                 <div className="pt-8 border-t border-white/5 relative">
                   <h2 className="text-[12px] font-black text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-3 mb-6">
-                    <div className="w-1 h-4 bg-zinc-600 rounded-full" /> 판매자 브리핑
+                    <div className="w-1 h-4 bg-zinc-600 rounded-full" /> 판매자 설명
                   </h2>
                   <div className="text-sm text-zinc-400 font-medium leading-relaxed bg-black/20 p-8 rounded-3xl border border-white/5 min-h-[120px] shadow-inner">
                     {auction.description || "등록된 상세 정보가 없습니다."}
@@ -327,19 +327,19 @@ export default function AuctionDetail() {
           {/* --- 우측: 조작 터미널 --- */}
           <div className="lg:col-span-4 space-y-6">
             <section className="bg-white/[0.02] border border-white/5 p-8 rounded-[32px] shadow-2xl backdrop-blur-md">
-              <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-10 flex items-center gap-2">
-                <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 라이브 터미널
+              <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 입찰 메뉴
               </h2>
 
               <div className="space-y-8">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5 overflow-hidden">
-                    <p className="text-[10px] font-black text-red-500 uppercase mb-2 tracking-tighter whitespace-nowrap">남은 경매 시간</p>
-                    <p className="text-xl font-mono font-black text-zinc-200 whitespace-nowrap">{timeLeft}</p>
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-[11px] font-black text-red-500 uppercase tracking-widest">남은 경매 시간 :</span>
+                    <span className="text-lg font-mono font-black text-zinc-200">{timeLeft}</span>
                   </div>
-                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5 text-right overflow-hidden min-w-0">
-                    <p className="text-[10px] font-black text-zinc-600 uppercase mb-2 tracking-tighter whitespace-nowrap">최고 입찰자</p>
-                    <p className="text-sm font-black text-cyan-400 uppercase italic truncate">{maskName(auction.lastBidder)}</p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">최고 입찰자 :</span>
+                    <span className="text-base font-black text-cyan-400 uppercase italic truncate">{maskName(auction.lastBidder)}</span>
                   </div>
                 </div>
 
@@ -369,7 +369,7 @@ export default function AuctionDetail() {
 
                   <div className="grid grid-cols-3 gap-2">
                     {[10, 20, 50].map(pct => (
-                      <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}% 부스트</button>
+                      <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}%</button>
                     ))}
                   </div>
                 </div>
@@ -389,7 +389,7 @@ export default function AuctionDetail() {
                       onClick={handleBuyNow}
                       className="w-full font-black py-4 rounded-xl text-[11px] uppercase tracking-widest transition-all bg-white/5 text-zinc-500 hover:text-white border border-white/5 active:scale-95 whitespace-nowrap"
                     >
-                      {isProcessing ? "처리 중..." : `즉시 구매 실행 (${formatGold(Number(auction.buyNowPrice))})`}
+                      {isProcessing ? "처리 중..." : `즉시 구매 (${formatGold(Number(auction.buyNowPrice))})`}
                     </button>
                   )}
                 </div>

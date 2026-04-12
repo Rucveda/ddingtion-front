@@ -9,6 +9,8 @@ export default function NoticePopup() {
   const [notice, setNotice] = useState<any>(null);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const loadNotice = async () => {
       try {
         // 💡 중요: 전체 경로 확인 요망
@@ -21,14 +23,23 @@ export default function NoticePopup() {
           const lastId = localStorage.getItem("last_notice_id");
           const now = new Date().getTime();
 
-          // 새 공지가 있거나 하루 닫기 기간이 지났을 때
-          if (!hideUntil || now > parseInt(hideUntil) || lastId !== latest.id.toString()) {
-            setTimeout(() => setIsOpen(true), 1000);
+          // 1. 이미 확인(영구 닫기)을 누른 공지인지 확인
+          const isAlreadyRead = lastId === latest.id.toString();
+          // 2. '하루 안 보기' 기간이 아직 남아있는지 확인
+          const isHiddenForADay = hideUntil && now < parseInt(hideUntil);
+
+          // 이미 읽었거나, 하루 닫기 기간이 안 지났으면 띄우지 않음
+          if (!isAlreadyRead && !isHiddenForADay) {
+            timeoutId = setTimeout(() => setIsOpen(true), 1000);
           }
         }
       } catch (err) { console.error("Notice error:", err); }
     };
     loadNotice();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, []);
 
   const closePopup = () => {
@@ -39,16 +50,16 @@ export default function NoticePopup() {
   const hideForADay = () => {
     const expireDate = new Date().getTime() + 24 * 60 * 60 * 1000;
     localStorage.setItem("hide_notice_until", expireDate.toString());
-    if (notice) localStorage.setItem("last_notice_id", notice.id.toString());
     setIsOpen(false);
   };
 
-  if (!notice || !isOpen) return null;
+  if (!notice) return null;
 
   return (
     <div className="fixed bottom-6 left-6 z-[9999]">
       <AnimatePresence>
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="w-[320px] bg-[#0c0c0e]/95 border border-white/10 rounded-[28px] shadow-2xl backdrop-blur-3xl overflow-hidden flex flex-col border-l-4 border-l-blue-600">
+        {isOpen && (
+          <motion.div key="notice-popup" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }} className="w-[320px] bg-[#0c0c0e]/95 border border-white/10 rounded-[28px] shadow-2xl backdrop-blur-3xl overflow-hidden flex flex-col border-l-4 border-l-blue-600">
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded border border-blue-500/20 uppercase">Notice</span>
@@ -63,7 +74,8 @@ export default function NoticePopup() {
               <button onClick={closePopup} className="px-5 py-2 bg-white text-black text-[11px] font-black rounded-xl active:scale-95">확인</button>
             </div>
           </div>
-        </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );

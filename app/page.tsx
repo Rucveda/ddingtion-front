@@ -335,7 +335,7 @@ function HomeComponent() {
                           <h3 className="text-2xl font-bold truncate mb-6 tracking-tighter group-hover:text-cyan-400 transition-colors">{auction.item.name}</h3>
                           <div className="bg-black/50 p-5 rounded-2xl border border-white/5">
                             <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
-                            <span className="text-2xl font-black text-yellow-400 font-mono italic">{formatGold(auction.currentPrice)}</span>
+                            <span className="text-2xl font-black text-yellow-400">{formatGold(auction.currentPrice)}</span>
                           </div>
                         </div>
                       </div>
