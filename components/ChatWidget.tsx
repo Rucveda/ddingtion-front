@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
 import ReviewModal from "./ReviewModal";
 
+// 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
+const CHAT_OPEN_EVENT = "ddingtion_chat_open";
+
 export default function ChatWidget() {
   const [isMounted, setIsMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -30,8 +33,8 @@ export default function ChatWidget() {
     }
   }, []);
 
+  // 채팅방 목록 불러오기
   const fetchRooms = async () => {
-    // 💡 403 에러 방지: 토큰이 없으면 요청하지 않음
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -60,6 +63,28 @@ export default function ChatWidget() {
     }
   };
 
+  // 💡 자동 열기 로직 (핵심 수정 부분)
+  const checkAutoOpen = useCallback(async () => {
+    const autoOpenId = localStorage.getItem("openChatId");
+    if (autoOpenId) {
+      // 신호를 받았으므로 ID 삭제 후 창 열기
+      localStorage.removeItem("openChatId");
+      setIsOpen(true);
+      
+      try {
+        const data = await request("/api/chat/rooms");
+        if (data && Array.isArray(data)) {
+          const activeRooms = data.filter((r: any) => r.status === "ACTIVE");
+          setRooms(activeRooms);
+          const target = activeRooms.find(r => r.id === Number(autoOpenId));
+          if (target) setSelectedRoom(target);
+        }
+      } catch (err) {
+        console.error("자동 채팅 열기 실패:", err);
+      }
+    }
+  }, []);
+
   const startAdminChat = async () => {
     triggerHaptic();
     try {
@@ -71,10 +96,13 @@ export default function ChatWidget() {
     } catch (err) { alert("관리자 연결 실패"); }
   };
 
+  // 💡 거래 종료 로직 (PATCH 대응)
   const closeTrade = async () => {
     if (!selectedRoom || !confirm("거래를 종료하시겠습니까? 종료 후 상대방 평가가 진행됩니다.")) return;
     try {
+      // PATCH 요청 전송 (백엔드 CORS 설정에 PATCH가 허용되어 있어야 함)
       const res = await request(`/api/chat/rooms/${selectedRoom.id}/close`, { method: "PATCH" });
+      
       if (res) {
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
         const isSeller = selectedRoom.sellerId === currentUser.id;
@@ -90,7 +118,9 @@ export default function ChatWidget() {
         fetchRooms();
         setShowReviewModal(true);
       }
-    } catch (e) { alert("오류 발생"); }
+    } catch (e) { 
+      alert("종료 처리 중 오류가 발생했습니다. 백엔드 서버의 PATCH 메서드 허용 여부를 확인하세요."); 
+    }
   };
 
   const handleReport = async () => {
@@ -126,27 +156,19 @@ export default function ChatWidget() {
       fetchRooms();
     });
 
-    const checkAutoOpen = async () => {
-      const autoOpenId = localStorage.getItem("openChatId");
-      if (autoOpenId) {
-        localStorage.removeItem("openChatId");
-        setIsOpen(true);
-        const data = await request("/api/chat/rooms");
-        if (data && Array.isArray(data)) {
-          const activeRooms = data.filter((r: any) => r.status === "ACTIVE");
-          setRooms(activeRooms);
-          const target = activeRooms.find(r => r.id === Number(autoOpenId));
-          if (target) setSelectedRoom(target);
-        }
-      }
-    };
+    // 초기 로드 시 자동 열기 확인
     checkAutoOpen();
-    window.addEventListener("storage", checkAutoOpen);
+
+    // 💡 이벤트 리스너 등록
+    window.addEventListener("storage", checkAutoOpen); // 타 탭 대응
+    window.addEventListener(CHAT_OPEN_EVENT, checkAutoOpen); // 현재 탭 대응
+    
     return () => { 
       newSocket.close(); 
       window.removeEventListener("storage", checkAutoOpen);
+      window.removeEventListener(CHAT_OPEN_EVENT, checkAutoOpen);
     };
-  }, [isMounted]);
+  }, [isMounted, checkAutoOpen]);
 
   useEffect(() => {
     if (selectedRoom?.id && socket) {
@@ -170,7 +192,6 @@ export default function ChatWidget() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   if (!user.id) return null;
 
-  // 💡 데이터 안정성 확보: rooms가 배열이 아닐 경우를 대비
   const safeRooms = Array.isArray(rooms) ? rooms : [];
   const totalUnread = safeRooms.reduce((acc, room) => acc + (room._count?.messages || 0), 0);
 
@@ -258,8 +279,8 @@ export default function ChatWidget() {
                     <div key={i} className={`flex flex-col ${msg.senderId === user.id ? "items-end" : "items-start"}`}>
                       <div className={`max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13px] font-bold leading-relaxed ${
                         msg.senderId === user.id 
-                          ? "bg-blue-600 text-white rounded-tr-none shadow-[0_5px_15px_rgba(37,99,235,0.3)]" 
-                          : "bg-zinc-800 text-zinc-200 rounded-tl-none border border-white/5 shadow-lg"
+                        ? "bg-blue-600 text-white rounded-tr-none shadow-[0_5px_15px_rgba(37,99,235,0.3)]" 
+                        : "bg-zinc-800 text-zinc-200 rounded-tl-none border border-white/5 shadow-lg"
                       }`}>
                         {msg.content}
                       </div>
@@ -310,6 +331,7 @@ export default function ChatWidget() {
         )}
       </AnimatePresence>
 
+      {/* 평점 모달 연동 */}
       {pendingReviewData && (
         <ReviewModal 
           isOpen={showReviewModal}
@@ -329,7 +351,7 @@ export default function ChatWidget() {
       >
         <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'rotate-90 scale-90' : 'opacity-40 group-hover:opacity-100'}`}>
            <div className={`w-6 h-6 border-2 rounded-sm rotate-45 flex items-center justify-center transition-all ${totalUnread > 0 && !isOpen ? 'border-blue-600 animate-pulse' : 'border-zinc-500'}`}>
-              {isOpen ? (
+             {isOpen ? (
                 <span className="text-[10px] -rotate-45 font-black text-white">✕</span>
               ) : (
                 <div className="-rotate-45 mb-0.5">

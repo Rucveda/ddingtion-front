@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import Link from "next/link";
-import { request } from "@/utils/api"; 
+import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CompletedAuction {
@@ -17,21 +17,21 @@ interface CompletedAuction {
 export default function AuctionDetail() {
   const { id } = useParams();
   const router = useRouter();
-  
+
   const [auction, setAuction] = useState<any>(null);
-  const [bidAmount, setBidAmount] = useState<string>("0"); 
+  const [bidAmount, setBidAmount] = useState<string>("0");
   const [socket, setSocket] = useState<Socket | null>(null);
   const [recentSales, setRecentSales] = useState<CompletedAuction[]>([]);
   const [timeLeft, setTimeLeft] = useState<string>("");
-  const [isProcessing, setIsProcessing] = useState(false); 
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isError, setIsError] = useState(false);
-  const GAME_MAX_PRICE = 10000000000; 
+  const GAME_MAX_PRICE = 10000000000;
 
   const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
 
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
-      window.navigator.vibrate(10); 
+      window.navigator.vibrate(10);
     }
   }, []);
 
@@ -79,7 +79,7 @@ export default function AuctionDetail() {
     });
     newSocket.on("auction_finished", (data) => {
       alert(`경매 종료. 낙찰자: ${data.winner}`);
-      router.replace("/?tab=AUCTION"); 
+      router.replace("/?tab=AUCTION");
     });
     return () => { newSocket.close(); };
   }, [id, router]);
@@ -114,19 +114,64 @@ export default function AuctionDetail() {
     socket?.emit("place_bid", { auctionId: id, userId: currentUser.id, bidAmount: Number(bidAmount) });
   };
 
+  const CHAT_OPEN_EVENT = "ddingtion_chat_open";
   const handleBuyNow = async () => {
+    // 1. 사전 검증 및 진동 피드백
     triggerHaptic();
-    if (!currentUser) return router.push("/login");
-    if (!confirm("즉시 구매를 진행하시겠습니까?")) return;
+    if (!currentUser) {
+      alert("로그인이 필요한 서비스입니다.");
+      return router.push("/login");
+    }
+
+    // 판매자 본인 여부 확인
+    if (isSeller) {
+      return alert("본인이 등록한 물품은 구매할 수 없습니다.");
+    }
+
+    if (!confirm("즉시 구매를 진행하시겠습니까? 확인 시 즉시 낙찰 처리됩니다.")) return;
+
     setIsProcessing(true);
+
     try {
-      const result = await request(`/api/auctions/${id}/buy`, { method: "POST" });
+      // 2. 서버에 구매 요청 전송
+      const result = await request(`/api/auctions/${id}/buy`, {
+        method: "POST"
+      });
+
       if (result?.roomId) {
-        socket?.emit('auction_finished', { auctionId: id, winner: currentUser.ingameName });
+        // 3. 소켓을 통해 경매 종료 알림 전파
+        socket?.emit('auction_finished', {
+          auctionId: id,
+          winner: currentUser.ingameName
+        });
+
+        // 4. 로컬 스토리지에 생성된 채팅방 ID 저장
         localStorage.setItem("openChatId", result.roomId.toString());
+
+        // 5. 핵심: 동일 탭의 ChatWidget에게 채팅창을 열라고 신호를 보냄
+        window.dispatchEvent(new Event(CHAT_OPEN_EVENT));
+
+        // 6. 메인 경매 목록 탭으로 부드럽게 이동
+        // replace를 사용하여 뒤로가기 시 구매창으로 다시 오지 않게 함
         router.replace("/?tab=AUCTION");
+
+        // (선택사항) 성공 알림
+        console.log("구매 성공: 채팅방으로 연결을 시도합니다.");
+      } else {
+        throw new Error("채팅방 생성에 실패했습니다.");
       }
-    } catch (err) { setIsProcessing(false); }
+    } catch (err: any) {
+      console.error("Purchase Error:", err);
+
+      // 에러 메시지 세분화
+      if (err.status === 403) {
+        alert("잔액이 부족하거나 구매 권한이 없습니다.");
+      } else {
+        alert(err.message || "구매 처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+      }
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (!auction || !auction.item) return (
@@ -171,11 +216,11 @@ export default function AuctionDetail() {
 
       <main className="max-w-7xl mx-auto py-10 px-6 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* --- 좌측: 상세 정보 패널 --- */}
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[40px] shadow-2xl backdrop-blur-md min-h-[600px]">
-              
+
               <div className="flex items-center gap-6 mb-12 bg-white/[0.03] p-6 rounded-3xl border border-white/5 relative overflow-hidden">
                 <div className="w-20 h-20 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
                   <img src={getSecureUrl(auction.item.iconUrl)} className="w-12 h-12 pixel-art" alt="" />
@@ -192,7 +237,7 @@ export default function AuctionDetail() {
                   <span className="text-5xl font-black italic text-white/10 select-none">+{auction.enhancementLevel}</span>
                 </div>
               </div>
-              
+
               <div className="custom-scrollbar overflow-y-auto max-h-[550px] pr-4 space-y-12">
                 {category === "WILD" && auction.enchantments && (
                   <div className="space-y-6">
@@ -242,7 +287,7 @@ export default function AuctionDetail() {
                                   <span className="text-[8px] font-black text-orange-600 uppercase mb-1">{rune.grade}</span>
                                   <span className="text-[11px] font-black text-zinc-100 truncate w-full px-3">{rune.type}</span>
                                 </>
-                              ) : <span className="text-zinc-800 text-[10px] font-black uppercase">Slot {i+1}</span>}
+                              ) : <span className="text-zinc-800 text-[10px] font-black uppercase">Slot {i + 1}</span>}
                             </div>
                           ))}
                         </div>
@@ -310,38 +355,38 @@ export default function AuctionDetail() {
                   <div className="bg-black/40 p-6 rounded-2xl border border-white/10 relative">
                     <label className="text-[11px] font-black text-blue-500 uppercase mb-3 block tracking-widest">내 입찰 금액 입력</label>
                     <div className="flex items-baseline gap-2 overflow-hidden relative">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         inputMode="numeric"
-                        disabled={isSeller || isProcessing} 
-                        value={Number(bidAmount).toLocaleString()} 
+                        disabled={isSeller || isProcessing}
+                        value={Number(bidAmount).toLocaleString()}
                         onChange={handleBidChange}
                         className={`w-full bg-transparent text-4xl font-mono font-black text-white outline-none min-w-0 ${isError ? 'shake-active' : ''}`}
                       />
                       <span className="text-blue-900 font-black shrink-0 relative top-1">G</span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-2">
                     {[10, 20, 50].map(pct => (
-                      <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct/100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}% 부스트</button>
+                      <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}% 부스트</button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-4 pt-8">
-                  <button 
-                    disabled={isSeller || isProcessing} 
-                    onClick={handleBid} 
+                  <button
+                    disabled={isSeller || isProcessing}
+                    onClick={handleBid}
                     className={`w-full font-black py-6 rounded-2xl text-base uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${isSeller ? "bg-zinc-900 text-zinc-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-900/20"}`}
                   >
                     {isSeller ? "내 물품 입찰 불가" : "경매 입찰 신청"}
                   </button>
-                  
+
                   {auction.buyNowPrice && auction.status === 'ACTIVE' && (
-                    <button 
-                      disabled={isSeller || isProcessing} 
-                      onClick={handleBuyNow} 
+                    <button
+                      disabled={isSeller || isProcessing}
+                      onClick={handleBuyNow}
                       className="w-full font-black py-4 rounded-xl text-[11px] uppercase tracking-widest transition-all bg-white/5 text-zinc-500 hover:text-white border border-white/5 active:scale-95 whitespace-nowrap"
                     >
                       {isProcessing ? "처리 중..." : `즉시 구매 실행 (${formatGold(Number(auction.buyNowPrice))})`}

@@ -12,7 +12,13 @@ interface ReviewModalProps {
   onClose: () => void;
 }
 
-export default function ReviewModal({ isOpen, auctionId, revieweeId, revieweeName, onClose }: ReviewModalProps) {
+export default function ReviewModal({
+  isOpen,
+  auctionId,
+  revieweeId,
+  revieweeName,
+  onClose
+}: ReviewModalProps) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,15 +26,24 @@ export default function ReviewModal({ isOpen, auctionId, revieweeId, revieweeNam
   const handleSubmit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
+
     try {
+      // 💡 백엔드 리뷰 저장 API 호출
       await request("/api/reviews", {
         method: "POST",
-        body: JSON.stringify({ auctionId, revieweeId, rating, comment })
+        body: JSON.stringify({
+          auctionId,
+          targetId: revieweeId, // 리뷰를 받는 사람
+          rating,
+          comment: comment.trim() || "매너 있는 거래였습니다."
+        }),
       });
-      alert(`${revieweeName}님에 대한 평가가 완료되었습니다.`);
+
+      alert(`${revieweeName}님에게 평점을 남겼습니다.`);
       onClose();
     } catch (error) {
-      alert("평가 등록 중 오류가 발생했습니다.");
+      console.error("리뷰 등록 실패:", error);
+      alert("평점 등록 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
     }
@@ -37,70 +52,74 @@ export default function ReviewModal({ isOpen, auctionId, revieweeId, revieweeNam
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-6">
-          {/* 배경 블러 */}
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6">
+          {/* 배경 오버레이 */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
           />
 
           {/* 모달 본체 */}
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="relative w-full max-w-[340px] bg-zinc-900 border border-white/10 rounded-[32px] p-8 shadow-2xl overflow-hidden"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-[400px] bg-zinc-950 border border-white/10 rounded-[32px] p-8 shadow-2xl overflow-hidden"
           >
-            {/* 장식용 육각형 배경 */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl" />
+            {/* 상단 장식 라인 */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-transparent opacity-50" />
 
-            <div className="text-center relative z-10">
-              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.3em] block mb-2 font-mono">Terminal Review</span>
-              <h2 className="text-lg font-bold text-white mb-1">{revieweeName}님과의 거래</h2>
-              <p className="text-[11px] text-zinc-500 font-bold mb-8 uppercase tracking-tight">거래 신뢰도를 평가해주세요</p>
+            <div className="text-center mb-8">
+              <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] block mb-2">Transaction Feedback</span>
+              <h2 className="text-xl font-bold text-white">거래는 어떠셨나요?</h2>
+              <p className="text-[12px] text-zinc-500 mt-2 font-medium">
+                <span className="text-blue-400 font-bold">{revieweeName}</span>님과의 거래 평점을 남겨주세요.
+              </p>
+            </div>
 
-              {/* 별점 선택 (1~5) */}
-              <div className="flex justify-center gap-2 mb-8">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setRating(num)}
-                    className={`w-10 h-10 rounded-xl font-black transition-all flex items-center justify-center border ${
-                      rating >= num 
-                        ? "bg-blue-600 border-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.4)]" 
-                        : "bg-white/5 border-white/5 text-zinc-700"
-                    }`}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
+            {/* 별점 선택 */}
+            <div className="flex justify-center gap-3 mb-8">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`text-2xl transition-all ${
+                    star <= rating ? "grayscale-0 scale-110" : "grayscale opacity-20 scale-100"
+                  }`}
+                >
+                  ⭐
+                </button>
+              ))}
+            </div>
 
-              {/* 후기 입력 */}
+            {/* 한줄 평 입력 */}
+            <div className="mb-8">
               <textarea
-                className="w-full bg-black/40 border border-white/10 rounded-2xl p-4 text-[13px] text-white outline-none focus:border-blue-500/40 transition-all mb-6 h-24 resize-none font-bold placeholder:text-zinc-800"
-                placeholder="거래 후기를 짧게 남겨주세요 (선택)"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
+                placeholder="간단한 후기를 남겨주세요 (선택사항)"
+                className="w-full h-24 bg-white/[0.03] border border-white/10 rounded-2xl p-4 text-[13px] text-white outline-none focus:border-blue-500/50 transition-all resize-none font-medium placeholder:text-zinc-700"
               />
+            </div>
 
-              {/* 버튼 그룹 */}
-              <div className="flex gap-3">
-                <button 
-                  onClick={onClose}
-                  className="flex-1 py-4 rounded-xl bg-zinc-800 text-[11px] font-black text-zinc-500 uppercase tracking-widest transition-all hover:bg-zinc-700"
-                >
-                  나중에
-                </button>
-                <button 
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="flex-1 py-4 rounded-xl bg-blue-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
-                >
-                  전송 완료
-                </button>
-              </div>
+            {/* 버튼 섹션 */}
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="flex-1 py-4 rounded-2xl bg-zinc-900 text-[11px] font-black text-zinc-500 uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+              >
+                나중에
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="flex-1 py-4 rounded-2xl bg-blue-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isSubmitting ? "전송 중..." : "평가 완료"}
+              </button>
             </div>
           </motion.div>
         </div>
