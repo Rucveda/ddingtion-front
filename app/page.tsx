@@ -362,7 +362,7 @@ function HomeComponent() {
 
       <footer className="border-t border-white/5 py-20 bg-black/40 backdrop-blur-md relative z-10 mt-auto">
         <div className="max-w-7xl mx-auto px-6">
-          <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.4em] text-center md:text-left">© 2026 DDINGTION. ELITE AUCTION HOUSE.</p>
+          <p className="text-zinc-700 text-[10px] font-black uppercase tracking-[0.4em] text-center md:text-left">© 2026 DDINGTION</p>
         </div>
       </footer>
     </div>
