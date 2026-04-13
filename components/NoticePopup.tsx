@@ -10,11 +10,15 @@ export default function NoticePopup() {
 
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let isMounted = true; // 💡 패치: 컴포넌트 마운트 상태 추적
 
     const loadNotice = async () => {
       try {
         // 💡 중요: 전체 경로 확인 요망
         const data = await request("/api/posts?type=NOTICE");
+        
+        if (!isMounted) return; // 💡 패치: 이미 언마운트된 첫 번째 Effect의 비동기 결과 무시
+        
         if (data && Array.isArray(data) && data.length > 0) {
           const latest = data[0];
           setNotice(latest);
@@ -30,7 +34,9 @@ export default function NoticePopup() {
 
           // 이미 읽었거나, 하루 닫기 기간이 안 지났으면 띄우지 않음
           if (!isAlreadyRead && !isHiddenForADay) {
-            timeoutId = setTimeout(() => setIsOpen(true), 1000);
+            timeoutId = setTimeout(() => {
+              if (isMounted) setIsOpen(true);
+            }, 1000);
           }
         }
       } catch (err) { console.error("Notice error:", err); }
@@ -38,6 +44,7 @@ export default function NoticePopup() {
     loadNotice();
 
     return () => {
+      isMounted = false; // 💡 패치: 클린업 시 마운트 해제
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
