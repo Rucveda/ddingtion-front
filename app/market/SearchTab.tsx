@@ -141,9 +141,16 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
               <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-3">나의 시뮬레이션</p>
               <h2 className="text-4xl font-black text-zinc-100 tracking-tighter tabular-nums mb-2">{formatGold(theoreticalValue)} G</h2>
               <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${theoreticalValue > (Number(analysis?.avgPrice) || 0) ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-green-500/30 text-green-400 bg-green-500/5'}`}>
-                  평균가 대비 {theoreticalValue > 0 ? (theoreticalValue / (Number(analysis?.avgPrice) || 1) * 100).toFixed(0) : 0}% 가치
-                </span>
+              {(() => {
+                const avgPrice = Number(analysis?.avgPrice) || 0;
+                const pct = avgPrice > 0 ? Math.round((theoreticalValue / avgPrice) * 100) : 0;
+                const isInsufficient = avgPrice === 0 || pct > 999;
+                return (
+                  <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${isInsufficient ? 'border-zinc-500/30 text-zinc-400 bg-zinc-500/5' : theoreticalValue > avgPrice ? 'border-red-500/30 text-red-400 bg-red-500/5' : 'border-green-500/30 text-green-400 bg-green-500/5'}`}>
+                    {isInsufficient ? "데이터 부족" : `평균가 대비 ${pct}% 가치`}
+                  </span>
+                );
+              })()}
               </div>
             </div>
             <div className="bg-white/[0.02] border border-white/5 p-8 rounded-[40px]">
