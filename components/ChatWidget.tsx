@@ -165,6 +165,10 @@ export default function ChatWidget() {
       // 💡 버그 패치: 도착한 메시지가 현재 내가 보고 있는 채팅방의 메시지일 때만 화면에 추가
       if (selectedRoomRef.current?.id === msg.roomId) {
         setMessages((prev) => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+        
+        // 💡 UX 패치: 채팅방을 켜둔 상태에서 새 메시지를 받으면 서버에 즉시 읽음 처리를 요청하여 빨간 뱃지 끄기
+        const token = localStorage.getItem("token");
+        if (token) newSocket.emit("join_room", { roomId: msg.roomId, token });
       }
       fetchRooms();
     });
