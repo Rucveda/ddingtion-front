@@ -7,13 +7,6 @@ import Link from "next/link";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface CompletedAuction {
-  id: number;
-  currentPrice: number;
-  endTime: string;
-  seller: { ingameName: string };
-}
-
 export default function AuctionDetail() {
   const { id } = useParams();
   const router = useRouter();
@@ -21,10 +14,10 @@ export default function AuctionDetail() {
   const [auction, setAuction] = useState<any>(null);
   const [bidAmount, setBidAmount] = useState<string>("0");
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [recentSales, setRecentSales] = useState<CompletedAuction[]>([]);
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null); // 💡 패치: 유저 상태 관리 추가
   const GAME_MAX_PRICE = 10000000000;
 
   const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
@@ -45,8 +38,12 @@ export default function AuctionDetail() {
     return amount.toLocaleString();
   };
 
-  const userStr = typeof window !== "undefined" ? localStorage.getItem("user") : null;
-  const currentUser = userStr ? JSON.parse(userStr) : null;
+  // 💡 패치: Next.js 하이드레이션(Hydration) 에러 방지를 위해 마운트 이후에 로컬 스토리지 접근
+  useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    if (userStr) setCurrentUser(JSON.parse(userStr));
+  }, []);
+
   const isSeller = auction && currentUser && Number(auction.sellerId) === Number(currentUser.id);
 
   const category = useMemo(() => {
@@ -65,7 +62,6 @@ export default function AuctionDetail() {
         if (data) {
           setAuction(data);
           setBidAmount(Math.floor(Number(data.currentPrice) * 1.1).toString());
-          fetchRecentSales(data.itemId);
         }
       } catch (err) { console.error(err); }
     };
@@ -101,17 +97,13 @@ export default function AuctionDetail() {
     return () => clearInterval(timer);
   }, [auction]);
 
-  const fetchRecentSales = async (itemId: number) => {
-    const data = await request(`/api/auctions/completed?itemId=${itemId}&limit=5`);
-    if (data) setRecentSales(data);
-  };
-
   const handleBid = () => {
     triggerHaptic();
     if (!currentUser) return router.push("/login");
     if (isSeller) return alert("본인이 등록한 물품에는 입찰할 수 없습니다.");
     if (Number(bidAmount) <= Number(auction.currentPrice)) return alert("현재가보다 높은 금액을 입력해야 합니다.");
-    socket?.emit("place_bid", { auctionId: id, userId: currentUser.id, bidAmount: Number(bidAmount) });
+    const token = localStorage.getItem("token"); // 로그인 시 저장되는 JWT 토큰
+    socket?.emit("place_bid", { auctionId: id, token, bidAmount: Number(bidAmount) });
   };
 
   const CHAT_OPEN_EVENT = "ddingtion_chat_open";
@@ -139,19 +131,13 @@ export default function AuctionDetail() {
       });
 
       if (result?.roomId) {
-        // 3. 소켓을 통해 경매 종료 알림 전파
-        socket?.emit('auction_finished', {
-          auctionId: id,
-          winner: currentUser.ingameName
-        });
-
-        // 4. 로컬 스토리지에 생성된 채팅방 ID 저장
+        // 3. 로컬 스토리지에 생성된 채팅방 ID 저장
         localStorage.setItem("openChatId", result.roomId.toString());
 
-        // 5. 핵심: 동일 탭의 ChatWidget에게 채팅창을 열라고 신호를 보냄
+        // 4. 핵심: 동일 탭의 ChatWidget에게 채팅창을 열라고 신호를 보냄
         window.dispatchEvent(new Event(CHAT_OPEN_EVENT));
 
-        // 6. 메인 경매 목록 탭으로 부드럽게 이동
+        // 5. 메인 경매 목록 탭으로 부드럽게 이동
         // replace를 사용하여 뒤로가기 시 구매창으로 다시 오지 않게 함
         router.replace("/?tab=AUCTION");
 

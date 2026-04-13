@@ -19,6 +19,9 @@ export default function ChatWidget() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
+
+  // 💡 버그 패치: 소켓 이벤트 수신 시 현재 열려있는 방을 정확히 판별하기 위한 Ref
+  const selectedRoomRef = useRef<any>(null);
   
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [pendingReviewData, setPendingReviewData] = useState<any>(null);
@@ -26,6 +29,11 @@ export default function ChatWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // 선택된 방이 바뀔 때마다 Ref 업데이트
+  useEffect(() => {
+    selectedRoomRef.current = selectedRoom;
+  }, [selectedRoom]);
 
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) {
@@ -146,13 +154,18 @@ export default function ChatWidget() {
     const token = localStorage.getItem("token");
     if (!userStr || !token) return;
 
-    const newSocket = io("https://ddingtion-back.onrender.com");
+    // 💡 유지보수 패치: 하드코딩된 서버 주소 제거
+    const socketUrl = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
+    const newSocket = io(socketUrl);
     setSocket(newSocket);
     fetchRooms();
 
     newSocket.on("refresh_chat_rooms", () => { fetchRooms(); });
     newSocket.on("new_message", (msg) => {
-      setMessages((prev) => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+      // 💡 버그 패치: 도착한 메시지가 현재 내가 보고 있는 채팅방의 메시지일 때만 화면에 추가
+      if (selectedRoomRef.current?.id === msg.roomId) {
+        setMessages((prev) => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+      }
       fetchRooms();
     });
 
@@ -172,8 +185,9 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (selectedRoom?.id && socket) {
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-      socket.emit("join_room", { roomId: selectedRoom.id, userId: user.id });
+      // 💡 보안 패치: userId 대신 검증 불가능한 토큰을 전송
+      const token = localStorage.getItem("token");
+      socket.emit("join_room", { roomId: selectedRoom.id, token });
       fetchMessages(selectedRoom.id);
     }
   }, [selectedRoom, socket]);
@@ -183,8 +197,9 @@ export default function ChatWidget() {
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !selectedRoom?.id || !socket) return;
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    socket.emit("send_message", { roomId: Number(selectedRoom.id), senderId: Number(user.id), content: input });
+    // 💡 보안 패치: userId 변조 공격 차단을 위해 토큰 전송
+    const token = localStorage.getItem("token");
+    socket.emit("send_message", { roomId: Number(selectedRoom.id), token, content: input });
     setInput("");
   };
 
