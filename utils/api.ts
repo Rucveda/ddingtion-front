@@ -1,5 +1,5 @@
 export const request = async (url: string, options: RequestInit = {}) => {
-  const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null; // 💡 앱 전체 호환성을 위해 localStorage로 복구
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -14,11 +14,9 @@ export const request = async (url: string, options: RequestInit = {}) => {
     });
 
     // 💡 401 Unauthorized: 유령 계정 처리
-    if (response.status === 401) {
+    if (response.status === 401 && !url.includes('/api/auth/login')) { // 💡 로그인 시도 중 틀린 경우는 가로채지 않음!
       if (typeof window !== 'undefined') {
         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
         localStorage.clear();
         window.location.href = '/login';
       }

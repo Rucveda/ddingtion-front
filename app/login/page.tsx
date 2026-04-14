@@ -43,9 +43,9 @@ export default function LoginPage() {
       if (data && data.token) {
         localStorage.clear();
         sessionStorage.clear();
-        sessionStorage.setItem("token", data.token);
+        localStorage.setItem("token", data.token); // 💡 새 탭 유지 및 타 컴포넌트 연동을 위해 로컬로 저장
         if (data.user) {
-          sessionStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.setItem("user", JSON.stringify(data.user));
         }
         router.push("/");
         setTimeout(() => { window.location.reload(); }, 100); 
