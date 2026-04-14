@@ -23,6 +23,16 @@ export const request = async (url: string, options: RequestInit = {}) => {
       return null;
     }
 
+    // 💡 403 Forbidden: 차단(Ban)된 계정 처리
+    if (response.status === 403) {
+      if (typeof window !== 'undefined') {
+        alert("관리자에 의해 접근이 차단된 계정입니다.");
+        localStorage.clear();
+        window.location.href = '/login';
+      }
+      return null;
+    }
+
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       const data = await response.json();
