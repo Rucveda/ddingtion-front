@@ -5,6 +5,8 @@ import ChatWidget from "@/components/ChatWidget";
 import NotificationCenter from "@/components/NotificationCenter";
 // 💡 신규 공지사항 팝업 임포트
 import NoticePopup from "@/components/NoticePopup";
+// 💡 전역 세션 관리 컴포넌트 임포트
+import GlobalSession from "@/components/GlobalSession";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +34,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#010101] selection:bg-white selection:text-black">
+        {/* 💡 전역 세션 감지 컴포넌트 (UI 렌더링 없음) */}
+        <GlobalSession />
+
         {/* 메인 페이지 콘텐츠 */}
         <div className="flex-1 relative z-10">
           {children}

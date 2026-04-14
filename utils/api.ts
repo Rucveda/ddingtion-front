@@ -1,5 +1,5 @@
 export const request = async (url: string, options: RequestInit = {}) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = typeof window !== 'undefined' ? sessionStorage.getItem('token') : null;
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -17,8 +17,9 @@ export const request = async (url: string, options: RequestInit = {}) => {
     if (response.status === 401) {
       if (typeof window !== 'undefined') {
         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        localStorage.clear();
         window.location.href = '/login';
       }
       return null;

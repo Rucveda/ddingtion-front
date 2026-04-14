@@ -43,10 +43,11 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (res.ok) {
-        localStorage.clear(); 
-        localStorage.setItem("token", data.token);
+        localStorage.clear();
+        sessionStorage.clear();
+        sessionStorage.setItem("token", data.token);
         if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
+          sessionStorage.setItem("user", JSON.stringify(data.user));
         }
         router.push("/");
         setTimeout(() => { window.location.reload(); }, 100); 
