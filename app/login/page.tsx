@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { request } from "@/utils/api";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -34,15 +35,12 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://ddingtion-back.onrender.com/api/auth/login", {
+      const data = await request("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ loginId, password }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (data && data.token) {
         localStorage.clear();
         sessionStorage.clear();
         sessionStorage.setItem("token", data.token);
@@ -51,11 +49,9 @@ export default function LoginPage() {
         }
         router.push("/");
         setTimeout(() => { window.location.reload(); }, 100); 
-      } else {
-        alert(data.error || "정보를 확인해주세요.");
       }
     } catch (error) {
-      alert("서버 연결 실패");
+      alert(error instanceof Error ? error.message : "로그인에 실패했습니다.");
     } finally {
       setIsLoading(false);
     }

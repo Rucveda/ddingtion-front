@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { request } from "@/utils/api";
 
 export default function Register() {
   const [form, setForm] = useState({ loginId: "", password: "", ingameName: "" });
@@ -29,20 +30,15 @@ export default function Register() {
     triggerHaptic();
     setIsLoading(true);
     try {
-      const res = await fetch("https://ddingtion-back.onrender.com/api/auth/register", {
+      const data = await request("/api/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (res.ok) {
-        alert("가입을 축하합니다! 이제 로그인할 수 있습니다.");
-        router.push("/login");
-      } else {
-        alert("이미 사용 중인 정보이거나 형식이 올바르지 않습니다.");
-      }
+      alert("가입을 축하합니다! 이제 로그인할 수 있습니다.");
+      router.push("/login");
     } catch (error) {
-      alert("서버 연결 실패");
+      alert(error instanceof Error ? error.message : "가입 처리 중 문제가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }

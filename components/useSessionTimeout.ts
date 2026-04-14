@@ -8,7 +8,7 @@ const TIMEOUT_MS = 10 * 60 * 1000; // 10분 (밀리초 단위)
 export function useSessionTimeout() {
   const router = useRouter();
   const pathname = usePathname();
-  const lastUpdateRef = useRef(Date.now());
+  const lastUpdateRef = useRef(0); // 💡 성능 버그 수정: 접속 직후 첫 활동이 무시되지 않도록 0으로 초기화
 
   const logout = useCallback(() => {
     // 스토리지 초기화 및 로그아웃 처리
@@ -61,5 +61,6 @@ export function useSessionTimeout() {
       clearInterval(interval);
       events.forEach((event) => window.removeEventListener(event, updateActivity));
     };
-  }, [logout, updateActivity]);
+    // 💡 페이지 이동(pathname) 시에도 정상적으로 타이머 이벤트가 갱신되도록 의존성 추가
+  }, [logout, updateActivity, pathname]);
 }

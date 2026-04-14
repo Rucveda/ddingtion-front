@@ -27,8 +27,15 @@ export const request = async (url: string, options: RequestInit = {}) => {
 
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
-      return response.json();
+      const data = await response.json();
+      // 💡 에러 발생 시 백엔드 에러 메시지를 즉시 throw 하여 catch 블록으로 넘김
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "요청 중 오류가 발생했습니다.");
+      }
+      return data;
     }
+
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
     return response;
 
   } catch (error) {

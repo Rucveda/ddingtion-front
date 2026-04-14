@@ -141,7 +141,10 @@ export default function SellItem() {
         }),
       });
       router.push("/?tab=AUCTION");
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
+    } catch (error) { 
+      console.error(error); 
+      alert(error instanceof Error ? error.message : "아이템 등록 중 오류가 발생했습니다.");
+    } finally { setIsLoading(false); }
   };
 
   return (
