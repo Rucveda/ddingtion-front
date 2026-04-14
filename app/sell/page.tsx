@@ -11,6 +11,14 @@ const WILD_BASE = [["효율", 5], ["행운", 3], ["섬세한손길", 1], ["바�
 const WILD_SPECIAL = [["경험", 5], ["조급함", 3], ["서두름", 3], ["심호흡", 2], ["석탄", 3], ["구리", 3], ["금", 3], ["철", 3], ["청금석", 3], ["석영", 3], ["다이아몬드", 3], ["에메랄드", 3], ["고대잔해", 3], ["노련한손길", 3], ["자동감기", 4], ["뾰족함", 5], ["바다의경험", 3], ["참격", 4], ["위력", 4], ["벌목", 3], ["출혈", 6], ["냉혈함", 4], ["골절", 3], ["백신", 5], ["천적", 4], ["속격", 3], ["반격", 3], ["광휘", 3], ["속박", 3], ["흡혈", 5], ["잠행", 3], ["혈전", 5], ["흡혈귀", 3], ["이중타격", 3], ["일격", 3], ["여명", 3], ["심판", 3], ["밤기사", 3], ["학구열", 4], ["좀비", 3], ["스켈레톤", 3], ["거미", 3], ["크리퍼", 3], ["마무리", 3], ["활력", 3], ["서막", 5], ["천벌", 5], ["견고함", 10], ["창공", 3], ["추진력", 3], ["경감", 4], ["견갑", 4], ["복원", 3], ["반사", 5], ["수호", 2], ["흡수", 4], ["내폭성", 3], ["회피", 5], ["엔더보호", 3], ["네더보호", 3], ["내화성", 1], ["과충전", 3], ["아가미", 1], ["투시", 1], ["불멸", 3], ["격퇴", 5], ["강인함", 6], ["소화", 3], ["추격", 3], ["심연", 4], ["탈출", 2], ["가벼운걸음", 1], ["낙하", 3], ["뜨거운걸음", 1], ["가속화", 3], ["완벽한착지", 3], ["용수철", 3]];
 const ISLAND_IMPRINTS = ["채집강화", "채집가속", "씨앗행운", "과일행운", "과일가속", "빠른농부", "작물상자", "과일바구니", "유성낙하", "농부룰렛", "채광강화", "채광가속", "광물행운", "유물탐색", "코비탐색", "빠른광부", "보석코비", "광산수레", "광부룰렛", "물고기행운", "어획강화", "조개탐색", "어패행운", "수중호흡", "빠른어부", "정령고래", "가오리인도", "어부룰렛", "공격강화", "공격가속", "전리품행운", "조각탐색", "빠른사냥꾼", "흔적추적", "조각공명", "흡인사냥", "사냥꾼룰렛"];
 const RPG_SKILLS = ["리프시커", "바인크리프", "우드서지", "버던트메테오", "그로브클랩", "스틸임팩트", "헤비사이클론", "그랜드크러시", "오리진이지스", "팔라딘저지먼트", "에너지버스트", "브로드샷", "락온트리거", "펄스레이닝", "오버클럭프로토콜", "차지블로우", "스위프트샷", "컨비전스스플릿", "리니어레인", "세라핌디센트", "피어스폴", "스러스트러시", "플리커랜서", "프로스트드롭", "앱솔루트도미니온", "플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"];
+const RPG_SKILL_MAP: Record<string, string[]> = {
+  "스태프": ["리프시커", "바인크리프", "우드서지", "버던트메테오", "그로브클랩"],
+  "망치": ["스틸임팩트", "헤비사이클론", "그랜드크러시", "오리진이지스", "팔라딘저지먼트"],
+  "총": ["에너지버스트", "브로드샷", "락온트리거", "펄스레이닝", "오버클럭프로토콜"],
+  "활": ["차지블로우", "스위프트샷", "컨비전스스플릿", "리니어레인", "세라핌디센트"],
+  "창": ["피어스폴", "스러스트러시", "플리커랜서", "프로스트드롭", "앱솔루트도미니온"],
+  "대검": ["플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"]
+};
 const RUNE_GRADES = ["루키", "커먼", "노멀", "레어"];
 const RUNE_TYPES = ["파괴의룬", "타격의룬", "증폭의룬", "기습의룬", "사냥의룬", "지배의룬", "개시의룬", "처형의룬", "한기의룬", "화염의룬", "자연의룬", "뇌전의룬", "강철의룬", "흡혈의룬", "열상의룬", "출혈의룬", "정밀의룬", "치명의룬", "역습의룬", "반격의룬"];
 
@@ -65,6 +73,18 @@ export default function SellItem() {
     if (cat.includes("ISLAND") || cat.includes("아일랜드")) return "ISLAND";
     if (cat.includes("RPG")) return "RPG";
     return "OTHER";
+  }, [selectedItem]);
+
+  const currentWeaponSkills = useMemo(() => {
+    if (!selectedItem) return RPG_SKILLS;
+    const name = selectedItem.name;
+    if (name.includes("스태프")) return RPG_SKILL_MAP["스태프"];
+    if (name.includes("망치")) return RPG_SKILL_MAP["망치"];
+    if (name.includes("총")) return RPG_SKILL_MAP["총"];
+    if (name.includes("활")) return RPG_SKILL_MAP["활"];
+    if (name.includes("창")) return RPG_SKILL_MAP["창"];
+    if (name.includes("대검")) return RPG_SKILL_MAP["대검"];
+    return RPG_SKILLS;
   }, [selectedItem]);
 
   const triggerHaptic = useCallback(() => {
@@ -392,7 +412,7 @@ export default function SellItem() {
                             <div className="w-1 h-1 rounded-full bg-purple-500" /> 전투 스킬 레벨 설정
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {RPG_SKILLS.slice(0, 10).map(name => (
+                            {currentWeaponSkills.map(name => (
                               <button key={name} type="button" onClick={() => toggleOption('skills', name, 7)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${form.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg" : "bg-white/5 border-transparent text-zinc-500 hover:bg-white/10"}`}>
                                 <span className="font-bold text-xs truncate">{name}</span>
                                 {form.skills[name] && <span className="font-black text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{form.skills[name]}</span>}
