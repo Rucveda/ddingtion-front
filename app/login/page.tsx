@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLongWait, setIsLongWait] = useState(false);
   const router = useRouter();
 
   const triggerHaptic = useCallback(() => {
@@ -33,6 +34,11 @@ export default function LoginPage() {
 
     triggerHaptic();
     setIsLoading(true);
+    setIsLongWait(false);
+
+    const timeoutId = setTimeout(() => {
+      setIsLongWait(true);
+    }, 5000); // 💡 요청 후 5초가 지나면 지연 안내 메시지 표시
 
     try {
       const data = await request("/api/auth/login", {
@@ -53,6 +59,8 @@ export default function LoginPage() {
     } catch (error) {
       alert(error instanceof Error ? error.message : "로그인에 실패했습니다.");
     } finally {
+      clearTimeout(timeoutId); // 💡 완료되거나 실패하면 타이머 정리
+      if (!isLongWait) setIsLongWait(false);
       setIsLoading(false);
     }
   };
@@ -111,7 +119,7 @@ export default function LoginPage() {
             {/* 💡 onSubmit 핸들러가 엔터키를 감지합니다. */}
             <form 
               onSubmit={handleLogin} 
-              className="space-y-6 bg-white/[0.02] backdrop-blur-3xl p-10 rounded-[40px] border border-white/5 shadow-2xl"
+              className="flex flex-col space-y-6 bg-white/[0.02] backdrop-blur-3xl p-10 rounded-[40px] border border-white/5 shadow-2xl"
             >
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">아이디</label>
@@ -146,6 +154,17 @@ export default function LoginPage() {
               >
                 {isLoading ? "접속 중..." : "로그인"}
               </button>
+
+              {isLongWait && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 text-center text-xs font-bold text-blue-400 space-y-1"
+                >
+                  <p>서버가 절전 모드에서 깨어나는 중입니다 😴</p>
+                  <p>최대 1분 정도 소요될 수 있으니 잠시만 기다려주세요!</p>
+                </motion.div>
+              )}
             </form>
           </div>
 
