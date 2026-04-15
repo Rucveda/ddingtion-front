@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,7 @@ interface MarketTabProps {
   initialTab?: "SEARCH" | "CALC" | "ETC" | "ADMIN";
 }
 
-export default function MarketIntelligence({ initialTab = "SEARCH" }: MarketTabProps) {
+function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
   const searchParams = useSearchParams();
   const [dbItems, setDbItems] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
@@ -178,5 +178,18 @@ export default function MarketIntelligence({ initialTab = "SEARCH" }: MarketTabP
         </footer>
       </div>
     </MarketProvider>
+  );
+}
+
+/**
+ * 🛠️ [빌드 에러 방지] useSearchParams를 사용하는 경우 Suspense로 감싸야 합니다.
+ */
+export default function MarketIntelligence(props: MarketTabProps) {
+  return (
+    <Suspense fallback={
+      <div className="w-full min-h-screen flex items-center justify-center opacity-20 text-[10px] font-black uppercase tracking-widest text-zinc-500">Loading Market...</div>
+    }>
+      <MarketIntelligenceContent {...props} />
+    </Suspense>
   );
 }
