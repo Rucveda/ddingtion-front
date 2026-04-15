@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -15,6 +16,7 @@ interface MarketTabProps {
 }
 
 export default function MarketIntelligence({ initialTab = "SEARCH" }: MarketTabProps) {
+  const searchParams = useSearchParams();
   const [dbItems, setDbItems] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,11 +24,16 @@ export default function MarketIntelligence({ initialTab = "SEARCH" }: MarketTabP
   const [userRole, setUserRole] = useState<string>("USER");
 
   /**
-   * 🛠️ [패치] 부모 컴포넌트(page.tsx)에서 전달한 탭 상태와 동기화
+   * 🛠️ [패치] URL 쿼리 파라미터 또는 Prop으로 탭 상태 동기화
    */
   useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
+    const tabFromQuery = searchParams.get('tab')?.toUpperCase();
+    if (tabFromQuery && ["SEARCH", "CALC", "ETC", "ADMIN"].includes(tabFromQuery)) {
+      setActiveTab(tabFromQuery as any);
+    } else {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab, searchParams]);
 
   const getSecureUrl = (url: string) => {
     if (!url) return "";

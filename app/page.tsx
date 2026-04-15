@@ -16,11 +16,57 @@ interface Auction {
   status: string;
   item: { name: string; iconUrl: string; category: string; };
   seller: { ingameName: string; };
+  enhancementLevel: number;
+  enchantments?: Record<string, number>;
+  imprint?: Record<string, number>;
+  skills?: Record<string, number>;
 }
 
 interface User { id: number; ingameName: string; role: string; }
 
 type TabType = "HOME" | "NOTICE" | "CALCULATOR" | "AUCTION";
+
+/**
+ * 🛠️ [패치] 남은 시간 표시 컴포넌트
+ */
+const TimeLeft = ({ endTime, status }: { endTime: string, status: string }) => {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (status !== 'ACTIVE') {
+      setTimeLeft("경매 종료");
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const now = new Date().getTime();
+      const end = new Date(endTime).getTime();
+      const distance = end - now;
+
+      if (distance < 0) {
+        setTimeLeft("경매 종료");
+        return false;
+      } else {
+        const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+        if (d > 0) setTimeLeft(`${d}일 ${h}시간`);
+        else if (h > 0) setTimeLeft(`${h}시간 ${m}분`);
+        else setTimeLeft(`${m}분 ${s}초`);
+        return true;
+      }
+    };
+
+    if (calculateTimeLeft()) {
+      const timer = setInterval(() => { if (!calculateTimeLeft()) clearInterval(timer); }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [endTime, status]);
+
+  return <span className="text-[9px] font-mono text-red-500/90">{timeLeft}</span>;
+};
 
 /**
  * 🛠️ [패치] HomeComponent: 실제 로직이 담긴 컴포넌트
@@ -332,9 +378,20 @@ function HomeComponent() {
                           <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700" alt="" />
                         </div>
                         <div className="p-8">
-                          <h3 className="text-2xl font-bold truncate mb-6 tracking-tighter group-hover:text-cyan-400 transition-colors">{auction.item.name}</h3>
+                          <h3 className="text-xl font-bold truncate mb-2 tracking-tighter group-hover:text-cyan-400 transition-colors">
+                            {auction.enhancementLevel > 0 && <span className="text-cyan-400 mr-1.5">+{auction.enhancementLevel}</span>}
+                            {auction.item.name}
+                          </h3>
+                          <div className="flex items-center flex-wrap gap-1.5 mb-4 text-[10px] font-bold text-zinc-500 min-h-[22px]">
+                            {auction.enchantments && Object.keys(auction.enchantments).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">인챈트 {Object.keys(auction.enchantments).length}개</span>}
+                            {auction.imprint && Object.keys(auction.imprint).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">각인 {Object.keys(auction.imprint).length}개</span>}
+                            {auction.skills && Object.keys(auction.skills).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">스킬 {Object.keys(auction.skills).length}개</span>}
+                          </div>
                           <div className="bg-black/50 p-5 rounded-2xl border border-white/5">
-                            <p className="text-[9px] font-black text-zinc-600 uppercase mb-1">Current Bid</p>
+                            <div className="flex justify-between items-center mb-1">
+                              <p className="text-[9px] font-black text-zinc-600 uppercase">Current Bid</p>
+                              <TimeLeft endTime={auction.endTime} status={auction.status} />
+                            </div>
                             <span className="text-2xl font-black text-yellow-400">{formatGold(auction.currentPrice)}</span>
                           </div>
                         </div>
