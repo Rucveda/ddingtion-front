@@ -239,7 +239,7 @@ export default function AdminDashboard() {
           </Link>
 
           <div className="flex gap-4 items-center">
-             <Link href="/market" onClick={triggerHaptic} className="text-[10px] font-black text-blue-400 border border-blue-500/20 px-5 py-2 rounded-xl hover:bg-blue-500/10 transition-all uppercase tracking-widest">
+             <Link href="/market/AdminTab" onClick={triggerHaptic} className="text-[10px] font-black text-blue-400 border border-blue-500/20 px-5 py-2 rounded-xl hover:bg-blue-500/10 transition-all uppercase tracking-widest">
                 Market Engine
              </Link>
              <Link href="/" onClick={triggerHaptic} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white hover:bg-white/10 border border-white/5 transition-all">

@@ -242,7 +242,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     if (!selectedItem || !form.price) return alert("필수 정보를 입력하세요.");
     setIsLoading(true);
     try {
-      await request('/api/auctions/inject-history', {
+      await request('/api/admin/market/history/inject', {
         method: 'POST',
         body: JSON.stringify({
           itemId: selectedItem.id, price: form.price, tradeDate: form.tradeDate,
