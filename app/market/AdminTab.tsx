@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_BASE_URL } from "@/utils/runtimeConfig";
 import {
   WILD_BASE,
   WILD_SPECIAL,
@@ -202,8 +203,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
 
     setIsLoading(true);
     try {
-      const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
-      const res = await fetch(`${BACKEND_URL}/api/admin/items`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/items`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
         body: formData

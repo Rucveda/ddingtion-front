@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "@/utils/runtimeConfig";
+
 export const request = async (url: string, options: RequestInit = {}) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null; // 💡 앱 전체 호환성을 위해 localStorage로 복구
   
@@ -8,7 +10,7 @@ export const request = async (url: string, options: RequestInit = {}) => {
   };
 
   try {
-    const response = await fetch(`https://ddingtion-back.onrender.com${url}`, { 
+    const response = await fetch(`${API_BASE_URL}${url}`, { 
       ...options, 
       headers 
     });

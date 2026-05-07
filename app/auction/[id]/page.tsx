@@ -6,6 +6,7 @@ import { io, Socket } from "socket.io-client";
 import Link from "next/link";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
+import { SOCKET_URL } from "@/utils/runtimeConfig";
 
 export default function AuctionDetail() {
   const { id } = useParams();
@@ -67,7 +68,7 @@ export default function AuctionDetail() {
     };
     initData();
 
-    const newSocket = io("https://ddingtion-back.onrender.com");
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
     newSocket.emit("join_auction", id);
     newSocket.on("bid_updated", (data) => {

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
-import NoticePopup from "@/components/NoticePopup";
 import PostEditor from "@/app/post/PostEditor";
 import MarketTab from "@/app/market/page";
 
@@ -196,8 +195,6 @@ function HomeComponent() {
 
       <div className="premium-abyss-bg" />
       <div className="bg-texture" />
-      <NoticePopup />
-
       <nav className="sticky top-0 z-[100] border-b border-white/5 bg-black/60 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-6 relative">
           <div className="h-20 flex justify-between items-center">

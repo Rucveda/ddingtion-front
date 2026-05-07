@@ -5,6 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
 import ReviewModal from "./ReviewModal";
+import { SOCKET_URL } from "@/utils/runtimeConfig";
 
 // 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
 const CHAT_OPEN_EVENT = "ddingtion_chat_open";
@@ -155,8 +156,7 @@ export default function ChatWidget() {
     if (!userStr || !token) return;
 
     // 💡 유지보수 패치: 하드코딩된 서버 주소 제거
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
-    const newSocket = io(socketUrl);
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
     fetchRooms();
 

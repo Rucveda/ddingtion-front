@@ -6,6 +6,7 @@ import Link from "next/link";
 import { request } from "@/utils/api"; 
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
+import { SOCKET_URL } from "@/utils/runtimeConfig";
 
 // --- Interfaces ---
 interface Auction { 
@@ -144,8 +145,7 @@ export default function AdminDashboard() {
      * 하드코딩된 주소 대신 환경 변수를 사용합니다. 
      * 환경변수가 없으면 기존 Render 주소를 폴백으로 사용합니다.
      */
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "https://ddingtion-back.onrender.com";
-    const newSocket = io(BACKEND_URL);
+    const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
     
     newSocket.on("new_message", (msg) => {
@@ -173,7 +173,9 @@ export default function AdminDashboard() {
   const sendSupportMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportInput.trim() || !selectedSupportRoom || !socket) return;
-    socket.emit("send_message", { roomId: selectedSupportRoom.id, senderId: adminId, content: supportInput });
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    socket.emit("send_message", { roomId: selectedSupportRoom.id, token, content: supportInput });
     setSupportInput("");
   };
 

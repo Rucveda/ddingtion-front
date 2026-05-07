@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { request } from "@/utils/api"; 
 import { io } from "socket.io-client";
+import { SOCKET_URL } from "@/utils/runtimeConfig";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -37,7 +38,7 @@ export default function NotificationCenter() {
 
     fetchLogs();
 
-    const socket = io("https://ddingtion-back.onrender.com");
+    const socket = io(SOCKET_URL);
     socket.emit("setup_notifications", user.id);
     
     socket.on("outbid_notification", () => {
