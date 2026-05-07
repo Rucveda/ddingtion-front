@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
 import NoticePopup from "@/components/NoticePopup";
@@ -20,6 +20,7 @@ interface Auction {
   enchantments?: Record<string, number>;
   imprint?: Record<string, number>;
   skills?: Record<string, number>;
+  buyNowPrice?: number | string | null;
 }
 
 interface User { id: number; ingameName: string; role: string; }
@@ -73,6 +74,7 @@ const TimeLeft = ({ endTime, status }: { endTime: string, status: string }) => {
  */
 function HomeComponent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -369,35 +371,87 @@ function HomeComponent() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
-                  {filteredAuctions.map((auction) => (
-                    <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} key={auction.id} className="group relative">
-                      <div className="absolute -inset-[1px] bg-gradient-to-b from-white/10 to-transparent rounded-[38px]" />
-                      <div className="relative bg-[#0d0d0f]/70 backdrop-blur-md border border-white/5 rounded-[36px] overflow-hidden group-hover:-translate-y-3 transition-all duration-500 shadow-2xl">
-                        <div className="aspect-square flex items-center justify-center p-12 border-b border-white/5 bg-white/[0.02]">
-                          <img src={getSecureUrl(auction.item.iconUrl)} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform duration-700" alt="" />
-                        </div>
-                        <div className="p-8">
-                          <h3 className="text-xl font-bold truncate mb-2 tracking-tighter group-hover:text-cyan-400 transition-colors">
-                            {auction.enhancementLevel > 0 && <span className="text-cyan-400 mr-1.5">+{auction.enhancementLevel}</span>}
-                            {auction.item.name}
-                          </h3>
-                          <div className="flex items-center flex-wrap gap-1.5 mb-4 text-[10px] font-bold text-zinc-500 min-h-[22px]">
-                            {auction.enchantments && Object.keys(auction.enchantments).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">인챈트 {Object.keys(auction.enchantments).length}개</span>}
-                            {auction.imprint && Object.keys(auction.imprint).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">각인 {Object.keys(auction.imprint).length}개</span>}
-                            {auction.skills && Object.keys(auction.skills).length > 0 && <span className="bg-white/5 px-2 py-0.5 rounded">스킬 {Object.keys(auction.skills).length}개</span>}
-                          </div>
-                          <div className="bg-black/50 p-5 rounded-2xl border border-white/5">
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-[9px] font-black text-zinc-600 uppercase">Current Bid</p>
+                <div className="overflow-x-auto w-full bg-black/40 border border-white/5 rounded-[24px] shadow-2xl backdrop-blur-md custom-scrollbar">
+                  <table className="w-full text-left text-sm text-zinc-300 border-collapse min-w-[800px]">
+                    <thead className="bg-white/[0.05] text-zinc-400 text-[11px] uppercase tracking-[0.1em] border-b border-white/10 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-5 font-black whitespace-nowrap">아이템</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-center">분류</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-center">강화/등급</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-right">현재 입찰가</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-right">즉시 구매가</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-center">판매자</th>
+                        <th className="px-6 py-5 font-black whitespace-nowrap text-right">남은 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {filteredAuctions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-16 text-center text-zinc-500 font-bold">
+                            현재 검색 조건에 맞는 경매가 없습니다.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredAuctions.map((auction) => (
+                          <tr
+                            key={auction.id}
+                            onClick={() => { triggerHaptic(); router.push(`/auction/${auction.id}`); }}
+                            className="hover:bg-white/[0.03] transition-colors cursor-pointer group"
+                          >
+                            <td className="px-6 py-4 flex items-center gap-4">
+                              <div className="w-10 h-10 bg-black/50 rounded-lg flex items-center justify-center border border-white/5 shrink-0 group-hover:border-white/20 transition-all">
+                                <img src={getSecureUrl(auction.item.iconUrl)} className="w-6 h-6 pixel-art" alt="icon" />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-zinc-100 group-hover:text-cyan-400 transition-colors truncate max-w-[200px]">
+                                  {auction.item.name}
+                                </span>
+                                <div className="flex gap-2 mt-1 text-[9px] text-zinc-500 font-bold">
+                                  {auction.enchantments && Object.keys(auction.enchantments).length > 0 && <span>인챈트 {Object.keys(auction.enchantments).length}</span>}
+                                  {auction.imprint && Object.keys(auction.imprint).length > 0 && <span>각인 {Object.keys(auction.imprint).length}</span>}
+                                  {auction.skills && Object.keys(auction.skills).length > 0 && <span>스킬 {Object.keys(auction.skills).length}</span>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-center text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                              {auction.item.category}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              {auction.enhancementLevel > 0 ? (
+                                <span className="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded text-[10px] font-black border border-cyan-500/20">
+                                  +{auction.enhancementLevel}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-700">-</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="font-mono font-black text-yellow-500 text-sm">
+                                {formatGold(Number(auction.currentPrice))}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              {auction.buyNowPrice ? (
+                                <span className="font-mono font-bold text-zinc-300 text-sm">
+                                  {formatGold(Number(auction.buyNowPrice))}
+                                </span>
+                              ) : (
+                                <span className="text-zinc-700">-</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <span className="text-[11px] font-bold text-zinc-400">
+                                {auction.seller?.ingameName || "알 수 없음"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
                               <TimeLeft endTime={auction.endTime} status={auction.status} />
-                            </div>
-                            <span className="text-2xl font-black text-yellow-400">{formatGold(auction.currentPrice)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </motion.div>
