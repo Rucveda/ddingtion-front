@@ -182,44 +182,50 @@ export default function MyPage() {
             </div>
           </section>
 
-          {user.discordVerificationRequired && (
-            <section
-              className={`mb-10 p-8 rounded-[32px] border ${
-                user.discordLinked
-                  ? "border-emerald-500/20 bg-emerald-500/5"
-                  : "border-indigo-500/30 bg-indigo-500/[0.07]"
-              }`}
-            >
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div>
-                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.35em] mb-2">
-                    신뢰 기반 거래
-                  </p>
-                  <h2 className="text-xl font-black text-white tracking-tight mb-2">
-                    디스코드 계정 연동
-                  </h2>
-                  <p className="text-sm text-zinc-400 font-medium leading-relaxed max-w-xl">
-                    {user.discordLinked
-                      ? "디스코드로 인증된 계정입니다. 경매 입찰 및 즉시 구매를 이용할 수 있습니다."
-                      : "입찰·즉시 구매는 디스코드로 인증된 계정만 가능합니다. 아래 버튼으로 본인의 디스코드를 연동해 주세요."}
-                  </p>
-                </div>
-                {!user.discordLinked && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      void handleDiscordLink();
-                    }}
-                    disabled={linkingDiscord}
-                    className="shrink-0 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-[#5865F2] text-white hover:bg-[#4752C4] transition-all disabled:opacity-50 active:scale-[0.98]"
-                  >
-                    {linkingDiscord ? "연결 중…" : "디스코드로 인증"}
-                  </button>
-                )}
+          <section
+            className={`mb-10 p-8 rounded-[32px] border ${
+              user.discordLinked
+                ? "border-emerald-500/20 bg-emerald-500/5"
+                : user.discordVerificationRequired
+                  ? "border-indigo-500/30 bg-indigo-500/[0.07]"
+                  : "border-amber-500/20 bg-amber-500/[0.04]"
+            }`}
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.35em] mb-2">
+                  신뢰 기반 거래
+                </p>
+                <h2 className="text-xl font-black text-white tracking-tight mb-2">
+                  디스코드 계정 연동
+                </h2>
+                <p className="text-sm text-zinc-400 font-medium leading-relaxed max-w-xl">
+                  {user.discordLinked
+                    ? "디스코드로 인증된 계정입니다. 경매 입찰 및 즉시 구매를 이용할 수 있습니다."
+                    : user.discordVerificationRequired
+                      ? "입찰·즉시 구매는 디스코드로 인증된 계정만 가능합니다. 아래 버튼으로 본인의 디스코드를 연동해 주세요."
+                      : "디스코드 인증 UI는 준비되어 있지만, 백엔드 Discord OAuth 환경변수가 아직 모두 활성화되지 않았습니다."}
+                </p>
               </div>
-            </section>
-          )}
+              {!user.discordLinked && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    void handleDiscordLink();
+                  }}
+                  disabled={linkingDiscord || !user.discordVerificationRequired}
+                  className="shrink-0 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-[#5865F2] text-white hover:bg-[#4752C4] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                >
+                  {linkingDiscord
+                    ? "연결 중..."
+                    : user.discordVerificationRequired
+                      ? "디스코드로 인증"
+                      : "서버 설정 확인 필요"}
+                </button>
+              )}
+            </div>
+          </section>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-4 space-y-6">
