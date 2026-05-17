@@ -4,12 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { request } from "@/utils/api"; 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function MyPage() {
   const [user, setUser] = useState<any>(null);
   const [myAuctions, setMyAuctions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [linkingDiscord, setLinkingDiscord] = useState(false);
   const router = useRouter();
 
   const triggerHaptic = useCallback(() => {
@@ -44,6 +45,57 @@ export default function MyPage() {
     };
     fetchAllData();
   }, [router]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get("discord");
+    if (!d) return;
+
+    const reason = params.get("reason") || "";
+    const reasonText: Record<string, string> = {
+      guild: "지정된 디스코드 서버에 가입된 계정만 연동할 수 있습니다.",
+      in_use: "이 디스코드 계정은 이미 다른 사이트 계정에 연결되어 있습니다.",
+      invalid_state: "인증 세션이 만료되었습니다. 다시 시도해 주세요.",
+      missing_params: "디스코드 응답이 올바르지 않습니다.",
+      forbidden: "연동할 수 없는 계정입니다.",
+      server: "서버 오류로 연동에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+    };
+
+    const run = async () => {
+      if (d === "linked") {
+        try {
+          const fresh = await request("/api/auth/me");
+          if (fresh) {
+            setUser(fresh);
+            localStorage.setItem("user", JSON.stringify(fresh));
+          }
+        } catch {
+          /* ignore */
+        }
+        alert("디스코드 계정이 연동되었습니다. 이제 경매 입찰·즉시 구매를 이용할 수 있습니다.");
+      } else if (d === "error") {
+        alert(reasonText[reason] || "디스코드 연동에 실패했습니다.");
+      }
+      router.replace("/mypage");
+    };
+    void run();
+  }, [router]);
+
+  const handleDiscordLink = useCallback(async () => {
+    setLinkingDiscord(true);
+    try {
+      const data = await request("/api/auth/discord/authorize");
+      if (data?.url) {
+        window.location.href = data.url as string;
+        return;
+      }
+      alert("인증 주소를 받지 못했습니다.");
+    } catch (e: any) {
+      alert(e?.message || "디스코드 연동을 시작할 수 없습니다.");
+    } finally {
+      setLinkingDiscord(false);
+    }
+  }, []);
 
   if (loading) return (
     <div className="min-h-screen bg-[#010101] flex items-center justify-center">
@@ -120,10 +172,54 @@ export default function MyPage() {
                 <span className={`text-[10px] font-black px-3 py-1 rounded-md border ${repUI.color} ${repUI.bg} border-current/20 tracking-widest`}>
                   {repUI.label}
                 </span>
+                {user.discordLinked && (
+                  <span className="text-[10px] font-black px-3 py-1 rounded-md border border-indigo-500/40 text-indigo-300 bg-indigo-500/10 tracking-widest">
+                    DISCORD 인증됨
+                  </span>
+                )}
               </div>
               <p className="text-zinc-600 font-bold text-xs uppercase tracking-[0.3em]">계정 식별번호: {user.loginId}</p>
             </div>
           </section>
+
+          {user.discordVerificationRequired && (
+            <section
+              className={`mb-10 p-8 rounded-[32px] border ${
+                user.discordLinked
+                  ? "border-emerald-500/20 bg-emerald-500/5"
+                  : "border-indigo-500/30 bg-indigo-500/[0.07]"
+              }`}
+            >
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div>
+                  <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.35em] mb-2">
+                    신뢰 기반 거래
+                  </p>
+                  <h2 className="text-xl font-black text-white tracking-tight mb-2">
+                    디스코드 계정 연동
+                  </h2>
+                  <p className="text-sm text-zinc-400 font-medium leading-relaxed max-w-xl">
+                    {user.discordLinked
+                      ? "디스코드로 인증된 계정입니다. 경매 입찰 및 즉시 구매를 이용할 수 있습니다."
+                      : "입찰·즉시 구매는 디스코드로 인증된 계정만 가능합니다. 아래 버튼으로 본인의 디스코드를 연동해 주세요."}
+                  </p>
+                </div>
+                {!user.discordLinked && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      void handleDiscordLink();
+                    }}
+                    disabled={linkingDiscord}
+                    className="shrink-0 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest bg-[#5865F2] text-white hover:bg-[#4752C4] transition-all disabled:opacity-50 active:scale-[0.98]"
+                  >
+                    {linkingDiscord ? "연결 중…" : "디스코드로 인증"}
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-4 space-y-6">

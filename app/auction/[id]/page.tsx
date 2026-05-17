@@ -19,7 +19,18 @@ export default function AuctionDetail() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isError, setIsError] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null); // 💡 패치: 유저 상태 관리 추가
+  const [tradePolicyLoaded, setTradePolicyLoaded] = useState(false);
   const GAME_MAX_PRICE = 10000000000;
+
+  const needsDiscordForTrade =
+    tradePolicyLoaded &&
+    Boolean(currentUser?.discordVerificationRequired) &&
+    !currentUser?.discordLinked;
+
+  const verifyingSession =
+    typeof window !== "undefined" &&
+    Boolean(localStorage.getItem("token")) &&
+    !tradePolicyLoaded;
 
   const getSecureUrl = (url: string) => url?.replace("http://", "https://") || "";
 
@@ -44,6 +55,31 @@ export default function AuctionDetail() {
     const userStr = localStorage.getItem("user");
     if (userStr) setCurrentUser(JSON.parse(userStr));
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setTradePolicyLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const fresh = await request("/api/auth/me");
+        if (!cancelled && fresh) {
+          setCurrentUser(fresh);
+          localStorage.setItem("user", JSON.stringify(fresh));
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) setTradePolicyLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const isSeller = auction && currentUser && Number(auction.sellerId) === Number(currentUser.id);
 
@@ -74,6 +110,9 @@ export default function AuctionDetail() {
     newSocket.on("bid_updated", (data) => {
       setAuction((prev: any) => ({ ...prev, currentPrice: data.newPrice, lastBidder: data.bidderName }));
     });
+    newSocket.on("chat_error", (data: { message?: string }) => {
+      if (data?.message) alert(data.message);
+    });
     newSocket.on("auction_finished", (data) => {
       alert(`경매 종료. 낙찰자: ${data.winner}`);
       router.replace("/?tab=AUCTION");
@@ -101,6 +140,14 @@ export default function AuctionDetail() {
   const handleBid = () => {
     triggerHaptic();
     if (!currentUser) return router.push("/login");
+    if (verifyingSession) {
+      alert("계정 인증 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (needsDiscordForTrade) {
+      alert("경매 입찰은 디스코드 인증이 필요합니다. 마이페이지에서 연동해 주세요.");
+      return router.push("/mypage");
+    }
     if (isSeller) return alert("본인이 등록한 물품에는 입찰할 수 없습니다.");
     if (Number(bidAmount) <= Number(auction.currentPrice)) return alert("현재가보다 높은 금액을 입력해야 합니다.");
     const token = localStorage.getItem("token"); // 로그인 시 저장되는 JWT 토큰
@@ -114,6 +161,14 @@ export default function AuctionDetail() {
     if (!currentUser) {
       alert("로그인이 필요한 서비스입니다.");
       return router.push("/login");
+    }
+    if (verifyingSession) {
+      alert("계정 인증 정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+    if (needsDiscordForTrade) {
+      alert("즉시 구매는 디스코드 인증이 필요합니다. 마이페이지에서 연동해 주세요.");
+      return router.push("/mypage");
     }
 
     // 판매자 본인 여부 확인
@@ -318,7 +373,22 @@ export default function AuctionDetail() {
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 입찰 메뉴
               </h2>
 
-              <div className="space-y-8">
+                <div className="space-y-8">
+                {(needsDiscordForTrade || verifyingSession) && (
+                  <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-[11px] font-bold text-indigo-200 leading-relaxed">
+                    {verifyingSession
+                      ? "계정 인증 상태를 확인하는 중입니다."
+                      : (
+                        <>
+                          디스코드 인증이 필요합니다.{" "}
+                          <Link href="/mypage" className="underline text-white">
+                            마이페이지
+                          </Link>
+                          에서 연동 후 입찰·즉시 구매를 이용할 수 있습니다.
+                        </>
+                      )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <div className="flex items-baseline gap-3">
                     <span className="text-[11px] font-black text-red-500 uppercase tracking-widest">남은 경매 시간 :</span>
@@ -345,7 +415,7 @@ export default function AuctionDetail() {
                       <input
                         type="text"
                         inputMode="numeric"
-                        disabled={isSeller || isProcessing}
+                        disabled={isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
                         value={Number(bidAmount).toLocaleString()}
                         onChange={handleBidChange}
                         className={`w-full bg-transparent text-4xl font-mono font-black text-white outline-none min-w-0 ${isError ? 'shake-active' : ''}`}
@@ -356,23 +426,23 @@ export default function AuctionDetail() {
 
                   <div className="grid grid-cols-3 gap-2">
                     {[10, 20, 50].map(pct => (
-                      <button key={pct} disabled={isSeller || isProcessing} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}%</button>
+                      <button key={pct} disabled={isSeller || isProcessing || needsDiscordForTrade || verifyingSession} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="py-3 rounded-xl font-black text-[10px] bg-white/5 border border-white/5 text-zinc-500 hover:text-white transition-all active:scale-95 whitespace-nowrap">+{pct}%</button>
                     ))}
                   </div>
                 </div>
 
                 <div className="space-y-4 pt-8">
-                  <button
-                    disabled={isSeller || isProcessing}
+                    <button
+                    disabled={isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
                     onClick={handleBid}
-                    className={`w-full font-black py-6 rounded-2xl text-base uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${isSeller ? "bg-zinc-900 text-zinc-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-900/20"}`}
+                    className={`w-full font-black py-6 rounded-2xl text-base uppercase tracking-[0.2em] transition-all shadow-xl active:scale-95 ${isSeller || needsDiscordForTrade || verifyingSession ? "bg-zinc-900 text-zinc-700 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-500 shadow-blue-900/20"}`}
                   >
-                    {isSeller ? "내 물품 입찰 불가" : "경매 입찰 신청"}
+                    {isSeller ? "내 물품 입찰 불가" : needsDiscordForTrade ? "디스코드 인증 필요" : verifyingSession ? "인증 확인 중…" : "경매 입찰 신청"}
                   </button>
 
                   {auction.buyNowPrice && auction.status === 'ACTIVE' && (
                     <button
-                      disabled={isSeller || isProcessing}
+                      disabled={isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
                       onClick={handleBuyNow}
                       className="w-full font-black py-4 rounded-xl text-[11px] uppercase tracking-widest transition-all bg-white/5 text-zinc-500 hover:text-white border border-white/5 active:scale-95 whitespace-nowrap"
                     >
