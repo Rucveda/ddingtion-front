@@ -15,8 +15,13 @@ export default function PostEditor({ userRole }: { userRole: string }) {
   const isAdmin = userRole === "ADMIN";
 
   const fetchPosts = useCallback(async () => {
-    const data = await request("/api/posts");
-    if (Array.isArray(data)) setPosts(data);
+    try {
+      const data = await request("/api/posts");
+      if (Array.isArray(data)) setPosts(data);
+    } catch (err) {
+      console.error("게시글 로드 실패:", err);
+      setPosts([]);
+    }
   }, []);
 
   useEffect(() => {

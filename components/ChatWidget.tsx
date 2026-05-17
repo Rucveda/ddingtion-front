@@ -227,24 +227,22 @@ export default function ChatWidget() {
             <header className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               {selectedRoom ? (
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setSelectedRoom(null)} className="text-[11px] font-black text-zinc-500 hover:text-white uppercase tracking-widest transition-none">← 뒤로</button>
+                  <button onClick={() => setSelectedRoom(null)} className="text-xs font-black text-zinc-400 hover:text-white tracking-tight transition-none">← 뒤로</button>
                   <div className="flex flex-col">
-                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-tighter">Connected</span>
-                    <span className="text-[13px] font-bold text-zinc-200">
+                    <span className="text-sm font-bold text-zinc-200">
                       {selectedRoom.isAdminChat ? "고객지원팀" : (selectedRoom.sellerId === user.id ? selectedRoom.buyer?.ingameName : selectedRoom.seller?.ingameName)}
                     </span>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <span className="text-[11px] font-black text-blue-500 uppercase tracking-[0.3em] block mb-1 font-mono">Chat Log</span>
-                  <h3 className="text-[13px] font-bold text-zinc-200">채팅 목록</h3>
+                  <h3 className="text-sm font-bold text-zinc-100">채팅 목록</h3>
                 </div>
               )}
               {selectedRoom && !selectedRoom.isAdminChat && (
                 <div className="flex gap-4 items-center">
-                  <button onClick={() => setShowReport(true)} className="text-[9px] font-black text-red-500/50 hover:text-red-500 uppercase transition-colors">신고</button>
-                  <button onClick={closeTrade} className="text-[9px] font-black text-zinc-500 hover:text-white uppercase transition-colors">종료</button>
+                  <button onClick={() => setShowReport(true)} className="text-[11px] font-black text-red-400/70 hover:text-red-400 transition-colors">신고</button>
+                  <button onClick={closeTrade} className="text-[11px] font-black text-zinc-400 hover:text-white transition-colors">종료</button>
                 </div>
               )}
               {!selectedRoom && <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white transition-colors">✕</button>}
@@ -255,23 +253,17 @@ export default function ChatWidget() {
                 <div className="space-y-4">
                   <div onClick={startAdminChat} className="p-5 bg-blue-500/10 border border-blue-500/30 rounded-2xl cursor-pointer hover:bg-blue-500/20 transition-all group shadow-lg">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-blue-600/30 rounded-xl flex items-center justify-center text-2xl border border-blue-600/40">🛡️</div>
+                      <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center text-xs font-black text-blue-200 border border-blue-600/30">상담</div>
                       <div>
-                        <p className="text-[14px] font-black text-blue-400 uppercase tracking-tight">관리자 1:1 상담</p>
-                        <p className="text-[11px] text-zinc-500 font-bold">운영 정책 및 거래 이슈 문의</p>
+                        <p className="text-sm font-black text-blue-300 tracking-tight">관리자 1:1 상담</p>
+                        <p className="text-xs text-zinc-400 font-bold">운영 정책 및 거래 이슈 문의</p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 opacity-20 py-2">
-                    <div className="h-[1px] flex-1 bg-white/30" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">활성화 채널</span>
-                    <div className="h-[1px] flex-1 bg-white/30" />
-                  </div>
-
                   {safeRooms.length === 0 ? (
-                    <div className="text-center py-20 opacity-30">
-                      <p className="text-[11px] text-zinc-500 font-black uppercase tracking-[0.4em]">거래 신호 없음</p>
+                    <div className="text-center py-20">
+                      <p className="text-xs text-zinc-500 font-bold">진행 중인 거래 채팅이 없습니다.</p>
                     </div>
                   ) : (
                     safeRooms.map(room => (
@@ -281,12 +273,12 @@ export default function ChatWidget() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="font-bold text-[14px] text-zinc-200 truncate leading-none">
+                            <span className="font-bold text-sm text-zinc-200 truncate leading-none">
                               {room.sellerId === user.id ? room.buyer?.ingameName : room.seller?.ingameName}
                             </span>
-                            <span className="text-[9px] text-blue-500 font-mono font-black uppercase">Active</span>
+                            <span className="text-[11px] text-blue-400 font-bold">진행 중</span>
                           </div>
-                          <p className="text-[12px] text-zinc-500 truncate">{room.messages?.[0]?.content || "데이터 동기화됨"}</p>
+                          <p className="text-xs text-zinc-400 truncate">{room.messages?.[0]?.content || "최근 메시지가 없습니다"}</p>
                         </div>
                       </div>
                     ))
@@ -303,7 +295,7 @@ export default function ChatWidget() {
                       }`}>
                         {msg.content}
                       </div>
-                      <span className="text-[9px] text-zinc-700 font-black mt-2 px-1 uppercase tracking-tighter">{new Date(msg.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                      <span className="text-[11px] text-zinc-500 font-bold mt-2 px-1">{new Date(msg.createdAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                     </div>
                   ))}
                   <div ref={scrollRef} />
@@ -317,7 +309,7 @@ export default function ChatWidget() {
                   value={input} 
                   onChange={(e) => setInput(e.target.value)} 
                   placeholder="메시지 전송..." 
-                  className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-[13px] font-bold outline-none focus:border-blue-500/50 transition-all text-zinc-200 placeholder:text-zinc-800" 
+                  className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-500/50 transition-all text-zinc-200 placeholder:text-zinc-500" 
                 />
                 <button className="w-12 h-12 bg-white text-black rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -368,18 +360,14 @@ export default function ChatWidget() {
         onClick={() => { triggerHaptic(); setIsOpen(!isOpen); }} 
         className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all shadow-xl group backdrop-blur-md"
       >
-        <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'rotate-90 scale-90' : 'opacity-40 group-hover:opacity-100'}`}>
-           <div className={`w-6 h-6 border-2 rounded-sm rotate-45 flex items-center justify-center transition-all ${totalUnread > 0 && !isOpen ? 'border-blue-600 animate-pulse' : 'border-zinc-500'}`}>
-             {isOpen ? (
-                <span className="text-[10px] -rotate-45 font-black text-white">✕</span>
-              ) : (
-                <div className="-rotate-45 mb-0.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill={totalUnread > 0 ? "#3b82f6" : "#71717a"} xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/>
-                  </svg>
-                </div>
-              )}
-           </div>
+        <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'scale-90' : 'opacity-50 group-hover:opacity-100'} ${totalUnread > 0 && !isOpen ? 'animate-pulse' : ''}`}>
+          {isOpen ? (
+            <span className="text-sm font-black text-white">✕</span>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={totalUnread > 0 ? "#3b82f6" : "#71717a"} xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/>
+            </svg>
+          )}
         </div>
         
         {totalUnread > 0 && !isOpen && (

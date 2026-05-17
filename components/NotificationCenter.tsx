@@ -10,6 +10,8 @@ import { SOCKET_URL } from "@/utils/runtimeConfig";
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const router = useRouter();
 
   const fetchLogs = useCallback(async () => {
@@ -33,10 +35,16 @@ export default function NotificationCenter() {
     const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     
+    queueMicrotask(() => {
+      setIsReady(true);
+      setHasSession(Boolean(userStr && token));
+    });
     if (!userStr || !token) return;
     const user = JSON.parse(userStr);
 
-    fetchLogs();
+    queueMicrotask(() => {
+      fetchLogs();
+    });
 
     const socket = io(SOCKET_URL);
     socket.emit("setup_notifications", user.id);
@@ -50,6 +58,8 @@ export default function NotificationCenter() {
 
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const unreadCount = safeNotifications.filter(n => !n.isRead).length;
+
+  if (!isReady || !hasSession) return null;
 
   // 💡 [핵심 패치] 알림 클릭 시 읽음 처리 및 UI 즉시 반영
   const handleNotificationClick = async (e: React.MouseEvent, notification: any) => {
@@ -102,8 +112,7 @@ export default function NotificationCenter() {
           >
             <div className="flex justify-between items-center p-6 pb-4 border-b border-white/5 bg-white/[0.02]">
               <div>
-                <span className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] block mb-1 font-mono">Archive Log</span>
-                <h3 className="text-[13px] font-bold text-zinc-200 uppercase tracking-tight">알림 센터</h3>
+                <h3 className="text-sm font-bold text-zinc-100 tracking-tight">알림 센터</h3>
               </div>
               <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white transition-colors">✕</button>
             </div>
@@ -111,7 +120,7 @@ export default function NotificationCenter() {
             <div className="max-h-72 overflow-y-auto space-y-2 p-4 custom-scrollbar">
               {safeNotifications.length === 0 ? (
                 <div className="text-center py-16">
-                  <p className="text-[11px] text-zinc-700 font-black uppercase tracking-[0.4em]">알림 없음</p>
+                  <p className="text-xs text-zinc-500 font-bold">알림 없음</p>
                 </div>
               ) : (
                 safeNotifications.map((n) => (
@@ -120,12 +129,12 @@ export default function NotificationCenter() {
                     onClick={(e) => handleNotificationClick(e, n)}
                     className={`group relative p-4 rounded-2xl cursor-pointer transition-all border ${
                       n.isRead 
-                        ? 'border-white/5 bg-transparent opacity-30 grayscale' 
+                        ? 'border-white/5 bg-transparent opacity-60' 
                         : 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.05)]'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className={`text-[8px] font-black px-2 py-0.5 rounded-md border ${n.isRead ? 'border-zinc-800 text-zinc-800' : 'border-red-500/40 text-red-500'} uppercase tracking-widest`}>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${n.isRead ? 'border-zinc-700 text-zinc-500' : 'border-red-500/40 text-red-500'} tracking-tight`}>
                         {n.type === 'OUTBID' ? '상위 입찰' : n.type}
                       </span>
                       <button 
@@ -135,8 +144,8 @@ export default function NotificationCenter() {
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12"/></svg>
                       </button>
                     </div>
-                    <p className={`text-[13px] leading-snug tracking-tight ${n.isRead ? 'text-zinc-500' : 'text-zinc-200 font-bold'}`}>{n.message}</p>
-                    <p className="text-[9px] text-zinc-700 mt-2 font-mono">{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className={`text-sm leading-snug tracking-tight ${n.isRead ? 'text-zinc-500' : 'text-zinc-200 font-bold'}`}>{n.message}</p>
+                    <p className="text-[11px] text-zinc-500 mt-2 font-mono">{new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 ))
               )}
@@ -145,7 +154,7 @@ export default function NotificationCenter() {
             {safeNotifications.length > 0 && (
               <button 
                 onClick={clearAll}
-                className="w-full py-4 bg-white/[0.02] hover:bg-red-900/20 text-[10px] font-black text-zinc-600 hover:text-red-500 transition-all border-t border-white/5 uppercase tracking-[0.2em]"
+                className="w-full py-4 bg-white/[0.02] hover:bg-red-900/20 text-xs font-black text-zinc-500 hover:text-red-500 transition-all border-t border-white/5 tracking-tight"
               >
                 모든 기록 파기
               </button>
@@ -158,19 +167,15 @@ export default function NotificationCenter() {
         onClick={() => setIsOpen(!isOpen)}
         className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all shadow-xl group backdrop-blur-md"
       >
-        <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'rotate-90 scale-90' : 'opacity-40 group-hover:opacity-100'}`}>
-           <div className={`w-6 h-6 border-2 rounded-sm rotate-45 flex items-center justify-center transition-all ${unreadCount > 0 && !isOpen ? 'border-red-600 animate-pulse' : 'border-zinc-500'}`}>
-              {isOpen ? (
-                <span className="text-[10px] -rotate-45 font-black text-white">✕</span>
-              ) : (
-                <div className="-rotate-45">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill={unreadCount > 0 ? "#ef4444" : "#71717a"} xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h15s-3-2-3-9z" />
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-              )}
-           </div>
+        <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'scale-90' : 'opacity-50 group-hover:opacity-100'} ${unreadCount > 0 && !isOpen ? 'animate-pulse' : ''}`}>
+          {isOpen ? (
+            <span className="text-sm font-black text-white">✕</span>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={unreadCount > 0 ? "#ef4444" : "#71717a"} xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h15s-3-2-3-9z" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
         </div>
         
         {unreadCount > 0 && !isOpen && (

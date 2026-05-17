@@ -314,8 +314,8 @@ export default function MyPage() {
         </motion.div>
       </main>
 
-      <footer className="mt-20 border-t border-white/5 py-12 opacity-30 text-center">
-        <p className="text-[10px] font-black uppercase tracking-[0.5em]">DDINGTION PROTOCOL // 2026</p>
+      <footer className="mt-20 border-t border-white/5 py-12 text-center">
+        <p className="text-xs font-bold text-zinc-500">© 2026 DDINGTION</p>
       </footer>
     </div>
   );

@@ -457,8 +457,8 @@ export default function AuctionDetail() {
         </motion.div>
       </main>
 
-      <footer className="mt-20 border-t border-white/5 py-12 opacity-30 text-center relative z-10">
-        <div className="text-[10px] font-black uppercase tracking-[0.5em]">DDINGTION PROTOCOL // 2026 // VERSION 2.1</div>
+      <footer className="mt-20 border-t border-white/5 py-12 text-center relative z-10">
+        <div className="text-xs font-bold text-zinc-500">© 2026 DDINGTION</div>
       </footer>
     </div>
   );

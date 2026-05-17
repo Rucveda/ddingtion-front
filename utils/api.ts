@@ -1,17 +1,22 @@
 import { API_BASE_URL } from "@/utils/runtimeConfig";
 
-export const request = async (url: string, options: RequestInit = {}) => {
+type RequestOptions = RequestInit & {
+  redirectOnNetworkError?: boolean;
+};
+
+export const request = async (url: string, options: RequestOptions = {}) => {
+  const { redirectOnNetworkError = false, ...fetchOptions } = options;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null; // 💡 앱 전체 호환성을 위해 localStorage로 복구
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   };
 
   try {
     const response = await fetch(`${API_BASE_URL}${url}`, { 
-      ...options, 
+      ...fetchOptions, 
       headers 
     });
 
@@ -58,7 +63,7 @@ export const request = async (url: string, options: RequestInit = {}) => {
       error instanceof TypeError ||
       (error instanceof Error && /failed to fetch|networkerror/i.test(error.message));
 
-    if (typeof window !== 'undefined' && isNetwork) {
+    if (typeof window !== 'undefined' && isNetwork && redirectOnNetworkError) {
       if (!window.location.pathname.includes('/server-error')) {
         window.location.href = '/server-error';
       }

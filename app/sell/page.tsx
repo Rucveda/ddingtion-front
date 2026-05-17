@@ -92,7 +92,12 @@ export default function SellItem() {
   }, []);
 
   useEffect(() => {
-    request("/api/auctions/items").then(data => Array.isArray(data) && setDbItems(data));
+    request("/api/auctions/items")
+      .then(data => Array.isArray(data) && setDbItems(data))
+      .catch(err => {
+        console.error("아이템 목록 로드 실패:", err);
+        setDbItems([]);
+      });
   }, []);
 
   const handleSelectItem = (item: Item) => {
@@ -457,8 +462,8 @@ export default function SellItem() {
         </motion.form>
       </main>
 
-      <footer className="mt-16 border-t border-white/5 py-10 opacity-30 text-center">
-        <div className="text-[10px] font-black uppercase tracking-[0.4em]">DDINGTION PROTOCOL // 2026 // VERSION 2.1</div>
+      <footer className="mt-16 border-t border-white/5 py-10 text-center">
+        <div className="text-xs font-bold text-zinc-500">© 2026 DDINGTION</div>
       </footer>
     </div>
   );

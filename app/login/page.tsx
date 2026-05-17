@@ -91,10 +91,10 @@ export default function LoginPage() {
       <div className="premium-abyss-bg" />
       <div className="bg-texture" />
 
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center relative z-10">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center relative z-10">
           <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
-            <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
+            <span className="text-2xl md:text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
               <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
               <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
               <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
@@ -105,43 +105,43 @@ export default function LoginPage() {
         </div>
       </nav>
 
-      <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-6 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-[400px]"
         >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black tracking-tighter uppercase">로그인</h2>
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="text-3xl font-black tracking-tighter uppercase text-zinc-100">로그인</h2>
           </div>
 
           <div className="relative">
             {/* 💡 onSubmit 핸들러가 엔터키를 감지합니다. */}
             <form 
               onSubmit={handleLogin} 
-              className="flex flex-col space-y-6 bg-white/[0.02] backdrop-blur-3xl p-10 rounded-[40px] border border-white/5 shadow-2xl"
+              className="flex flex-col space-y-6 bg-white/[0.03] backdrop-blur-3xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl"
             >
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">아이디</label>
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">아이디</label>
                 <input 
                   required
                   autoFocus
                   type="text"
                   autoComplete="off"
                   onKeyDown={handleKeyDown} // 💡 개별 입력창에서도 엔터 감지
-                  className="w-full bg-white/[0.03] border border-white/10 p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/30 outline-none transition-all font-bold text-lg"
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg"
                   value={loginId}
                   onChange={handleInputChange(setLoginId)}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">비밀번호</label>
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">비밀번호</label>
                 <input 
                   required
                   type="password"
                   onKeyDown={handleKeyDown} // 💡 개별 입력창에서도 엔터 감지
-                  className="w-full bg-white/[0.03] border border-white/10 p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/30 outline-none transition-all font-bold text-lg"
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg"
                   value={password}
                   onChange={handleInputChange(setPassword)}
                 />
@@ -150,7 +150,7 @@ export default function LoginPage() {
               <button 
                 type="submit" // 💡 submit 타입은 엔터키를 눌렀을 때 form을 제출시킵니다.
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-4"
+                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-4 sm:py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-base sm:text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-2 sm:mt-4"
               >
                 {isLoading ? "접속 중..." : "로그인"}
               </button>
@@ -169,7 +169,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/register" onClick={triggerHaptic} className="text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
+            <Link href="/register" onClick={triggerHaptic} className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
               계정 생성하기
             </Link>
           </div>

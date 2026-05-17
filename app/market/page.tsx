@@ -48,11 +48,16 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
 
   useEffect(() => {
     // 아이템 리스트 로드
-    request("/api/auctions/items").then(data => {
-      if (Array.isArray(data)) {
-        setDbItems(data);
-      }
-    });
+    request("/api/auctions/items")
+      .then(data => {
+        if (Array.isArray(data)) {
+          setDbItems(data);
+        }
+      })
+      .catch(err => {
+        console.error("아이템 목록 로드 실패:", err);
+        setDbItems([]);
+      });
 
     // 유저 권한 확인
     const savedUser = localStorage.getItem("user");
@@ -87,34 +92,34 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
         `}</style>
 
         {/* 🛠️ 메인 페이지와 통합되었으므로 상단바, 로고, X버튼을 모두 제거한 레이아웃입니다. */}
-        <main className="max-w-7xl mx-auto py-4 px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <main className="max-w-7xl mx-auto py-4 px-4 sm:px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 items-start">
             
             {/* 왼쪽 사이드바: 아이템 리스트 */}
-            <aside className="lg:col-span-3 w-full sticky top-32">
+            <aside className="lg:col-span-3 w-full lg:sticky lg:top-32">
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-white/[0.02] border border-white/5 p-5 rounded-[32px] backdrop-blur-md shadow-2xl"
+                className="bg-white/[0.03] border border-white/10 p-4 md:p-5 rounded-[28px] md:rounded-[32px] backdrop-blur-md shadow-2xl"
               >
-                <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4 flex items-center gap-2 px-1">
+                <div className="text-[10px] font-black text-zinc-300 uppercase tracking-widest mb-4 flex items-center gap-2 px-1">
                   <div className="w-1 h-3 bg-blue-600 rounded-full" /> 아이템 선택
                 </div>
                 
                 <input 
                   type="text" 
                   placeholder="아이템 이름 입력..." 
-                  className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl text-xs font-bold outline-none focus:border-blue-500/50 transition-all mb-4 placeholder:text-zinc-800"
+                  className="w-full bg-black/40 border border-white/10 p-4 rounded-2xl text-sm md:text-xs font-bold outline-none focus:border-blue-500/50 transition-all mb-4 placeholder:text-zinc-500"
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)}
                 />
 
-                <div className="max-h-[60vh] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                <div className="max-h-[40vh] lg:max-h-[60vh] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
                   {filteredItems.map(item => (
                     <button 
                       key={item.id}
                       onClick={() => handleSelectItem(item)}
-                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all border ${selectedItem?.id === item.id ? "bg-blue-600/10 border-blue-500/40 text-white shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "bg-white/[0.02] border-transparent text-zinc-500 hover:bg-white/5"}`}
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all border ${selectedItem?.id === item.id ? "bg-blue-600/10 border-blue-500/40 text-white shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "bg-white/[0.02] border-transparent text-zinc-300 hover:bg-white/5"}`}
                     >
                       <div className="w-7 h-7 flex items-center justify-center shrink-0">
                         <img src={getSecureUrl(item.iconUrl)} className="w-full h-full object-contain pixel-art" alt="" />
@@ -123,7 +128,10 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
                     </button>
                   ))}
                   {filteredItems.length === 0 && (
-                    <div className="text-center py-10 opacity-20 text-[10px] font-black uppercase tracking-widest">No Items Found</div>
+                    <div className="text-center py-10 text-xs font-bold text-zinc-400">
+                      아이템이 없습니다.
+                      <div className="mt-2 text-[11px] font-medium text-zinc-500">서버 연결 또는 검색어를 확인해 주세요.</div>
+                    </div>
                   )}
                 </div>
               </motion.div>
@@ -141,8 +149,8 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
                   className="w-full"
                 >
                   {/* 내부 컨텐츠 박스 */}
-                  <section className="bg-white/[0.01] border border-white/5 p-6 md:p-10 rounded-[48px] shadow-2xl backdrop-blur-md min-h-[75vh] flex flex-col w-full overflow-hidden">
-                    {selectedItem || activeTab === "ETC" || activeTab === "ADMIN" ? (
+                  <section className="bg-white/[0.02] border border-white/10 p-5 md:p-10 rounded-[32px] md:rounded-[48px] shadow-2xl backdrop-blur-md min-h-[520px] md:min-h-[75vh] flex flex-col w-full overflow-hidden">
+                    {selectedItem || activeTab === "ADMIN" ? (
                       <div className="w-full h-full">
                         {activeTab === "SEARCH" && <SearchTab selectedItem={selectedItem} />}
                         {activeTab === "CALC" && <CalcTab selectedItem={selectedItem} />}
@@ -158,12 +166,10 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
                       </div>
                     ) : (
                       /* 아이템 미선택 시 가이드 화면 */
-                      <div className="flex-1 flex flex-col items-center justify-center opacity-20 py-32">
-                        <div className="w-16 h-16 border-2 border-zinc-700 rotate-45 flex items-center justify-center mb-8">
-                           <div className="w-2 h-2 bg-zinc-700 rounded-full animate-pulse" />
-                        </div>
-                        <h3 className="text-xs font-black tracking-[0.4em] uppercase text-center mb-2">Market Intelligence</h3>
-                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center px-8">분석할 아이템을 왼쪽 리스트에서 선택해주세요</p>
+                      <div className="flex-1 flex items-center justify-center py-24 md:py-32 text-center">
+                        <p className="max-w-xs text-sm font-bold text-zinc-400 leading-relaxed px-4">
+                          분석할 아이템을 왼쪽 리스트에서 선택해주세요
+                        </p>
                       </div>
                     )}
                   </section>
@@ -173,9 +179,6 @@ function MarketIntelligenceContent({ initialTab = "SEARCH" }: MarketTabProps) {
           </div>
         </main>
 
-        <footer className="mt-20 border-t border-white/5 py-12 opacity-20 text-center">
-          <p className="text-[9px] font-black uppercase tracking-[0.5em]">DDINGTION CALCULATOR 2026</p>
-        </footer>
       </div>
     </MarketProvider>
   );

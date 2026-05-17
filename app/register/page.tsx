@@ -65,10 +65,10 @@ export default function Register() {
       <div className="bg-texture" />
 
       {/* 상단 네비게이션: 로그인과 동일하게 로고만 */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center relative z-10">
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center relative z-10">
           <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
-            <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
+            <span className="text-2xl md:text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
               <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
               <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
               <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
@@ -80,29 +80,29 @@ export default function Register() {
       </nav>
 
       {/* 중앙 메인 컨텐츠 */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-6 relative z-10">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-[400px]"
         >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black tracking-tighter uppercase">회원가입</h2>
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="text-3xl font-black tracking-tighter uppercase text-zinc-100">회원가입</h2>
           </div>
 
           <div className="relative">
             <form 
               onSubmit={handleSubmit} 
-              className="space-y-6 bg-white/[0.02] backdrop-blur-3xl p-10 rounded-[40px] border border-white/5 shadow-2xl"
+              className="space-y-6 bg-white/[0.03] backdrop-blur-3xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl"
             >
               {/* 아이디 */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">아이디</label>
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">아이디</label>
                 <input 
                   required
                   type="text"
                   autoComplete="off"
-                  className="w-full bg-white/[0.03] border border-white/10 p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/30 outline-none transition-all font-bold text-lg" 
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
                   value={form.loginId}
                   onChange={handleInputChange("loginId")} 
                 />
@@ -110,11 +110,11 @@ export default function Register() {
 
               {/* 비밀번호 */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">비밀번호</label>
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">비밀번호</label>
                 <input 
                   required
                   type="password"
-                  className="w-full bg-white/[0.03] border border-white/10 p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/30 outline-none transition-all font-bold text-lg" 
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
                   value={form.password}
                   onChange={handleInputChange("password")} 
                 />
@@ -122,11 +122,11 @@ export default function Register() {
 
               {/* 인게임 닉네임 (닉네임은 한글 허용 가능성이 있어 필터 제외) */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-2">인게임 닉네임</label>
+                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">인게임 닉네임</label>
                 <input 
                   required
                   type="text"
-                  className="w-full bg-white/[0.03] border border-white/10 p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/30 outline-none transition-all font-bold text-lg" 
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
                   value={form.ingameName}
                   onChange={handleInputChange("ingameName")} 
                 />
@@ -135,7 +135,7 @@ export default function Register() {
               <button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-4"
+                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-4 sm:py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-base sm:text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-2 sm:mt-4"
               >
                 {isLoading ? "가입 중..." : "회원가입"}
               </button>
@@ -143,7 +143,7 @@ export default function Register() {
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/login" onClick={triggerHaptic} className="text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
+            <Link href="/login" onClick={triggerHaptic} className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
               이미 계정이 있으신가요?
             </Link>
           </div>
