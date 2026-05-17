@@ -206,6 +206,11 @@ export default function MyPage() {
                       ? "입찰·즉시 구매는 디스코드로 인증된 계정만 가능합니다. 아래 버튼으로 본인의 디스코드를 연동해 주세요."
                       : "디스코드 인증 UI는 준비되어 있지만, 백엔드 Discord OAuth 환경변수가 아직 모두 활성화되지 않았습니다."}
                 </p>
+                {!user.discordLinked && !user.discordVerificationRequired && user.discordConfig?.missing?.length > 0 && (
+                  <p className="mt-3 text-[11px] font-bold text-amber-300/80 tracking-tight">
+                    백엔드에서 비어 있다고 감지한 값: {user.discordConfig.missing.join(", ")}
+                  </p>
+                )}
               </div>
               {!user.discordLinked && (
                 <button
