@@ -52,6 +52,12 @@ export default function MyPage() {
     if (!d) return;
 
     const reason = params.get("reason") || "";
+    const notificationKey = `discord_callback:${d}:${reason}`;
+    const alreadyHandled = sessionStorage.getItem(notificationKey) === "1";
+
+    // alert가 라우터 갱신보다 먼저 브라우저를 막을 수 있어 URL을 즉시 정리합니다.
+    window.history.replaceState(null, "", "/mypage");
+
     const reasonText: Record<string, string> = {
       guild: "지정된 디스코드 서버에 가입된 계정만 연동할 수 있습니다.",
       in_use: "이 디스코드 계정은 이미 다른 사이트 계정에 연결되어 있습니다.",
@@ -72,14 +78,19 @@ export default function MyPage() {
         } catch {
           /* ignore */
         }
-        alert("디스코드 계정이 연동되었습니다. 이제 경매 입찰·즉시 구매를 이용할 수 있습니다.");
+        if (!alreadyHandled) {
+          sessionStorage.setItem(notificationKey, "1");
+          alert("디스코드 계정이 연동되었습니다. 이제 경매 입찰·즉시 구매를 이용할 수 있습니다.");
+        }
       } else if (d === "error") {
-        alert(reasonText[reason] || "디스코드 연동에 실패했습니다.");
+        if (!alreadyHandled) {
+          sessionStorage.setItem(notificationKey, "1");
+          alert(reasonText[reason] || "디스코드 연동에 실패했습니다.");
+        }
       }
-      router.replace("/mypage");
     };
     void run();
-  }, [router]);
+  }, []);
 
   const handleDiscordLink = useCallback(async () => {
     setLinkingDiscord(true);

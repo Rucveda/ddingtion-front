@@ -34,7 +34,7 @@ export default function SellItem() {
   const [activeRuneSlot, setActiveRuneSlot] = useState<number | null>(null);
 
   const [form, setForm] = useState({ 
-    startPrice: "", buyNowPrice: "", durationHours: "24", description: "",
+    startPrice: "", buyNowPrice: "", durationDays: "1", description: "",
     enhancementLevel: 0, enhancementRank: "입문", enchantments: {} as Record<string, number>, 
     imprints: {} as Record<string, number>, skills: {} as Record<string, number>,
     runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "", type: "" }]
@@ -249,11 +249,28 @@ export default function SellItem() {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="text-[11px] font-black text-zinc-600 ml-1">경매 등록 기간</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {["1", "12", "24", "48"].map(h => (
-                      <button key={h} type="button" onClick={() => { triggerHaptic(); setForm({...form, durationHours: h}); }} className={`py-3 rounded-xl font-black text-xs border transition-all ${form.durationHours === h ? "bg-white text-black border-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600"}`}>{h}시간</button>
-                    ))}
+                  <div className="flex items-center justify-between">
+                    <div className="text-[11px] font-black text-zinc-600 ml-1">경매 등록 기간</div>
+                    <div className="text-[11px] font-black text-blue-500">{form.durationDays}일</div>
+                  </div>
+                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5 space-y-4">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-4xl font-black text-white font-mono tracking-tighter">{form.durationDays}</span>
+                      <span className="text-sm font-black text-zinc-500">일 동안 진행</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="7"
+                      step="1"
+                      value={form.durationDays}
+                      onChange={e => { triggerHaptic(); setForm({ ...form, durationDays: e.target.value }); }}
+                      className="w-full h-1 bg-zinc-800 rounded-lg appearance-none accent-blue-500 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[9px] font-black text-zinc-700 uppercase">
+                      <span>1일</span>
+                      <span>7일</span>
+                    </div>
                   </div>
                 </div>
               </div>
