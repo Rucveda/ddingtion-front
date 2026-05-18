@@ -127,15 +127,18 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
   const handleExportPricePreset = async () => {
     triggerHaptic();
-    const compactPrices = Object.entries(prices).filter(([key, value]) => {
+    const typedPrices = prices as Record<string, string>;
+    const typedEnchantPrices = enchantPrices as Record<string, { price: string; rate: string }>;
+    const typedImprintPrices = imprintPrices as Record<string, string>;
+    const compactPrices = Object.entries(typedPrices).filter(([key, value]) => {
       return String(value ?? "") !== String(DEFAULT_PRICES[key] ?? "");
     });
-    const compactEnchantPrices = Object.entries(enchantPrices).map(([name, data]) => [
+    const compactEnchantPrices = Object.entries(typedEnchantPrices).map(([name, data]) => [
       name,
       data.price || "",
       data.rate || "",
     ]);
-    const compactImprintPrices = Object.entries(imprintPrices);
+    const compactImprintPrices = Object.entries(typedImprintPrices);
     const payload = {
       v: 2,
       p: compactPrices,
