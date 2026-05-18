@@ -27,7 +27,7 @@ export default function ServerErrorPage() {
         <div className="pt-10">
           <button 
             onClick={() => window.location.href = "/"}
-            className="bg-white text-black font-black px-10 py-4 rounded-2xl hover:bg-cyan-500 transition-all active:scale-95 uppercase tracking-widest"
+            className="site-btn site-btn-primary px-10 py-4 text-sm"
           >
             다시 연결 시도
           </button>

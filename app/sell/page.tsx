@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { request } from "@/utils/api"; 
 import { motion, AnimatePresence } from "framer-motion";
+import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 
 // --- 데이터 정의 (기존 데이터 유지) ---
 const WILD_BASE = [["효율", 5], ["행운", 3], ["섬세한손길", 1], ["바다의행운", 3], ["미끼", 3], ["밀치기", 2], ["휩쓸기", 3], ["약탈", 3], ["날카로움", 5], ["발화", 2], ["살충", 5], ["강타", 5], ["화염", 1], ["밀어내기", 2], ["힘", 5], ["무한", 1], ["다중발사", 1], ["관통", 4], ["빠른장전", 3], ["집전", 1], ["찌르기", 5], ["충성", 3], ["급류", 3], ["육중", 5], ["격파", 4], ["돌풍", 3], ["폭발보호", 4], ["화염보호", 4], ["발사체보호", 4], ["가시", 3], ["보호", 4], ["친수성", 1], ["호흡", 3], ["신속한잠행", 3], ["물갈퀴", 3], ["가벼운착지", 4], ["영혼가속", 3], ["차가운걸음", 2], ["내구성", 3], ["수선", 1]];
@@ -154,75 +154,41 @@ export default function SellItem() {
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative overflow-x-hidden">
-      <style jsx global>{`
-        .premium-abyss-bg {
-          position: fixed; inset: -15%; z-index: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
-                      radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.08) 0%, transparent 40%),
-                      radial-gradient(circle at 50% 50%, rgba(15, 15, 15, 1) 0%, rgba(1, 1, 1, 1) 100%);
-          filter: blur(80px); pointer-events: none;
-        }
-        .bg-texture {
-          position: fixed; inset: 0; z-index: 1; opacity: 0.3; pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.08' d='M1 3h1v1H1V3zm2-2h1v1H2V1z'%3E%3C/path%3E%3C/svg%3E");
-        }
-        .pixel-art { image-rendering: pixelated; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-      `}</style>
+      <SiteBackground />
+      <SimpleTopBar onNavigate={triggerHaptic} closeHref="/?tab=AUCTION" />
 
-      <div className="premium-abyss-bg" />
-      <div className="bg-texture" />
-
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/40 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center relative z-10">
-          <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
-            <span className="text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
-              <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
-              <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
-              <span className="text-[#ef4444]">N</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/?tab=AUCTION" onClick={triggerHaptic} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white border border-white/5 transition-all">✕</Link>
-          </div>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto py-10 px-6 relative z-10">
+      <main className="max-w-7xl mx-auto py-6 md:py-8 px-4 sm:px-6 relative z-10">
         <motion.form 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
           transition={{ duration: 0.5 }}
           onSubmit={handleSell} 
-          className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+          className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start"
         >
-          <aside className="lg:col-span-4 space-y-6">
-            <section className="bg-white/[0.02] border border-white/5 p-8 rounded-[32px] shadow-2xl backdrop-blur-md">
-              <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+          <aside className="lg:col-span-4 space-y-4">
+            <section className="site-card p-4 md:p-5 rounded-[28px]">
+              <h2 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] mb-4 flex items-center gap-2">
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 등록
               </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <div className="relative">
-                  <div className="text-[11px] font-black text-zinc-600 mb-2 ml-1">아이템 검색</div>
+                  <div className="text-[10px] font-extrabold text-zinc-600 mb-2 ml-1 uppercase tracking-[0.12em]">아이템 검색</div>
                   <input 
                     type="text" placeholder="아이템 이름을 입력하세요..." 
-                    className="w-full bg-black/40 border border-white/10 p-4 rounded-xl text-base font-bold outline-none focus:border-blue-500/50 transition-all"
+                    className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded-2xl text-xs font-semibold outline-none focus:border-blue-500/50 transition-all placeholder:text-zinc-600"
                     value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setShowDropdown(true); }}
                   />
                   <AnimatePresence>
                     {showDropdown && searchTerm && (
-                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute top-full left-0 w-full mt-2 bg-[#0d0d0f]/95 border border-white/10 rounded-2xl overflow-hidden z-[100] shadow-3xl max-h-60 overflow-y-auto custom-scrollbar backdrop-blur-3xl">
+                      <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute top-full left-0 w-full mt-2 bg-[#0d0d0f]/95 border border-white/10 rounded-2xl overflow-hidden z-[100] shadow-3xl max-h-56 overflow-y-auto custom-scrollbar backdrop-blur-3xl">
                         {filteredItems.map(item => (
-                          <div key={item.id} onClick={() => handleSelectItem(item)} className="p-4 hover:bg-white/5 cursor-pointer flex items-center gap-4 border-b border-white/5 group transition-colors">
+                          <div key={item.id} onClick={() => handleSelectItem(item)} className="px-3 py-2.5 hover:bg-white/5 cursor-pointer flex items-center gap-3 border-b border-white/5 group transition-colors">
                             {/* 🛠️ [패치 적용] */}
-                            <img src={getSecureUrl(item.iconUrl)} className="w-8 h-8 pixel-art" alt="" />
+                            <img src={getSecureUrl(item.iconUrl)} className="w-7 h-7 pixel-art" alt="" />
                             <div>
-                              <div className="font-bold text-sm text-zinc-300 group-hover:text-white">{item.name}</div>
-                              <div className="text-[10px] text-zinc-600 font-black">{item.category}</div>
+                              <div className="font-semibold text-[11px] text-zinc-300 group-hover:text-white">{item.name}</div>
+                              <div className="text-[9px] text-zinc-600 font-extrabold uppercase tracking-tight">{item.category}</div>
                             </div>
                           </div>
                         ))}
@@ -231,37 +197,37 @@ export default function SellItem() {
                   </AnimatePresence>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
-                    <label className="text-[11px] font-black text-yellow-500 uppercase mb-2 block tracking-widest">경매 시작가</label>
-                    <div className="flex items-baseline gap-2">
-                      <input required type="text" className="w-full bg-transparent text-2xl font-mono font-black text-yellow-500 outline-none" value={form.startPrice} onChange={e => setForm({...form, startPrice: e.target.value.replace(/[^0-9]/g, "")})} />
-                      <span className="text-yellow-900 font-black">G</span>
+                <div className="space-y-3">
+                  <div className="text-[10px] font-extrabold text-zinc-600 ml-1 uppercase tracking-[0.12em]">가격 설정</div>
+                  <div className="bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
+                    <div className="p-4">
+                      <label className="text-[10px] font-extrabold text-yellow-400 uppercase mb-1.5 block tracking-[0.12em]">경매 시작가</label>
+                      <div className="flex items-baseline gap-2">
+                        <input required type="text" className="w-full bg-transparent text-xl font-mono font-extrabold text-yellow-400 outline-none" value={form.startPrice} onChange={e => setForm({...form, startPrice: e.target.value.replace(/[^0-9]/g, "")})} />
+                        <span className="text-yellow-900 font-extrabold">G</span>
+                      </div>
+                      <div className="text-[10px] text-zinc-700 font-semibold mt-1">{formatGold(form.startPrice)} 골드</div>
                     </div>
-                    {/* 🛠️ [포맷팅 적용] */}
-                    <div className="text-[11px] text-zinc-700 font-bold mt-1">{formatGold(form.startPrice)} 골드</div>
-                  </div>
 
-                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5">
-                    <label className="text-[11px] font-black text-blue-500 uppercase mb-2 block tracking-widest">즉시 구매가</label>
-                    <div className="flex items-baseline gap-2">
-                      <input type="text" className="w-full bg-transparent text-2xl font-mono font-black text-blue-500 outline-none placeholder:text-blue-900/20" placeholder="선택사항" value={form.buyNowPrice} onChange={e => setForm({...form, buyNowPrice: e.target.value.replace(/[^0-9]/g, "")})} />
-                      <span className="text-blue-900 font-black">G</span>
+                    <div className="h-px bg-white/5" />
+
+                    <div className="p-4">
+                      <label className="text-[10px] font-extrabold text-blue-400 uppercase mb-1.5 block tracking-[0.12em]">즉시 구매가</label>
+                      <div className="flex items-baseline gap-2">
+                        <input type="text" className="w-full bg-transparent text-xl font-mono font-extrabold text-blue-400 outline-none placeholder:text-blue-900/20" placeholder="선택사항" value={form.buyNowPrice} onChange={e => setForm({...form, buyNowPrice: e.target.value.replace(/[^0-9]/g, "")})} />
+                        <span className="text-blue-900 font-extrabold">G</span>
+                      </div>
+                      <div className="text-[10px] text-zinc-700 font-semibold mt-1">{formatGold(form.buyNowPrice)} 골드</div>
                     </div>
-                    {/* 🛠️ [포맷팅 적용] */}
-                    <div className="text-[11px] text-zinc-700 font-bold mt-1">{formatGold(form.buyNowPrice)} 골드</div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-[11px] font-black text-zinc-600 ml-1">경매 등록 기간</div>
-                    <div className="text-[11px] font-black text-blue-500">{form.durationDays}일</div>
-                  </div>
-                  <div className="bg-black/40 p-5 rounded-2xl border border-white/5 space-y-4">
+                  <div className="text-[10px] font-extrabold text-zinc-600 ml-1 uppercase tracking-[0.12em]">경매 등록 기간</div>
+                  <div className="bg-black/40 p-4 rounded-2xl border border-white/5 space-y-3">
                     <div className="flex items-baseline gap-3">
-                      <span className="text-4xl font-black text-white font-mono tracking-tighter">{form.durationDays}</span>
-                      <span className="text-sm font-black text-zinc-500">일 동안 진행</span>
+                      <span className="text-2xl font-extrabold text-white font-mono tracking-[-0.04em]">{form.durationDays}</span>
+                      <span className="text-xs font-extrabold text-zinc-500">일 동안 진행</span>
                     </div>
                     <input
                       type="range"
@@ -270,11 +236,27 @@ export default function SellItem() {
                       step="1"
                       value={form.durationDays}
                       onChange={e => { triggerHaptic(); setForm({ ...form, durationDays: e.target.value }); }}
-                      className="w-full h-1 bg-zinc-800 rounded-lg appearance-none accent-blue-500 cursor-pointer"
+                      className="calc-range"
                     />
-                    <div className="flex justify-between text-[9px] font-black text-zinc-700 uppercase">
+                    <div className="flex justify-between text-[9px] font-extrabold text-zinc-700 uppercase">
                       <span>1일</span>
                       <span>7일</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="text-[10px] font-extrabold text-zinc-600 ml-1 uppercase tracking-[0.12em]">판매자 설명</div>
+                  <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                    <textarea
+                      value={form.description}
+                      onChange={e => setForm({ ...form, description: e.target.value })}
+                      maxLength={500}
+                      placeholder="거래 가능 시간, 옵션 설명, 특이사항을 입력하세요..."
+                      className="min-h-[92px] w-full resize-none bg-transparent text-xs font-medium leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600"
+                    />
+                    <div className="mt-2 border-t border-white/5 pt-2 text-right text-[10px] font-semibold text-zinc-600">
+                      {form.description.length}/500
                     </div>
                   </div>
                 </div>
@@ -282,7 +264,7 @@ export default function SellItem() {
 
               <button 
                 disabled={isLoading || !selectedItem} 
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-900 disabled:text-zinc-700 text-white font-black py-5 rounded-xl text-sm uppercase tracking-widest transition-all shadow-xl mt-8 active:scale-95"
+                className="site-btn site-btn-primary mt-5 w-full py-4 text-sm"
               >
                 {isLoading ? "등록 중..." : "아이템 등록하기"}
               </button>
@@ -297,50 +279,50 @@ export default function SellItem() {
                   initial={{ opacity: 0, x: 10 }} 
                   animate={{ opacity: 1, x: 0 }} 
                   exit={{ opacity: 0, x: -10 }} 
-                  className="bg-white/[0.02] border border-white/5 p-8 rounded-[40px] shadow-2xl backdrop-blur-md min-h-[600px]"
+                  className="site-card p-4 md:p-5 rounded-[28px] min-h-[520px]"
                 >
-                  <div className="flex items-center gap-6 mb-10 bg-white/[0.03] p-6 rounded-3xl border border-white/5">
-                    <div className="w-16 h-16 bg-black/40 rounded-xl flex items-center justify-center border border-white/5 shrink-0">
+                  <div className="flex items-center gap-4 mb-5 bg-white/[0.03] p-4 rounded-[24px] border border-white/5">
+                    <div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0">
                       {/* 🛠️ [패치 적용] */}
-                      <img src={getSecureUrl(selectedItem.iconUrl)} className="w-10 h-10 pixel-art" alt="" />
+                      <img src={getSecureUrl(selectedItem.iconUrl)} className="w-9 h-9 pixel-art" alt="" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black tracking-tighter uppercase">{selectedItem.name}</h3>
+                      <h3 className="text-xl md:text-2xl font-extrabold tracking-[-0.04em] uppercase">{selectedItem.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-blue-500 font-black text-[10px] uppercase">분류: {selectedItem.category}</span>
+                        <span className="text-blue-400 font-extrabold text-[10px] uppercase tracking-[0.12em]">분류: {selectedItem.category}</span>
                         <div className="w-1 h-1 rounded-full bg-zinc-800" />
-                        <span className="text-zinc-600 font-black text-[10px]">ID: #{selectedItem.id}</span>
+                        <span className="text-zinc-600 font-extrabold text-[10px] tracking-[0.12em]">ID: #{selectedItem.id}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="custom-scrollbar overflow-y-auto max-h-[500px] pr-4 space-y-10">
+                  <div className="custom-scrollbar overflow-y-auto max-h-[470px] pr-2 space-y-6">
                     {category === "WILD" && (
-                      <div className="space-y-10">
-                        <div className="space-y-4">
-                          <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-blue-500" /> 일반 인챈트 선택
+                      <div className="space-y-6">
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em] border-l-2 border-blue-500 pl-3">
+                            일반 인챈트
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {WILD_BASE.map(([name, max]) => (
                               <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} 
-                                className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-transparent text-zinc-500 hover:bg-white/10"}`}>
-                                <span className="font-bold text-xs">{name as string}</span>
-                                {form.enchantments[name as string] && <span className="font-black text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
+                                className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                <span className="font-semibold text-[10px]">{name as string}</span>
+                                {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
                               </button>
                             ))}
                           </div>
                         </div>
-                        <div className="space-y-4">
-                          <div className="text-[11px] font-black text-red-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-red-500" /> 특수 인챈트 선택
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-extrabold text-red-400 uppercase tracking-[0.14em] border-l-2 border-red-500 pl-3">
+                            특수 인챈트
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {WILD_SPECIAL.map(([name, max]) => (
                               <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)}
-                                className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${form.enchantments[name as string] ? "bg-red-600 border-red-400 text-white shadow-lg" : "bg-white/5 border-transparent text-zinc-500 hover:bg-white/10"}`}>
-                                <span className="font-bold text-xs">{name as string}</span>
-                                {form.enchantments[name as string] && <span className="font-black text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
+                                className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                <span className="font-semibold text-[10px]">{name as string}</span>
+                                {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
                               </button>
                             ))}
                           </div>
@@ -349,25 +331,25 @@ export default function SellItem() {
                     )}
 
                     {category === "ISLAND" && (
-                      <div className="space-y-10">
-                        <div className="max-w-xs space-y-4">
-                          <div className="text-[11px] font-black text-yellow-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-yellow-500" /> 아이템 강화 수치
+                      <div className="space-y-6">
+                        <div className="max-w-xs space-y-3">
+                          <div className="text-[10px] font-extrabold text-yellow-400 uppercase tracking-[0.14em] border-l-2 border-yellow-500 pl-3">
+                            아이템 강화 +{form.enhancementLevel}
                           </div>
-                          <div className="bg-yellow-500/5 border border-yellow-500/20 p-6 rounded-2xl flex items-center gap-6">
-                            <span className="text-3xl font-black italic text-yellow-500 w-12">+{form.enhancementLevel}</span>
-                            <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-yellow-500 cursor-pointer" />
+                          <div className="bg-yellow-500/5 border border-yellow-500/20 p-4 rounded-2xl flex items-center gap-4">
+                            <span className="text-2xl font-extrabold italic text-yellow-500 w-10">+{form.enhancementLevel}</span>
+                            <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="calc-range calc-range-yellow flex-1" />
                           </div>
                         </div>
-                        <div className="space-y-4">
-                          <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-zinc-700" /> 각인 옵션 선택
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] border-l-2 border-white/10 pl-3">
+                            각인 옵션
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
                             {ISLAND_IMPRINTS.map(name => (
-                              <button key={name} type="button" onClick={() => toggleOption('imprints', name, 5)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${form.imprints[name] ? "bg-yellow-500 border-yellow-400 text-black shadow-lg" : "bg-white/5 border-transparent text-zinc-500 hover:bg-white/10"}`}>
-                                <span className="font-bold text-xs">{name}</span>
-                                {form.imprints[name] && <span className="font-black text-[10px] bg-black/10 px-1.5 py-0.5 rounded-md">LV.{form.imprints[name]}</span>}
+                              <button key={name} type="button" onClick={() => toggleOption('imprints', name, 5)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.imprints[name] ? "bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                <span className="font-semibold text-[10px]">{name}</span>
+                                {form.imprints[name] && <span className="font-extrabold text-[9px] bg-black/10 px-1.5 py-0.5 rounded-md">LV.{form.imprints[name]}</span>}
                               </button>
                             ))}
                           </div>
@@ -376,37 +358,37 @@ export default function SellItem() {
                     )}
 
                     {category === "RPG" && (
-                      <div className="space-y-10">
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                          <div className="space-y-4">
-                            <div className="text-[11px] font-black text-cyan-500 uppercase tracking-widest">강화 랭크 및 수치</div>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                          <div className="space-y-3">
+                            <div className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-[0.14em] border-l-2 border-cyan-500 pl-3">강화 랭크 / +{form.enhancementLevel}</div>
                             <div className="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
                               {["입문", "견습", "정예", "영웅"].map(rank => (
-                                <button key={rank} type="button" onClick={() => { triggerHaptic(); setForm({...form, enhancementRank: rank}); }} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black transition-all ${form.enhancementRank === rank ? "bg-cyan-600 text-white shadow-lg" : "text-zinc-600"}`}>{rank}</button>
+                                <button key={rank} type="button" onClick={() => { triggerHaptic(); setForm({...form, enhancementRank: rank}); }} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.enhancementRank === rank ? "bg-cyan-600 text-white shadow-lg" : "text-zinc-600 hover:text-zinc-300"}`}>{rank}</button>
                               ))}
                             </div>
-                            <div className="flex items-center gap-6 bg-black/40 p-5 rounded-2xl border border-white/5 mt-2">
-                              <span className="text-3xl font-black text-cyan-500 italic w-12">+{form.enhancementLevel}</span>
-                              <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-cyan-500 cursor-pointer" />
+                            <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 mt-2">
+                              <span className="text-2xl font-extrabold text-cyan-500 italic w-10">+{form.enhancementLevel}</span>
+                              <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="calc-range calc-range-cyan flex-1" />
                             </div>
                           </div>
                           
-                          <div className="space-y-4">
-                            <div className="text-[11px] font-black text-orange-500 uppercase tracking-widest">룬 장착</div>
+                          <div className="space-y-3">
+                            <div className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] border-l-2 border-orange-500 pl-3">룬 장착</div>
                             <div className="grid grid-cols-3 gap-2">
                               {[0, 1, 2].map(idx => (
                                 <button key={idx} type="button" onClick={() => { triggerHaptic(); setActiveRuneSlot(activeRuneSlot === idx ? null : idx); }} className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all ${activeRuneSlot === idx ? 'border-orange-500 bg-orange-500/10 shadow-[0_0_10px_rgba(249,115,22,0.1)]' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
                                   {form.runes[idx].type ? (
                                     <div className="text-center p-1">
-                                      <div className="text-[7px] font-black text-orange-600 uppercase">{form.runes[idx].grade}</div>
-                                      <div className="text-[10px] font-black text-zinc-200 leading-tight">{form.runes[idx].type.replace("의룬", "")}</div>
+                                      <div className="text-[7px] font-extrabold text-orange-500 uppercase">{form.runes[idx].grade}</div>
+                                      <div className="text-[10px] font-extrabold text-zinc-200 leading-tight">{form.runes[idx].type.replace("의룬", "")}</div>
                                     </div>
                                   ) : (
                                     <div className="w-5 h-5 border border-zinc-800 rotate-45 flex items-center justify-center opacity-30">
                                       <div className="w-1 h-1 bg-zinc-800 rounded-full" />
                                     </div>
                                   )}
-                                  <div className="absolute bottom-1.5 text-[7px] font-black text-zinc-700">SLOT {idx+1}</div>
+                                  <div className="absolute bottom-1.5 text-[7px] font-extrabold text-zinc-700">SLOT {idx+1}</div>
                                 </button>
                               ))}
                             </div>
@@ -415,32 +397,32 @@ export default function SellItem() {
 
                         <AnimatePresence>
                           {activeRuneSlot !== null && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-orange-500/[0.03] border border-orange-500/20 rounded-2xl p-6 space-y-6 overflow-hidden">
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-orange-500/[0.03] border border-orange-500/20 rounded-2xl p-5 space-y-5 overflow-hidden">
                               <div className="flex justify-between items-center">
-                                <div className="text-[11px] font-black text-orange-500 uppercase flex items-center gap-2">룬 설정 #{activeRuneSlot + 1}</div>
-                                <button type="button" onClick={() => setActiveRuneSlot(null)} className="text-[10px] font-black text-zinc-600 hover:text-white transition-colors">닫기</button>
+                                <div className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] flex items-center gap-2">룬 설정 #{activeRuneSlot + 1}</div>
+                                <button type="button" onClick={() => setActiveRuneSlot(null)} className="text-[10px] font-extrabold text-zinc-600 hover:text-white transition-colors">닫기</button>
                               </div>
                               <div className="space-y-3">
-                                <div className="text-[10px] font-black text-zinc-600 ml-1">룬 등급</div>
-                                <div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} type="button" onClick={() => updateRune(g)} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black transition-all ${form.runes[activeRuneSlot!].grade === g ? 'bg-orange-500 text-black font-black' : 'bg-white/5 text-zinc-600'}`}>{g}</button>))}</div>
+                                <div className="text-[10px] font-extrabold text-zinc-600 ml-1">룬 등급</div>
+                                <div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} type="button" onClick={() => updateRune(g)} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.runes[activeRuneSlot!].grade === g ? 'bg-orange-500 text-black' : 'bg-white/[0.035] border border-white/5 text-zinc-600 hover:text-zinc-300'}`}>{g}</button>))}</div>
                               </div>
                               <div className="space-y-3">
-                                <div className="text-[10px] font-black text-zinc-600 ml-1">룬 종류</div>
-                                <div className="grid grid-cols-4 gap-1.5">{RUNE_TYPES.slice(0, 8).map(t => (<button key={t} type="button" onClick={() => updateRune(undefined, t)} className={`py-2 rounded-lg text-[10px] font-bold transition-all border ${form.runes[activeRuneSlot!].type === t ? 'bg-zinc-100 text-black border-white' : 'bg-black/40 border-white/5 text-zinc-600'}`}>{t.replace("의룬", "")}</button>))}</div>
+                                <div className="text-[10px] font-extrabold text-zinc-600 ml-1">룬 종류</div>
+                                <div className="grid grid-cols-4 gap-1.5">{RUNE_TYPES.slice(0, 8).map(t => (<button key={t} type="button" onClick={() => updateRune(undefined, t)} className={`min-h-[32px] py-1.5 rounded-md text-[10px] font-semibold transition-all border ${form.runes[activeRuneSlot!].type === t ? 'bg-zinc-100 text-black border-white' : 'bg-black/40 border-white/5 text-zinc-600 hover:text-zinc-300'}`}>{t.replace("의룬", "")}</button>))}</div>
                               </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
 
-                        <div className="space-y-4">
-                          <div className="text-[11px] font-black text-purple-500 uppercase tracking-widest flex items-center gap-2">
-                            <div className="w-1 h-1 rounded-full bg-purple-500" /> 전투 스킬 레벨 설정
+                        <div className="space-y-3">
+                          <div className="text-[10px] font-extrabold text-purple-400 uppercase tracking-[0.14em] border-l-2 border-purple-500 pl-3">
+                            전투 스킬
                           </div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {currentWeaponSkills.map(name => (
-                              <button key={name} type="button" onClick={() => toggleOption('skills', name, 7)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${form.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg" : "bg-white/5 border-transparent text-zinc-500 hover:bg-white/10"}`}>
-                                <span className="font-bold text-xs truncate">{name}</span>
-                                {form.skills[name] && <span className="font-black text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{form.skills[name]}</span>}
+                              <button key={name} type="button" onClick={() => toggleOption('skills', name, 7)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                <span className="font-semibold text-[10px] truncate">{name}</span>
+                                {form.skills[name] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{form.skills[name]}</span>}
                               </button>
                             ))}
                           </div>
@@ -450,11 +432,11 @@ export default function SellItem() {
                   </div>
                 </motion.section>
               ) : (
-                <div className="h-[600px] border border-dashed border-white/5 rounded-[40px] flex flex-col items-center justify-center opacity-20">
-                  <div className="w-12 h-12 border border-zinc-700 rotate-45 flex items-center justify-center mb-6">
-                    <div className="w-2 h-2 bg-zinc-700 rounded-full animate-pulse" />
-                  </div>
-                  <div className="text-sm font-black uppercase tracking-[0.4em]">아이템을 선택해주세요</div>
+              <div className="h-[520px] border border-dashed border-white/5 bg-white/[0.015] rounded-[28px] flex flex-col items-center justify-center px-6 text-center">
+                <div className="text-sm font-extrabold tracking-tight text-zinc-300">아이템을 선택해주세요</div>
+                <p className="mt-2 max-w-sm text-xs font-medium leading-relaxed text-zinc-500 break-keep">
+                  등록할 아이템을 선택하면 카테고리에 맞는 강화, 인챈트, 각인, 스킬 옵션을 설정할 수 있습니다.
+                </p>
                 </div>
               )}
             </AnimatePresence>
@@ -462,9 +444,7 @@ export default function SellItem() {
         </motion.form>
       </main>
 
-      <footer className="mt-16 border-t border-white/5 py-10 text-center">
-        <div className="text-xs font-bold text-zinc-500">© 2026 DDINGTION</div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

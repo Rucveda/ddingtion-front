@@ -264,10 +264,10 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
   if (!selectedItem) return null;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <section className="lg:col-span-7 bg-white/[0.02] border border-white/5 p-6 rounded-[40px] shadow-2xl flex flex-col h-[380px] backdrop-blur-md relative overflow-hidden">
-          <div className="flex items-center gap-3 mb-6 px-2"><div className="w-1.5 h-3.5 bg-blue-600 rounded-full" /><h3 className="text-xs font-black text-zinc-400 uppercase tracking-widest">기댓값 시뮬레이션</h3></div>
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <section className="lg:col-span-7 bg-white/[0.02] border border-white/5 p-5 rounded-[30px] shadow-2xl flex flex-col h-[320px] backdrop-blur-md relative overflow-hidden">
+          <div className="flex items-center gap-3 mb-4 px-1"><div className="w-1.5 h-3.5 bg-blue-600 rounded-full" /><h3 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-[0.14em]">기댓값 시뮬레이션</h3></div>
           <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -281,12 +281,12 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           </div>
         </section>
 
-        <section className="lg:col-span-5 bg-white/[0.02] border border-white/5 p-8 rounded-[40px] shadow-2xl flex flex-col h-[380px] backdrop-blur-md">
-          <div className="flex justify-between items-end mb-6 border-b border-white/5 pb-4"><div className="flex flex-col gap-1"><span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Simulation Ledger</span><h4 className="text-lg font-black text-zinc-200">직작 예상 비용</h4></div><div className="text-right"><div className="text-2xl font-black text-blue-500 font-mono tracking-tighter tabular-nums">{formatGold(receiptData.total)} G</div></div></div>
+        <section className="lg:col-span-5 bg-white/[0.02] border border-white/5 p-5 rounded-[30px] shadow-2xl flex flex-col h-[320px] backdrop-blur-md">
+          <div className="flex justify-between items-end mb-4 border-b border-white/5 pb-3"><div className="flex flex-col gap-1"><span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em]">Simulation Ledger</span><h4 className="text-base font-extrabold text-zinc-200">직작 예상 비용</h4></div><div className="text-right"><div className="text-xl font-black text-blue-400 font-mono tracking-[-0.04em] tabular-nums">{formatGold(receiptData.total)} G</div></div></div>
           <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
             {receiptData.items.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between bg-black/20 p-3 rounded-xl border border-white/5 transition-all">
-                <div className="min-w-0 flex-1 mr-4"><div className="text-[11px] font-bold text-zinc-300 truncate">{item.name}</div><div className="text-[9px] text-zinc-600 font-black uppercase tracking-tighter truncate">{item.subText}</div></div>
+              <div key={idx} className="flex items-center justify-between bg-black/20 px-3 py-2.5 rounded-xl border border-white/5 transition-all">
+                <div className="min-w-0 flex-1 mr-4"><div className="text-[11px] font-semibold text-zinc-300 truncate">{item.name}</div><div className="text-[9px] text-zinc-600 font-extrabold uppercase tracking-tight truncate">{item.subText}</div></div>
                 <div className="text-xs font-black text-zinc-500 font-mono shrink-0">+{formatGold(item.cost)}</div>
               </div>
             ))}
@@ -294,44 +294,44 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         </section>
       </div>
 
-      <section className="bg-blue-600/[0.03] border border-blue-500/20 p-8 rounded-[40px] shadow-xl backdrop-blur-md">
-        <div className="flex items-center justify-between mb-8 px-2">
-          <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-sm font-black text-zinc-300 uppercase tracking-widest">시세 입력</h3></div>
-          <button onClick={handleSavePrices} className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all active:scale-95 ${isPriceFeedbackActive ? "bg-green-600 text-white shadow-lg" : "bg-blue-600 text-white shadow-lg"}`}>
+      <section className="bg-blue-600/[0.03] border border-blue-500/20 p-5 rounded-[30px] shadow-xl backdrop-blur-md">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-[11px] font-extrabold text-zinc-300 uppercase tracking-[0.14em]">시세 입력</h3></div>
+          <button onClick={handleSavePrices} className={`site-btn site-btn-compact ${isPriceFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-primary"}`}>
             {isPriceFeedbackActive ? "✓ 시세 저장됨" : "현재 시세 저장"}
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {category === "RPG" && (
             <>
               {(() => {
                 const wType = ["스태프", "망치", "총", "활", "창", "대검"].find(t => selectedItem.name.includes(t));
                 const baseKey = `MAT_RPG_BASE_${wType || selectedItem.name}`;
                 return (
-                  <div className="bg-black/60 p-4 rounded-2xl border border-cyan-500/30 flex flex-col gap-2">
-                    <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">순정 시세 ({wType || "기본"})</span>
+                  <div className="bg-black/50 px-3 py-2.5 rounded-2xl border border-cyan-500/30 flex flex-col gap-1.5">
+                    <span className="text-[9px] font-extrabold text-cyan-400 uppercase tracking-[0.12em]">순정 시세 ({wType || "기본"})</span>
                     <input className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" value={prices[baseKey] || ""} onChange={e => updatePrice(baseKey, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
                   </div>
                 );
               })()}
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">해방의 인장</span><input className="bg-transparent text-sm font-black font-mono text-cyan-400 outline-none w-full" value={prices["MAT_RPG_해방의 인장"] || ""} onChange={e => updatePrice("MAT_RPG_해방의 인장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">개방의 문장</span><input className="bg-transparent text-sm font-black font-mono text-purple-400 outline-none w-full" value={prices["MAT_RPG_개방의 문장"] || ""} onChange={e => updatePrice("MAT_RPG_개방의 문장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              {skillConfig && (<div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">{skillConfig.material}</span><input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_RPG_${skillConfig.material}`] || ""} onChange={e => updatePrice(`MAT_RPG_${skillConfig.material}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>)}
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">해방의 인장</span><input className="bg-transparent text-sm font-black font-mono text-cyan-400 outline-none w-full" value={prices["MAT_RPG_해방의 인장"] || ""} onChange={e => updatePrice("MAT_RPG_해방의 인장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">개방의 문장</span><input className="bg-transparent text-sm font-black font-mono text-purple-400 outline-none w-full" value={prices["MAT_RPG_개방의 문장"] || ""} onChange={e => updatePrice("MAT_RPG_개방의 문장", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              {skillConfig && (<div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">{skillConfig.material}</span><input className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full" value={prices[`MAT_RPG_${skillConfig.material}`] || ""} onChange={e => updatePrice(`MAT_RPG_${skillConfig.material}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>)}
               {activeNeededMaterials.map(m => (
-                <div key={m} className="bg-black/60 p-4 rounded-2xl border border-blue-500/20 flex flex-col gap-2"><span className="text-[9px] font-black text-blue-400 uppercase">{m}</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices[`MAT_RPG_${m}`] || ""} onChange={e => updatePrice(`MAT_RPG_${m}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+                <div key={m} className="bg-black/50 px-3 py-2.5 rounded-2xl border border-blue-500/20 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-blue-400 uppercase">{m}</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices[`MAT_RPG_${m}`] || ""} onChange={e => updatePrice(`MAT_RPG_${m}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
               ))}
             </>
           )}
           {category === "ISLAND" && (
             <>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-yellow-500 uppercase">각인 계약서</span><input className="bg-transparent text-sm font-black font-mono text-yellow-500 outline-none w-full" value={prices.MAT_ISLAND_CONTRACT || ""} onChange={e => updatePrice("MAT_ISLAND_CONTRACT", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(하)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_LOW || ""} onChange={e => updatePrice("MAT_STONE_LOW", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(중)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_MID || ""} onChange={e => updatePrice("MAT_STONE_MID", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
-              <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2"><span className="text-[9px] font-black text-zinc-600 uppercase">라이프스톤(상)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_HIGH || ""} onChange={e => updatePrice("MAT_STONE_HIGH", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-yellow-500 uppercase">각인 계약서</span><input className="bg-transparent text-sm font-black font-mono text-yellow-500 outline-none w-full" value={prices.MAT_ISLAND_CONTRACT || ""} onChange={e => updatePrice("MAT_ISLAND_CONTRACT", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">라이프스톤(하)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_LOW || ""} onChange={e => updatePrice("MAT_STONE_LOW", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">라이프스톤(중)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_MID || ""} onChange={e => updatePrice("MAT_STONE_MID", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
+              <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5"><span className="text-[9px] font-extrabold text-zinc-600 uppercase">라이프스톤(상)</span><input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={prices.MAT_STONE_HIGH || ""} onChange={e => updatePrice("MAT_STONE_HIGH", e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" /></div>
               {Object.keys(filters.imprints).map(name => (
-                <div key={name} className="bg-black/60 p-4 rounded-2xl border border-yellow-500/20 flex flex-col gap-2">
-                  <span className="text-[9px] font-black text-yellow-600 uppercase">{name} 각인서</span>
+                <div key={name} className="bg-black/50 px-3 py-2.5 rounded-2xl border border-yellow-500/20 flex flex-col gap-1.5">
+                  <span className="text-[9px] font-extrabold text-yellow-600 uppercase">{name} 각인서</span>
                   <input className="bg-transparent text-sm font-black font-mono text-white outline-none w-full" value={prices[`MAT_SCROLL_투박한_${name}`] || ""} onChange={e => updatePrice(`MAT_SCROLL_투박한_${name}`, e.target.value.replace(/[^0-9]/g, ''))} placeholder="0" />
                 </div>
               ))}
@@ -344,8 +344,8 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
             return (
               <div key={name} className="contents">
                 {/* 일반 인챈트 시세 / 확률 */}
-                <div className="bg-black/40 p-4 rounded-2xl border border-white/5 flex flex-col gap-2">
-                  <span className="text-[9px] font-black text-blue-400 uppercase">{name} 가격 / 확률(%)</span>
+                <div className="bg-black/40 px-3 py-2.5 rounded-2xl border border-white/5 flex flex-col gap-1.5">
+                  <span className="text-[9px] font-extrabold text-blue-400 uppercase">{name} 가격 / 확률(%)</span>
                   <div className="flex gap-2">
                     <input className="bg-transparent text-sm font-black font-mono text-zinc-100 outline-none w-full" value={enchantPrices[name]?.price || ""} onChange={e => updateEnchantPrice(name, e.target.value, enchantPrices[name]?.rate || "10")} placeholder="0" />
                     <input className="bg-transparent text-sm font-black font-mono text-blue-500 outline-none w-12 text-center border-l border-white/10" value={enchantPrices[name]?.rate || ""} onChange={e => updateEnchantPrice(name, enchantPrices[name]?.price || "0", e.target.value)} placeholder="10" />
@@ -354,8 +354,8 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
                 {/* 상급 인챈트 시세 / 확률 (통합형) */}
                 {isHighAvailable && (
-                  <div className="bg-black/60 p-4 rounded-2xl border border-orange-500/30 flex flex-col gap-2">
-                    <span className="text-[9px] font-black text-orange-500 uppercase">상급 {name} 가격 / 확률(%)</span>
+                  <div className="bg-black/50 px-3 py-2.5 rounded-2xl border border-orange-500/30 flex flex-col gap-1.5">
+                    <span className="text-[9px] font-extrabold text-orange-500 uppercase">상급 {name} 가격 / 확률(%)</span>
                     <div className="flex gap-2">
                       <input
                         className="bg-transparent text-sm font-black font-mono text-orange-400 outline-none w-full"
@@ -378,26 +378,26 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
         </div>
       </section>
 
-      <section className="bg-white/[0.02] border border-white/5 p-8 md:p-10 rounded-[48px] shadow-2xl backdrop-blur-md">
-        <div className="flex items-center justify-between mb-10 border-b border-white/5 pb-8 px-2">
-          <div className="flex items-center gap-6"><div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner"><img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" /></div><div><h3 className="text-xl font-black uppercase tracking-tighter">{selectedItem.name}</h3><p className="text-blue-500 font-black text-[10px] uppercase tracking-widest mt-1">아이템 커스텀 설정</p></div></div>
-          <button onClick={handleSaveFilters} className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all active:scale-95 ${isFilterFeedbackActive ? "bg-green-600 text-white shadow-lg" : "bg-zinc-100 text-black hover:bg-white shadow-lg"}`}>{isFilterFeedbackActive ? "✓ 설정 저장됨" : "선택 옵션 저장"}</button>
+      <section className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[32px] shadow-2xl backdrop-blur-md">
+        <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-4 px-1">
+          <div className="flex items-center gap-4"><div className="w-11 h-11 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner"><img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" /></div><div><h3 className="text-lg font-extrabold uppercase tracking-[-0.03em]">{selectedItem.name}</h3><p className="text-blue-400 font-extrabold text-[10px] uppercase tracking-[0.12em] mt-1">아이템 커스텀 설정</p></div></div>
+          <button onClick={handleSaveFilters} className={`site-btn site-btn-compact ${isFilterFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-secondary"}`}>{isFilterFeedbackActive ? "✓ 설정 저장됨" : "선택 옵션 저장"}</button>
         </div>
 
-        <div className="custom-scrollbar overflow-y-auto max-h-[500px] pr-4">
+        <div className="custom-scrollbar overflow-y-auto max-h-[430px] pr-2">
           {category === "RPG" && (
-            <div className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                  <div className="text-[11px] font-black text-cyan-500 uppercase tracking-widest border-l-4 border-cyan-500 pl-4">강화 랭크 및 단계 (+{filters.enhancementLevel})</div>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-3">
+                  <div className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-[0.14em] border-l-2 border-cyan-500 pl-3">강화 랭크 / +{filters.enhancementLevel}</div>
                   <div className="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
-                    {["입문", "견습", "정예", "영웅"].map(rank => (<button key={rank} onClick={() => setRpgRank(rank)} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black transition-all ${rpgRank === rank ? "bg-cyan-600 text-white shadow-md" : "text-zinc-600 hover:text-zinc-400"}`}>{rank}</button>))}
+                    {["입문", "견습", "정예", "영웅"].map(rank => (<button key={rank} onClick={() => setRpgRank(rank)} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-black transition-all ${rpgRank === rank ? "bg-cyan-600 text-white shadow-md" : "text-zinc-600 hover:text-zinc-400"}`}>{rank}</button>))}
                   </div>
-                  <div className="flex items-center bg-black/40 p-5 rounded-2xl border border-white/5 mt-2"><input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) })} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-cyan-500 cursor-pointer" /></div>
+                  <div className="flex items-center bg-black/40 p-4 rounded-2xl border border-white/5 mt-2"><input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) })} className="calc-range calc-range-cyan flex-1" /></div>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="text-[11px] font-black text-orange-500 uppercase tracking-widest border-l-4 border-orange-500 pl-4">룬 장착</div>
+                <div className="space-y-3">
+                  <div className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] border-l-2 border-orange-500 pl-3">룬 장착</div>
                   <div className="grid grid-cols-3 gap-2">
                     {filters.runes.map((rune, idx) => (
                       <button key={idx} onClick={() => setActiveRuneSlot(activeRuneSlot === idx ? null : idx)} className={`aspect-square rounded-xl border flex flex-col items-center justify-center p-2 transition-all relative ${activeRuneSlot === idx ? 'border-orange-500 bg-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.2)]' : 'bg-black/40 border-white/5 text-zinc-700 hover:border-white/10'}`}>
@@ -417,22 +417,22 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
               <AnimatePresence>
                 {activeRuneSlot !== null && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-orange-500/[0.03] border border-orange-500/20 rounded-3xl p-8 space-y-8 overflow-hidden">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-orange-500/[0.03] border border-orange-500/20 rounded-3xl p-5 space-y-5 overflow-hidden">
                     <div className="flex justify-between items-center px-1"><div className="text-[11px] font-black text-orange-500 uppercase flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />룬 설정 #{activeRuneSlot + 1}</div><button onClick={() => setActiveRuneSlot(null)} className="text-[10px] font-black text-zinc-600 hover:text-white transition-colors">닫기</button></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                      <div className="space-y-4"><p className="text-[10px] font-black text-zinc-500 uppercase ml-1">룬 등급</p><div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} onClick={() => updateRune(g)} className={`flex-1 py-2.5 rounded-lg text-[10px] font-black transition-all ${filters.runes[activeRuneSlot!].grade === g ? 'bg-orange-500 text-black shadow-lg' : 'bg-white/5 text-zinc-600'}`}>{g}</button>))}</div></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="space-y-4"><p className="text-[10px] font-black text-zinc-500 uppercase ml-1">룬 등급</p><div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} onClick={() => updateRune(g)} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-black transition-all ${filters.runes[activeRuneSlot!].grade === g ? 'bg-orange-500 text-black shadow-lg' : 'bg-white/5 text-zinc-600'}`}>{g}</button>))}</div></div>
                       <div className="space-y-4"><p className="text-[10px] font-black text-zinc-500 uppercase ml-1">룬 종류</p><div className="grid grid-cols-4 gap-1.5">{RUNE_TYPES.slice(0, 8).map(t => (<button key={t} onClick={() => updateRune(undefined, t)} className={`py-2 rounded-lg text-[9px] font-bold transition-all border ${filters.runes[activeRuneSlot!].type === t ? 'bg-zinc-100 text-black border-white' : 'bg-black/20 border-white/5 text-zinc-500'}`}>{t.replace("의룬", "")}</button>))}</div></div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <div className="space-y-6">
-                <div className="text-[11px] font-black text-purple-500 uppercase tracking-widest border-l-4 border-purple-500 pl-4">무기 전용 전투 스킬 (최대 4개)</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="space-y-3">
+                <div className="text-[10px] font-extrabold text-purple-400 uppercase tracking-[0.14em] border-l-2 border-purple-500 pl-3">무기 전용 전투 스킬</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                   {skillConfig && Object.keys(skillConfig.skills).map(name => (
-                    <button key={name} onClick={() => toggleOption('skills', name, 7)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${filters.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg" : "bg-white/5 border-transparent text-zinc-600 hover:bg-white/10"}`}>
-                      <span className="font-bold text-xs truncate">{name}</span>
+                    <button key={name} onClick={() => toggleOption('skills', name, 7)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${filters.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-600/10" : "bg-white/[0.035] border-transparent text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                      <span className="font-semibold text-[10px] truncate">{name}</span>
                       {filters.skills[name] && <span className="font-black text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{filters.skills[name]}</span>}
                     </button>
                   ))}
@@ -442,26 +442,26 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           )}
 
           {category === "WILD" && (
-            <div className="space-y-12">
-              <div className="space-y-6">
-                <div className="text-[11px] font-black text-blue-500 uppercase tracking-widest border-l-4 border-blue-500 pl-4">일반 인챈트 구성 (한계 돌파 포함)</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <div className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em] border-l-2 border-blue-500 pl-3">일반 인챈트</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                   {WILD_BASE.map(([name, max]: any) => {
                     const HIGH_LIMITS: Record<string, number> = { "효율": 10, "날카로움": 7, "보호": 6, "미끼": 5, "약탈": 5, "행운": 5 };
                     const currentMax = HIGH_LIMITS[name] || max;
                     return (
-                      <button key={name} onClick={() => toggleOption('enchantments', name, currentMax)} className={`p-4 rounded-xl border text-xs font-bold transition-all ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
+                      <button key={name} onClick={() => toggleOption('enchantments', name, currentMax)} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                         {name} {filters.enchantments[name] && <span className="bg-white/20 px-1.5 py-0.5 rounded ml-1 text-[9px]">Lv.{filters.enchantments[name]}</span>}
                       </button>
                     );
                   })}
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="text-[11px] font-black text-red-500 uppercase tracking-widest border-l-4 border-red-500 pl-4">특수 인챈트 선택</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="space-y-3">
+                <div className="text-[10px] font-extrabold text-red-400 uppercase tracking-[0.14em] border-l-2 border-red-500 pl-3">특수 인챈트</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                   {WILD_SPECIAL.map(([name, max]: any) => (
-                    <button key={name} onClick={() => toggleOption('enchantments', name, max)} className={`p-4 rounded-xl border text-xs font-bold transition-all ${filters.enchantments[name] ? "bg-red-600 border-red-400 text-white shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}>
+                    <button key={name} onClick={() => toggleOption('enchantments', name, max)} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${filters.enchantments[name] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                       {name} {filters.enchantments[name] && <span className="bg-white/20 px-1.5 py-0.5 rounded ml-1 text-[9px]">Lv.{filters.enchantments[name]}</span>}
                     </button>
                   ))}
@@ -471,18 +471,18 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
           )}
 
           {category === "ISLAND" && (
-            <div className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                  <div className="text-[11px] font-black text-yellow-500 uppercase tracking-widest border-l-4 border-yellow-500 pl-4">장비 강화 단계 (+{filters.enhancementLevel})</div>
-                  <div className="flex items-center bg-black/40 p-5 rounded-2xl border border-white/5 mt-2">
-                    <input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => { triggerHaptic(5); setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) }); }} className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none accent-yellow-500 cursor-pointer" />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-3">
+                  <div className="text-[10px] font-extrabold text-yellow-400 uppercase tracking-[0.14em] border-l-2 border-yellow-500 pl-3">장비 강화 +{filters.enhancementLevel}</div>
+                  <div className="flex items-center bg-black/40 p-4 rounded-2xl border border-white/5 mt-2">
+                    <input type="range" min="0" max="15" value={filters.enhancementLevel} onChange={e => { triggerHaptic(5); setFilters({ ...filters, enhancementLevel: parseInt(e.target.value) }); }} className="calc-range calc-range-yellow flex-1" />
                   </div>
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="text-[11px] font-black text-zinc-500 uppercase tracking-widest border-l-4 border-white/10 pl-4">각인 활성화</div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{ISLAND_IMPRINTS.map(name => (<button key={name} onClick={() => toggleOption('imprints', name, 5)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${filters.imprints[name] ? "bg-yellow-600 border-yellow-400 text-black shadow-lg" : "bg-white/5 border-white/5 text-zinc-600 hover:bg-white/10"}`}><span className="font-bold text-xs">{name}</span>{filters.imprints[name] && <span className="font-black text-[9px] bg-black/10 px-1.5 py-0.5 rounded">Lv.{filters.imprints[name]}</span>}</button>))}</div>
+              <div className="space-y-3">
+                <div className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] border-l-2 border-white/10 pl-3">각인 활성화</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">{ISLAND_IMPRINTS.map(name => (<button key={name} onClick={() => toggleOption('imprints', name, 5)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${filters.imprints[name] ? "bg-yellow-500 border-yellow-300 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}><span className="font-semibold text-[10px]">{name}</span>{filters.imprints[name] && <span className="font-black text-[9px] bg-black/10 px-1.5 py-0.5 rounded">Lv.{filters.imprints[name]}</span>}</button>))}</div>
               </div>
             </div>
           )}

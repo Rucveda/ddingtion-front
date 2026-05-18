@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { request } from "@/utils/api";
+import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -74,36 +75,8 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none overflow-x-hidden relative flex flex-col">
-      
-      <style jsx global>{`
-        .premium-abyss-bg {
-          position: fixed; inset: -15%; z-index: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
-                      radial-gradient(circle at 50% 50%, rgba(15, 15, 15, 1) 0%, rgba(1, 1, 1, 1) 100%);
-          filter: blur(80px); pointer-events: none;
-        }
-        .bg-texture {
-          position: fixed; inset: 0; z-index: 1; opacity: 0.3; pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.08' d='M1 3h1v1H1V3zm2-2h1v1H2V1z'%3E%3C/path%3E%3C/svg%3E");
-        }
-      `}</style>
-
-      <div className="premium-abyss-bg" />
-      <div className="bg-texture" />
-
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center relative z-10">
-          <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
-            <span className="text-2xl md:text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
-              <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
-              <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
-              <span className="text-[#ef4444]">N</span>
-            </span>
-          </Link>
-        </div>
-      </nav>
+      <SiteBackground />
+      <SimpleTopBar onNavigate={triggerHaptic} />
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-6 relative z-10">
         <motion.div 
@@ -113,6 +86,9 @@ export default function LoginPage() {
         >
           <div className="text-center mb-8 md:mb-10">
             <h2 className="text-3xl font-black tracking-tighter uppercase text-zinc-100">로그인</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-zinc-500 break-keep">
+              경매 입찰, 물품 등록, 거래 채팅을 이용하려면 계정 접속이 필요합니다.
+            </p>
           </div>
 
           <div className="relative">
@@ -122,14 +98,15 @@ export default function LoginPage() {
               className="flex flex-col space-y-6 bg-white/[0.03] backdrop-blur-3xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl"
             >
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">아이디</label>
+                <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">마인크래프트 닉네임</label>
                 <input 
                   required
                   autoFocus
                   type="text"
                   autoComplete="off"
+                  placeholder="예: Steve"
                   onKeyDown={handleKeyDown} // 💡 개별 입력창에서도 엔터 감지
-                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg"
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-semibold text-base sm:text-lg placeholder:text-zinc-700"
                   value={loginId}
                   onChange={handleInputChange(setLoginId)}
                 />
@@ -150,7 +127,7 @@ export default function LoginPage() {
               <button 
                 type="submit" // 💡 submit 타입은 엔터키를 눌렀을 때 form을 제출시킵니다.
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-4 sm:py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-base sm:text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-2 sm:mt-4"
+                className="site-btn site-btn-primary mt-2 w-full py-4 text-sm sm:mt-4 sm:py-5 sm:text-base"
               >
                 {isLoading ? "접속 중..." : "로그인"}
               </button>
@@ -161,15 +138,15 @@ export default function LoginPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 text-center text-xs font-bold text-blue-400 space-y-1"
                 >
-                  <p>서버가 절전 모드에서 깨어나는 중입니다 😴</p>
-                  <p>최대 1분 정도 소요될 수 있으니 잠시만 기다려주세요!</p>
+                  <p>서버 연결을 준비하는 중입니다.</p>
+                  <p>최대 1분 정도 소요될 수 있습니다.</p>
                 </motion.div>
               )}
             </form>
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/register" onClick={triggerHaptic} className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
+            <Link href="/register" onClick={triggerHaptic} className="site-btn site-btn-ghost site-btn-compact">
               계정 생성하기
             </Link>
           </div>

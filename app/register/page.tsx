@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { request } from "@/utils/api";
+import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
 
 export default function Register() {
-  const [form, setForm] = useState({ loginId: "", password: "", ingameName: "" });
+  const [form, setForm] = useState({ loginId: "", password: "" });
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -17,11 +18,10 @@ export default function Register() {
     }
   }, []);
 
-  // 💡 아이디와 비밀번호에서 한글 입력을 실시간으로 차단하는 함수
+  // 마인크래프트 닉네임과 비밀번호에서 한글 입력을 실시간으로 차단합니다.
   const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // 아이디와 비밀번호는 영문/숫자/특수문자만 허용 (한글 제거)
-    const filteredValue = field === "ingameName" ? value : value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "");
+    const filteredValue = value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "");
     setForm({ ...form, [field]: filteredValue });
   };
 
@@ -30,9 +30,12 @@ export default function Register() {
     triggerHaptic();
     setIsLoading(true);
     try {
-      const data = await request("/api/auth/register", {
+      await request("/api/auth/register", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          ingameName: form.loginId,
+        }),
       });
 
       alert("가입을 축하합니다! 이제 로그인할 수 있습니다.");
@@ -46,38 +49,8 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none overflow-x-hidden relative flex flex-col">
-      
-      <style jsx global>{`
-        .premium-abyss-bg {
-          position: fixed; inset: -15%; z-index: 0;
-          background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
-                      radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.08) 0%, transparent 40%),
-                      radial-gradient(circle at 50% 50%, rgba(15, 15, 15, 1) 0%, rgba(1, 1, 1, 1) 100%);
-          filter: blur(80px); pointer-events: none;
-        }
-        .bg-texture {
-          position: fixed; inset: 0; z-index: 1; opacity: 0.3; pointer-events: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4' viewBox='0 0 4 4'%3E%3Cpath fill='%23ffffff' fill-opacity='0.08' d='M1 3h1v1H1V3zm2-2h1v1H2V1z'%3E%3C/path%3E%3C/svg%3E");
-        }
-      `}</style>
-
-      <div className="premium-abyss-bg" />
-      <div className="bg-texture" />
-
-      {/* 상단 네비게이션: 로그인과 동일하게 로고만 */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-black/60 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center relative z-10">
-          <Link href="/" onClick={triggerHaptic} className="flex items-center gap-1 group">
-            <span className="text-2xl md:text-3xl font-black tracking-tighter transition-transform group-hover:scale-105">
-              <span className="text-[#3b82f6]">D</span><span className="text-[#eab308]">D</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">N</span>
-              <span className="text-[#eab308]">G</span><span className="text-[#ef4444]">T</span>
-              <span className="text-[#3b82f6]">I</span><span className="text-[#22c55e]">O</span>
-              <span className="text-[#ef4444]">N</span>
-            </span>
-          </Link>
-        </div>
-      </nav>
+      <SiteBackground />
+      <SimpleTopBar onNavigate={triggerHaptic} />
 
       {/* 중앙 메인 컨텐츠 */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-6 relative z-10">
@@ -88,6 +61,9 @@ export default function Register() {
         >
           <div className="text-center mb-8 md:mb-10">
             <h2 className="text-3xl font-black tracking-tighter uppercase text-zinc-100">회원가입</h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-zinc-500 break-keep">
+              거래 알림과 경매 참여에 사용할 계정을 생성합니다.
+            </p>
           </div>
 
           <div className="relative">
@@ -95,14 +71,15 @@ export default function Register() {
               onSubmit={handleSubmit} 
               className="space-y-6 bg-white/[0.03] backdrop-blur-3xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl"
             >
-              {/* 아이디 */}
+              {/* 마인크래프트 닉네임 (백엔드 필드는 loginId 유지) */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">아이디</label>
+                <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">마인크래프트 닉네임</label>
                 <input 
                   required
                   type="text"
                   autoComplete="off"
-                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
+                  placeholder="예: Steve"
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-semibold text-base sm:text-lg placeholder:text-zinc-700" 
                   value={form.loginId}
                   onChange={handleInputChange("loginId")} 
                 />
@@ -110,32 +87,20 @@ export default function Register() {
 
               {/* 비밀번호 */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">비밀번호</label>
+                <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">비밀번호</label>
                 <input 
                   required
                   type="password"
-                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
+                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-semibold text-base sm:text-lg" 
                   value={form.password}
                   onChange={handleInputChange("password")} 
                 />
               </div>
 
-              {/* 인게임 닉네임 (닉네임은 한글 허용 가능성이 있어 필터 제외) */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">인게임 닉네임</label>
-                <input 
-                  required
-                  type="text"
-                  className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg" 
-                  value={form.ingameName}
-                  onChange={handleInputChange("ingameName")} 
-                />
-              </div>
-              
               <button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-white hover:bg-zinc-200 text-black font-black py-4 sm:py-5 rounded-[20px] transition-all transform active:scale-[0.98] shadow-xl text-base sm:text-lg disabled:bg-zinc-900 disabled:text-zinc-700 mt-2 sm:mt-4"
+                className="site-btn site-btn-primary mt-2 w-full py-4 text-sm sm:mt-4 sm:py-5 sm:text-base"
               >
                 {isLoading ? "가입 중..." : "회원가입"}
               </button>
@@ -143,7 +108,7 @@ export default function Register() {
           </div>
 
           <div className="mt-8 text-center">
-            <Link href="/login" onClick={triggerHaptic} className="text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest transition-all">
+            <Link href="/login" onClick={triggerHaptic} className="site-btn site-btn-ghost site-btn-compact">
               이미 계정이 있으신가요?
             </Link>
           </div>

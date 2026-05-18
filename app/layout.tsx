@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DDINGTION",
-  description: "띵타이쿤 비공식 강화계산기, 경매플랫폼",
+  description: "띵타이쿤 비공식 경매플랫폼",
 };
 
 export default function RootLayout({

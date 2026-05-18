@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +13,14 @@ export default function PostEditor({ userRole }: { userRole: string }) {
 
   const canWrite = userRole === "ADMIN" || userRole === "WRITER";
   const isAdmin = userRole === "ADMIN";
+  const getPostTypeLabel = (type: string) => type === "NOTICE" ? "공지" : "일반";
+  const { latestNotices, communityPosts } = useMemo(() => {
+    const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return {
+      latestNotices: sortedPosts.filter((post) => post.type === "NOTICE").slice(0, 3),
+      communityPosts: sortedPosts.filter((post) => post.type !== "NOTICE"),
+    };
+  }, [posts]);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -28,7 +36,6 @@ export default function PostEditor({ userRole }: { userRole: string }) {
     fetchPosts();
   }, [fetchPosts]);
 
-  // 💡 [신규] 게시글 삭제 로직
   const handleDelete = async (postId: number) => {
     if (!confirm("정말로 이 게시글을 영구 삭제하시겠습니까?")) return;
 
@@ -36,8 +43,8 @@ export default function PostEditor({ userRole }: { userRole: string }) {
       const res = await request(`/api/posts/${postId}`, { method: "DELETE" });
       if (res) {
         alert("게시글이 삭제되었습니다.");
-        setSelectedPost(null); // 상세보기 닫기
-        fetchPosts(); // 목록 갱신
+        setSelectedPost(null);
+        fetchPosts();
       }
     } catch (err: any) {
       alert(err.message || "삭제에 실패했습니다.");
@@ -61,141 +68,209 @@ export default function PostEditor({ userRole }: { userRole: string }) {
     }
   };
 
-  // 현재 로그인한 유저 ID 가져오기 (삭제 버튼 노출용)
-  const currentUserId = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "{}").id : null;
+  const getCurrentUserId = () => {
+    if (typeof window === "undefined") return null;
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}")?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const currentUserId = getCurrentUserId();
 
   return (
-    <div className="max-w-5xl mx-auto px-6 min-h-[800px] pb-40">
+    <div className="mx-auto min-h-[640px] max-w-5xl px-4 pb-28 sm:px-6">
       <AnimatePresence mode="wait">
         {selectedPost ? (
-          /* --- 1. 상세보기 모드 --- */
           <motion.div
             key="detail"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-[#0c0c0e] border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl backdrop-blur-xl relative"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="mx-auto max-w-4xl"
           >
-            <div className="flex justify-between items-start mb-8">
+            <div className="mb-4 flex items-center justify-between gap-3">
               <button
                 onClick={() => setSelectedPost(null)}
-                className="text-zinc-500 hover:text-white text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-colors"
+                className="site-btn site-btn-secondary site-btn-compact"
               >
-                <span className="text-lg">←</span> Back to list
+                <span className="text-sm">←</span> 목록으로
               </button>
 
-              {/* 💡 [패치] 삭제 권한 확인: 본인 글이거나 관리자일 때만 노출 */}
               {(selectedPost.authorId === currentUserId || isAdmin) && (
                 <button
                   onClick={() => handleDelete(selectedPost.id)}
-                  className="px-5 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white text-[10px] font-black uppercase rounded-xl transition-all border border-red-500/20"
+                  className="site-btn site-btn-danger site-btn-compact"
                 >
-                  Delete Post
+                  삭제
                 </button>
               )}
             </div>
 
-            <div className="flex items-center gap-3 mb-6">
-              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${selectedPost.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
-                {selectedPost.type}
-              </span>
-              <span className="text-zinc-600 text-[10px] font-bold">
-                {new Date(selectedPost.createdAt).toLocaleString()}
-              </span>
-            </div>
+            <article className="site-card overflow-hidden rounded-[30px]">
+              <header className="border-b border-white/5 bg-white/[0.018] p-5 md:p-7">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold ${selectedPost.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
+                    {getPostTypeLabel(selectedPost.type)}
+                  </span>
+                  <span className="text-[11px] font-medium text-zinc-600">
+                    {new Date(selectedPost.createdAt).toLocaleString()}
+                  </span>
+                  <span className="font-mono text-[10px] text-zinc-700">#{selectedPost.id}</span>
+                </div>
 
-            <h2 className="text-3xl font-black text-white mb-8 tracking-tight leading-tight border-b border-white/5 pb-8">
-              {selectedPost.title}
-            </h2>
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <h2 className="min-w-0 max-w-3xl text-2xl font-extrabold leading-tight tracking-[-0.04em] text-white md:text-4xl">
+                    {selectedPost.title}
+                  </h2>
 
-            <div className="text-zinc-300 font-medium leading-relaxed whitespace-pre-wrap min-h-[300px]">
-              {selectedPost.content}
-            </div>
+                  <div className="flex w-fit shrink-0 items-center gap-3 rounded-2xl border border-white/5 bg-black/20 p-3 md:w-48">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/25 to-cyan-500/10 text-xs font-extrabold text-blue-100">
+                      {(selectedPost.author?.ingameName || "?").slice(0, 1).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-semibold text-zinc-200">{selectedPost.author?.ingameName || "알 수 없음"}</p>
+                      <p className="mt-0.5 text-[10px] font-medium text-zinc-600">작성자</p>
+                    </div>
+                  </div>
+                </div>
+              </header>
 
-            <div className="mt-12 pt-8 border-t border-white/5 flex justify-between items-center text-zinc-500">
-              <span className="text-xs font-bold uppercase tracking-tight">Author: {selectedPost.author?.ingameName}</span>
-              <span className="text-[10px] font-mono opacity-30 tracking-tighter uppercase font-black">UID_{selectedPost.id}</span>
-            </div>
+              <div className="bg-black/10 px-5 py-6 md:px-7 md:py-8">
+                <div className="min-h-[260px] whitespace-pre-wrap text-[15px] font-medium leading-8 text-zinc-300 break-keep">
+                  {selectedPost.content}
+                </div>
+              </div>
+
+              <footer className="flex flex-col gap-3 border-t border-white/5 bg-white/[0.012] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-medium text-zinc-600">커뮤니티 게시글은 작성자의 의견이며, 거래 전 정보 확인을 권장합니다.</p>
+                <button
+                  onClick={() => setSelectedPost(null)}
+                  className="site-btn site-btn-secondary site-btn-compact w-fit"
+                >
+                  목록 보기
+                </button>
+              </footer>
+            </article>
           </motion.div>
         ) : !isWriting ? (
-          /* --- 2. 목록 모드 --- */
           <motion.div
             key="list"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="space-y-6"
+            className="space-y-4"
           >
-            <div className="flex justify-between items-end mb-10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Community</h2>
-                <p className="text-zinc-500 text-[10px] font-black tracking-[0.3em] uppercase mt-1">최신 공지 및 유저 게시글</p>
+                <p className="site-label text-blue-400">Community</p>
+                <h2 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-white md:text-3xl">커뮤니티</h2>
+                <p className="mt-2 text-xs font-medium text-zinc-500">최신 공지와 유저 게시글을 확인합니다.</p>
               </div>
               {canWrite && (
                 <button
                   onClick={() => setIsWriting(true)}
-                  className="px-8 py-3 bg-white text-black font-black rounded-xl text-xs hover:bg-cyan-500 transition-all active:scale-95 shadow-lg"
+                  className="site-btn site-btn-primary w-fit"
                 >
                   새 글 작성
                 </button>
               )}
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {posts.map((post) => (
-                <div
-                  key={post.id}
-                  onClick={() => setSelectedPost(post)}
-                  className="bg-white/[0.03] border border-white/5 p-6 rounded-[24px] hover:bg-white/[0.08] hover:border-white/10 transition-all group cursor-pointer active:scale-[0.99]"
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${post.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
-                      {post.type}
-                    </span>
-                    <span className="text-zinc-600 text-[10px] font-bold">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+              <div className="order-2 grid grid-cols-1 gap-3 lg:order-1">
+                {posts.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
+                    <p className="text-sm font-semibold text-zinc-400">아직 등록된 게시글이 없습니다.</p>
+                    <p className="mt-2 text-xs font-medium text-zinc-600">공지나 커뮤니티 글이 작성되면 이곳에 표시됩니다.</p>
                   </div>
-                  <h3 className="text-lg font-bold text-zinc-200 mb-2 group-hover:text-cyan-400 transition-colors">
-                    {post.title}
-                  </h3>
-                  <div className="flex items-center justify-between pointer-events-none">
-                    <span className="text-xs text-zinc-500 font-medium opacity-60 uppercase font-black tracking-tight">Author: {post.author?.ingameName}</span>
-                    <div className="flex items-center gap-4">
-                        <span className="text-[10px] text-zinc-700 font-mono font-black">READ MORE +</span>
+                ) : communityPosts.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
+                    <p className="text-sm font-semibold text-zinc-400">아직 일반 게시글이 없습니다.</p>
+                    <p className="mt-2 text-xs font-medium text-zinc-600">커뮤니티 글이 작성되면 공지 아래에 표시됩니다.</p>
+                  </div>
+                ) : communityPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    onClick={() => setSelectedPost(post)}
+                    className="group cursor-pointer rounded-[22px] border border-white/5 bg-white/[0.025] p-4 transition-all hover:border-white/10 hover:bg-white/[0.05] active:scale-[0.995]"
+                  >
+                    <div className="mb-2.5 flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-semibold ${post.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
+                        {getPostTypeLabel(post.type)}
+                      </span>
+                      <span className="text-[10px] font-medium text-zinc-600">
+                        {new Date(post.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <h3 className="mb-2 truncate text-sm font-semibold text-zinc-200 transition-colors group-hover:text-cyan-300 md:text-base">
+                      {post.title}
+                    </h3>
+                    <div className="pointer-events-none flex items-center justify-between">
+                      <span className="text-xs font-medium text-zinc-500">작성자: {post.author?.ingameName || "알 수 없음"}</span>
+                      <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-semibold text-zinc-600">자세히 보기</span>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+
+              <aside className="order-1 rounded-[24px] border border-blue-500/10 bg-blue-500/[0.035] p-3 lg:sticky lg:top-32 lg:order-2">
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <h3 className="text-xs font-extrabold text-blue-100">최신 공지</h3>
+                  <span className="text-[10px] font-medium text-blue-200/50">최대 3개</span>
                 </div>
-              ))}
+                <div className="grid gap-1.5">
+                  {latestNotices.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-blue-500/10 bg-black/15 px-3 py-2 text-xs font-medium text-blue-100/45">
+                      등록된 공지가 없습니다.
+                    </div>
+                  ) : latestNotices.map((post) => (
+                    <button
+                      key={`notice-${post.id}`}
+                      onClick={() => setSelectedPost(post)}
+                      className="rounded-xl bg-black/20 px-3 py-2 text-left transition-colors hover:bg-white/[0.045]"
+                    >
+                      <div className="mb-1.5 flex items-center justify-between gap-2">
+                        <span className="rounded bg-blue-600 px-2 py-0.5 text-[9px] font-semibold text-white">공지</span>
+                        <span className="text-[10px] font-medium text-zinc-600">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className="line-clamp-2 text-xs font-semibold leading-relaxed text-zinc-200">{post.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </aside>
             </div>
           </motion.div>
         ) : (
-          /* --- 3. 작성 모드 --- */
           <motion.div
             key="editor"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -12 }}
           >
-            <div className="bg-[#0c0c0e] border border-white/5 rounded-[40px] p-8 md:p-12 shadow-2xl">
-              <div className="flex justify-between items-center mb-10">
+            <div className="site-card rounded-[28px] p-4 md:p-5">
+              <div className="mb-5 flex flex-col gap-3 border-b border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   onClick={() => setIsWriting(false)}
-                  className="text-zinc-500 hover:text-white text-xs font-black uppercase tracking-widest transition-colors"
+                  className="w-fit text-xs font-semibold text-zinc-500 transition-colors hover:text-white"
                 >
-                  ← Back to list
+                  ← 목록으로
                 </button>
-                <div className="flex bg-black/40 p-1.5 rounded-xl border border-white/10">
+                <div className="flex w-fit rounded-xl border border-white/10 bg-black/40 p-1">
                   <button
                     onClick={() => setForm({ ...form, type: "GENERAL" })}
-                    className={`px-5 py-2 rounded-lg text-[10px] font-black transition-all ${form.type === "GENERAL" ? "bg-zinc-700 text-white shadow-lg" : "text-zinc-500"}`}
+                    className={`rounded-lg px-4 py-1.5 text-[10px] font-semibold transition-all ${form.type === "GENERAL" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     일반 게시글
                   </button>
                   {isAdmin && (
                     <button
                       onClick={() => setForm({ ...form, type: "NOTICE" })}
-                      className={`px-5 py-2 rounded-lg text-[10px] font-black transition-all ml-1 ${form.type === "NOTICE" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-500"}`}
+                      className={`ml-1 rounded-lg px-4 py-1.5 text-[10px] font-semibold transition-all ${form.type === "NOTICE" ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
                     >
                       시스템 공지
                     </button>
@@ -204,13 +279,13 @@ export default function PostEditor({ userRole }: { userRole: string }) {
               </div>
 
               <input
-                className="w-full bg-transparent border-b border-white/10 p-4 text-xl font-bold text-white outline-none focus:border-blue-500 transition-all mb-8 placeholder:text-zinc-800"
+                className="mb-4 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-base font-semibold text-white outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/50"
                 placeholder="제목을 입력하세요"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
               />
               <textarea
-                className="w-full bg-black/20 border border-white/5 p-8 rounded-[32px] text-zinc-300 h-96 resize-none leading-relaxed mb-10 custom-scrollbar outline-none focus:border-white/10 transition-all"
+                className="mb-4 h-72 w-full resize-none rounded-2xl border border-white/5 bg-black/20 p-4 text-sm leading-relaxed text-zinc-300 outline-none transition-all placeholder:text-zinc-700 focus:border-white/10 custom-scrollbar"
                 placeholder="내용을 작성하세요. 줄바꿈이 그대로 반영됩니다."
                 value={form.content}
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
@@ -218,9 +293,7 @@ export default function PostEditor({ userRole }: { userRole: string }) {
               <button
                 onClick={handlePublish}
                 disabled={isLoading}
-                className={`w-full py-6 rounded-2xl font-black transition-all active:scale-[0.98] disabled:opacity-50 uppercase tracking-[0.2em] text-xs ${
-                    form.type === 'NOTICE' ? 'bg-blue-600 text-white shadow-blue-900/20' : 'bg-white text-black hover:bg-cyan-500'
-                } shadow-xl`}
+                className={`site-btn w-full ${form.type === 'NOTICE' ? 'site-btn-primary' : 'site-btn-secondary'}`}
               >
                 {isLoading ? "전송 중..." : "게시글 작성 완료"}
               </button>

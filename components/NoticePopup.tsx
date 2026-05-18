@@ -70,15 +70,15 @@ export default function NoticePopup() {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[9px] font-black rounded border border-blue-500/20 uppercase">Notice</span>
-              <button onClick={closePopup} className="text-zinc-600 hover:text-white">✕</button>
+              <button onClick={closePopup} className="site-btn site-btn-ghost h-7 w-7 p-0">✕</button>
             </div>
             <h3 className="text-[15px] font-bold text-white mb-4 leading-tight">{notice.title}</h3>
             <div className="text-[12px] text-zinc-400 leading-relaxed whitespace-pre-wrap max-h-[150px] overflow-y-auto mb-6 custom-scrollbar">
               {notice.content}
             </div>
             <div className="flex items-center justify-between pt-4 border-t border-white/5">
-              <button onClick={hideForADay} className="text-[10px] font-black text-zinc-600 hover:text-white uppercase tracking-widest">하루 닫기</button>
-              <button onClick={closePopup} className="px-5 py-2 bg-white text-black text-[11px] font-black rounded-xl active:scale-95">확인</button>
+              <button onClick={hideForADay} className="site-btn site-btn-ghost site-btn-compact">하루 닫기</button>
+              <button onClick={closePopup} className="site-btn site-btn-primary site-btn-compact">확인</button>
             </div>
           </div>
           </motion.div>

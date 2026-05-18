@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "@/utils/runtimeConfig";
+import { isLocalDev } from "@/utils/devMode";
+import { getLocalDummyResponse } from "@/utils/localDummyData";
 
 type RequestOptions = RequestInit & {
   redirectOnNetworkError?: boolean;
@@ -7,6 +9,11 @@ type RequestOptions = RequestInit & {
 export const request = async (url: string, options: RequestOptions = {}) => {
   const { redirectOnNetworkError = false, ...fetchOptions } = options;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null; // 💡 앱 전체 호환성을 위해 localStorage로 복구
+  const method = (fetchOptions.method || "GET").toString().toUpperCase();
+  if (isLocalDev()) {
+    const localResponse = getLocalDummyResponse(url, method);
+    if (localResponse !== null) return localResponse;
+  }
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -26,6 +33,7 @@ export const request = async (url: string, options: RequestOptions = {}) => {
 
     // 💡 401 Unauthorized: 유령 계정 처리
     if (response.status === 401 && !url.includes('/api/auth/login')) { // 💡 로그인 시도 중 틀린 경우는 가로채지 않음!
+      if (isLocalDev()) return getLocalDummyResponse(url, method);
       if (typeof window !== 'undefined') {
         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
         localStorage.clear();
@@ -39,6 +47,7 @@ export const request = async (url: string, options: RequestOptions = {}) => {
       if (data?.code === "DISCORD_REQUIRED") {
         throw new Error(data.error || "디스코드 인증이 필요합니다.");
       }
+      if (isLocalDev()) return getLocalDummyResponse(url, method);
       if (typeof window !== 'undefined') {
         alert(data?.error || "관리자에 의해 접근이 차단된 계정입니다.");
         localStorage.clear();
@@ -59,6 +68,10 @@ export const request = async (url: string, options: RequestOptions = {}) => {
 
   } catch (error) {
     console.error("Critical Connection Error:", error);
+    if (isLocalDev()) {
+      const localResponse = getLocalDummyResponse(url, method);
+      if (localResponse !== null) return localResponse;
+    }
     const isNetwork =
       error instanceof TypeError ||
       (error instanceof Error && /failed to fetch|networkerror/i.test(error.message));

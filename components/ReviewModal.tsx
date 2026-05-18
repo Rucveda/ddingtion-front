@@ -109,14 +109,14 @@ export default function ReviewModal({
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 py-4 rounded-2xl bg-zinc-900 text-[11px] font-black text-zinc-500 uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+                className="site-btn site-btn-secondary flex-1 py-4"
               >
                 나중에
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex-1 py-4 rounded-2xl bg-blue-600 text-[11px] font-black text-white uppercase tracking-widest shadow-lg shadow-blue-600/20 hover:bg-blue-500 active:scale-95 transition-all disabled:opacity-50"
+                className="site-btn site-btn-primary flex-1 py-4"
               >
                 {isSubmitting ? "전송 중..." : "평가 완료"}
               </button>

@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
 import ReviewModal from "./ReviewModal";
 import { SOCKET_URL } from "@/utils/runtimeConfig";
+import { isLocalDev } from "@/utils/devMode";
+import { ensureLocalDummySession } from "@/utils/localDummyData";
 
 // 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
 const CHAT_OPEN_EVENT = "ddingtion_chat_open";
@@ -44,6 +46,7 @@ export default function ChatWidget() {
 
   // 채팅방 목록 불러오기
   const fetchRooms = async () => {
+    if (isLocalDev()) ensureLocalDummySession();
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -61,6 +64,7 @@ export default function ChatWidget() {
   };
 
   const fetchMessages = async (roomId: number) => {
+    if (isLocalDev()) ensureLocalDummySession();
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -79,6 +83,7 @@ export default function ChatWidget() {
       // 신호를 받았으므로 ID 삭제 후 창 열기
       localStorage.removeItem("openChatId");
       setIsOpen(true);
+      if (isLocalDev()) ensureLocalDummySession();
       
       try {
         const data = await request("/api/chat/rooms");
@@ -105,14 +110,20 @@ export default function ChatWidget() {
     } catch (err) { alert("관리자 연결 실패"); }
   };
 
-  // 💡 거래 종료 로직 (PATCH 대응)
+  // 거래 확정: 양측이 모두 확인하면 거래가 완료되고 리뷰 단계로 넘어갑니다.
   const closeTrade = async () => {
-    if (!selectedRoom || !confirm("거래를 종료하시겠습니까? 종료 후 상대방 평가가 진행됩니다.")) return;
+    if (!selectedRoom || !confirm("거래를 확정하시겠습니까? 양측이 모두 확정하면 거래가 완료됩니다.")) return;
     try {
-      // PATCH 요청 전송 (백엔드 CORS 설정에 PATCH가 허용되어 있어야 함)
       const res = await request(`/api/chat/rooms/${selectedRoom.id}/close`, { method: "PATCH" });
       
       if (res) {
+        if (!res.completed) {
+          if (res.room) setSelectedRoom(res.room);
+          fetchRooms();
+          alert(res.message || "거래 확정이 기록되었습니다. 상대방의 확정을 기다려주세요.");
+          return;
+        }
+
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
         const isSeller = selectedRoom.sellerId === currentUser.id;
 
@@ -128,7 +139,7 @@ export default function ChatWidget() {
         setShowReviewModal(true);
       }
     } catch (e) { 
-      alert("종료 처리 중 오류가 발생했습니다. 백엔드 서버의 PATCH 메서드 허용 여부를 확인하세요."); 
+      alert("거래 확정 처리 중 오류가 발생했습니다."); 
     }
   };
 
@@ -151,9 +162,21 @@ export default function ChatWidget() {
 
   useEffect(() => {
     if (!isMounted) return;
+    if (isLocalDev()) ensureLocalDummySession();
     const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     if (!userStr || !token) return;
+
+    if (isLocalDev()) {
+      fetchRooms();
+      checkAutoOpen();
+      window.addEventListener("storage", checkAutoOpen);
+      window.addEventListener(CHAT_OPEN_EVENT, checkAutoOpen);
+      return () => {
+        window.removeEventListener("storage", checkAutoOpen);
+        window.removeEventListener(CHAT_OPEN_EVENT, checkAutoOpen);
+      };
+    }
 
     // 💡 유지보수 패치: 하드코딩된 서버 주소 제거
     const newSocket = io(SOCKET_URL);
@@ -188,6 +211,10 @@ export default function ChatWidget() {
   }, [isMounted, checkAutoOpen]);
 
   useEffect(() => {
+    if (isLocalDev() && selectedRoom?.id) {
+      fetchMessages(selectedRoom.id);
+      return;
+    }
     if (selectedRoom?.id && socket) {
       // 💡 보안 패치: userId 대신 검증 불가능한 토큰을 전송
       const token = localStorage.getItem("token");
@@ -200,7 +227,24 @@ export default function ChatWidget() {
 
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !selectedRoom?.id || !socket) return;
+    if (!input.trim() || !selectedRoom?.id) return;
+    if (isLocalDev()) {
+      const currentUser = ensureLocalDummySession();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          roomId: selectedRoom.id,
+          senderId: currentUser.id,
+          content: input,
+          createdAt: new Date().toISOString(),
+          sender: { id: currentUser.id, ingameName: currentUser.ingameName },
+        },
+      ]);
+      setInput("");
+      return;
+    }
+    if (!socket) return;
     // 💡 보안 패치: userId 변조 공격 차단을 위해 토큰 전송
     const token = localStorage.getItem("token");
     socket.emit("send_message", { roomId: Number(selectedRoom.id), token, content: input });
@@ -208,11 +252,19 @@ export default function ChatWidget() {
   };
 
   if (!isMounted) return null;
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = isLocalDev() ? ensureLocalDummySession() : JSON.parse(localStorage.getItem("user") || "{}");
   if (!user.id) return null;
 
   const safeRooms = Array.isArray(rooms) ? rooms : [];
   const totalUnread = safeRooms.reduce((acc, room) => acc + (room._count?.messages || 0), 0);
+  const currentUserConfirmed =
+    selectedRoom && !selectedRoom.isAdminChat
+      ? (selectedRoom.sellerId === user.id ? selectedRoom.sellerConfirmed : selectedRoom.buyerConfirmed)
+      : false;
+  const partnerConfirmed =
+    selectedRoom && !selectedRoom.isAdminChat
+      ? (selectedRoom.sellerId === user.id ? selectedRoom.buyerConfirmed : selectedRoom.sellerConfirmed)
+      : false;
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] font-sans select-none flex flex-col items-end">
@@ -227,7 +279,7 @@ export default function ChatWidget() {
             <header className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               {selectedRoom ? (
                 <div className="flex items-center gap-4">
-                  <button onClick={() => setSelectedRoom(null)} className="text-xs font-black text-zinc-400 hover:text-white tracking-tight transition-none">← 뒤로</button>
+                  <button onClick={() => setSelectedRoom(null)} className="site-btn site-btn-ghost site-btn-compact">← 뒤로</button>
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-zinc-200">
                       {selectedRoom.isAdminChat ? "고객지원팀" : (selectedRoom.sellerId === user.id ? selectedRoom.buyer?.ingameName : selectedRoom.seller?.ingameName)}
@@ -241,11 +293,17 @@ export default function ChatWidget() {
               )}
               {selectedRoom && !selectedRoom.isAdminChat && (
                 <div className="flex gap-4 items-center">
-                  <button onClick={() => setShowReport(true)} className="text-[11px] font-black text-red-400/70 hover:text-red-400 transition-colors">신고</button>
-                  <button onClick={closeTrade} className="text-[11px] font-black text-zinc-400 hover:text-white transition-colors">종료</button>
+                  <button onClick={() => setShowReport(true)} className="site-btn site-btn-danger site-btn-compact">신고</button>
+                  <button
+                    onClick={closeTrade}
+                    disabled={Boolean(currentUserConfirmed)}
+                    className="site-btn site-btn-secondary site-btn-compact"
+                  >
+                    {currentUserConfirmed ? "확정 완료" : "거래 확정"}
+                  </button>
                 </div>
               )}
-              {!selectedRoom && <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white transition-colors">✕</button>}
+              {!selectedRoom && <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-8 w-8 rounded-full p-0">✕</button>}
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -286,6 +344,19 @@ export default function ChatWidget() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {!selectedRoom.isAdminChat && (
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-4">
+                      <div className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">거래 확정 상태</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className={`rounded-xl px-3 py-2 text-[11px] font-black ${currentUserConfirmed ? "bg-emerald-500/10 text-emerald-300" : "bg-white/[0.04] text-zinc-500"}`}>
+                          내 확인 {currentUserConfirmed ? "완료" : "대기"}
+                        </div>
+                        <div className={`rounded-xl px-3 py-2 text-[11px] font-black ${partnerConfirmed ? "bg-emerald-500/10 text-emerald-300" : "bg-white/[0.04] text-zinc-500"}`}>
+                          상대 확인 {partnerConfirmed ? "완료" : "대기"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex flex-col ${msg.senderId === user.id ? "items-end" : "items-start"}`}>
                       <div className={`max-w-[85%] px-5 py-3.5 rounded-[22px] text-[13px] font-bold leading-relaxed ${
@@ -311,7 +382,7 @@ export default function ChatWidget() {
                   placeholder="메시지 전송..." 
                   className="flex-1 bg-white/[0.04] border border-white/10 rounded-xl px-5 py-4 text-sm font-bold outline-none focus:border-blue-500/50 transition-all text-zinc-200 placeholder:text-zinc-500" 
                 />
-                <button className="w-12 h-12 bg-white text-black rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5">
+                <button className="site-btn site-btn-primary h-12 w-12 p-0">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                 </button>
               </form>
@@ -332,8 +403,8 @@ export default function ChatWidget() {
                     onChange={e => setReportReason(e.target.value)} 
                   />
                   <div className="flex gap-3 w-full">
-                    <button onClick={() => setShowReport(false)} className="flex-1 py-4 rounded-xl bg-zinc-800 text-[10px] font-black uppercase tracking-widest text-zinc-500">취소</button>
-                    <button onClick={handleReport} className="flex-1 py-4 rounded-xl bg-red-600 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-red-600/20">전송</button>
+                    <button onClick={() => setShowReport(false)} className="site-btn site-btn-secondary flex-1 py-4">취소</button>
+                    <button onClick={handleReport} className="site-btn site-btn-danger flex-1 py-4">전송</button>
                   </div>
                 </motion.div>
               )}
@@ -358,7 +429,7 @@ export default function ChatWidget() {
 
       <button 
         onClick={() => { triggerHaptic(); setIsOpen(!isOpen); }} 
-        className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all shadow-xl group backdrop-blur-md"
+        className="site-btn site-btn-secondary relative h-14 w-14 rounded-full p-0 shadow-xl group"
       >
         <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'scale-90' : 'opacity-50 group-hover:opacity-100'} ${totalUnread > 0 && !isOpen ? 'animate-pulse' : ''}`}>
           {isOpen ? (

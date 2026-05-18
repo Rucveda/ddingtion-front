@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { request } from "@/utils/api"; 
 import { io } from "socket.io-client";
 import { SOCKET_URL } from "@/utils/runtimeConfig";
+import { isLocalDev } from "@/utils/devMode";
+import { ensureLocalDummySession } from "@/utils/localDummyData";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -15,6 +17,7 @@ export default function NotificationCenter() {
   const router = useRouter();
 
   const fetchLogs = useCallback(async () => {
+    if (isLocalDev()) ensureLocalDummySession();
     const token = localStorage.getItem("token");
     if (!token) return;
 
@@ -32,6 +35,7 @@ export default function NotificationCenter() {
   }, []);
 
   useEffect(() => {
+    if (isLocalDev()) ensureLocalDummySession();
     const userStr = localStorage.getItem("user");
     const token = localStorage.getItem("token");
     
@@ -45,6 +49,8 @@ export default function NotificationCenter() {
     queueMicrotask(() => {
       fetchLogs();
     });
+
+    if (isLocalDev()) return;
 
     const socket = io(SOCKET_URL);
     socket.emit("setup_notifications", user.id);
@@ -91,13 +97,13 @@ export default function NotificationCenter() {
     // UI에서 즉시 제거
     setNotifications(prev => prev.filter(n => n.id !== id));
     // 서버에서 삭제
-    await request(`/api/notifications/${id}`, { method: "DELETE" });
+    if (!isLocalDev()) await request(`/api/notifications/${id}`, { method: "DELETE" });
   };
 
   const clearAll = async () => {
     if (!confirm("모든 알림 기록을 파기하시겠습니까?")) return;
     setNotifications([]); // UI 즉시 초기화
-    await request("/api/notifications/all/clear", { method: "DELETE" });
+    if (!isLocalDev()) await request("/api/notifications/all/clear", { method: "DELETE" });
   };
 
   return (
@@ -114,7 +120,7 @@ export default function NotificationCenter() {
               <div>
                 <h3 className="text-sm font-bold text-zinc-100 tracking-tight">알림 센터</h3>
               </div>
-              <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 text-zinc-500 hover:text-white transition-colors">✕</button>
+              <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-8 w-8 rounded-full p-0">✕</button>
             </div>
 
             <div className="max-h-72 overflow-y-auto space-y-2 p-4 custom-scrollbar">
@@ -139,7 +145,7 @@ export default function NotificationCenter() {
                       </span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                        className="delete-btn opacity-0 group-hover:opacity-100 p-1 text-zinc-600 hover:text-white transition-all"
+                        className="site-btn site-btn-ghost h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
                       >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12"/></svg>
                       </button>
@@ -154,7 +160,7 @@ export default function NotificationCenter() {
             {safeNotifications.length > 0 && (
               <button 
                 onClick={clearAll}
-                className="w-full py-4 bg-white/[0.02] hover:bg-red-900/20 text-xs font-black text-zinc-500 hover:text-red-500 transition-all border-t border-white/5 tracking-tight"
+                className="site-btn site-btn-danger w-full rounded-none border-x-0 border-b-0 py-4"
               >
                 모든 기록 파기
               </button>
@@ -165,7 +171,7 @@ export default function NotificationCenter() {
 
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center relative hover:scale-110 active:scale-95 transition-all shadow-xl group backdrop-blur-md"
+        className="site-btn site-btn-secondary relative h-14 w-14 rounded-full p-0 shadow-xl group"
       >
         <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'scale-90' : 'opacity-50 group-hover:opacity-100'} ${unreadCount > 0 && !isOpen ? 'animate-pulse' : ''}`}>
           {isOpen ? (

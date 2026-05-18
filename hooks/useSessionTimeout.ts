@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { isLocalDev } from "@/utils/devMode";
 
 const TIMEOUT_MS = 10 * 60 * 1000; // 10분 (밀리초 단위)
 
@@ -33,6 +34,7 @@ export function useSessionTimeout() {
   }, []);
 
   useEffect(() => {
+    if (isLocalDev()) return;
     // 💡 로그인 및 회원가입 페이지에서는 세션 타이머를 작동시키지 않음
     if (pathname === "/login" || pathname === "/register") return;
 
