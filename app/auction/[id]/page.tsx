@@ -488,12 +488,12 @@ export default function AuctionDetail() {
               <div className="custom-scrollbar overflow-y-auto max-h-[470px] pr-2 space-y-6">
                 {category !== "WILD" && (
                   <div className="space-y-3">
-                    <h2 className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-[0.14em] flex items-center gap-2">
-                      <div className="w-1 h-3 bg-cyan-500 rounded-full" /> 강화 단계
+                    <h2 className="text-[10px] font-extrabold text-blue-300 uppercase tracking-[0.14em] flex items-center gap-2">
+                      <div className="w-1 h-3 bg-blue-500 rounded-full" /> 강화 단계
                     </h2>
-                    <div className="inline-flex items-baseline gap-2 rounded-2xl border border-cyan-500/15 bg-cyan-500/[0.06] px-4 py-2.5">
-                      <span className="font-mono text-xl font-extrabold text-cyan-100">+{auction.enhancementLevel || 0}</span>
-                      <span className="text-xs font-semibold text-cyan-300/70">강화</span>
+                    <div className="inline-flex items-baseline gap-2 rounded-2xl border border-blue-500/15 bg-blue-500/[0.06] px-4 py-2.5">
+                      <span className="font-mono text-xl font-extrabold text-blue-100">+{auction.enhancementLevel || 0}</span>
+                      <span className="text-xs font-semibold text-blue-300/70">강화</span>
                     </div>
                   </div>
                 )}
@@ -535,15 +535,15 @@ export default function AuctionDetail() {
                     {/* RPG 룬 정보 */}
                     {auction.runes && (
                       <div className="space-y-3">
-                        <h2 className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] flex items-center gap-2">
-                          <div className="w-1 h-3 bg-orange-500 rounded-full" /> 장착된 룬
+                        <h2 className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-[0.14em] flex items-center gap-2">
+                          <div className="w-1 h-3 bg-indigo-500 rounded-full" /> 장착된 룬
                         </h2>
                         <div className="grid grid-cols-3 gap-2">
                           {auction.runes.map((rune: any, i: number) => (
-                            <div key={i} className={`h-14 rounded-xl border flex flex-col items-center justify-center text-center ${rune.type ? 'bg-orange-500/10 border-orange-500/30' : 'bg-black/40 border-white/5 opacity-40'}`}>
+                            <div key={i} className={`h-14 rounded-xl border flex flex-col items-center justify-center text-center ${rune.type ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-black/40 border-white/5 opacity-40'}`}>
                               {rune.type ? (
                                 <>
-                                  <span className="text-[8px] font-black text-orange-500 uppercase mb-0.5">{rune.grade}</span>
+                                  <span className="text-[8px] font-black text-indigo-300 uppercase mb-0.5">{rune.grade}</span>
                                   <span className="text-[10px] font-extrabold text-zinc-100 truncate w-full px-2">{rune.type}</span>
                                 </>
                               ) : <span className="text-zinc-800 text-[10px] font-black uppercase">Slot {i + 1}</span>}

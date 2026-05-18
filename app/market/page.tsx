@@ -109,45 +109,51 @@ function MarketIntelligenceContent({ initialTab }: MarketTabProps) {
           </>
         )}
 
-        <main className={`max-w-7xl mx-auto ${isEmbedded ? "py-2" : "py-8 md:py-10"} px-4 sm:px-6 relative z-10`}>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 items-start">
+        <main className={`mx-auto max-w-7xl ${isEmbedded ? "py-1" : "py-6 md:py-8"} relative z-10 px-3 sm:px-5`}>
+          <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
             
             {/* 왼쪽 사이드바: 아이템 리스트 */}
-            <aside className="lg:col-span-3 w-full lg:sticky lg:top-32">
+            <aside className="w-full lg:sticky lg:top-28 lg:col-span-3">
               <motion.div 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-white/[0.03] border border-white/10 p-3.5 md:p-4 rounded-[24px] md:rounded-[28px] backdrop-blur-md shadow-2xl"
+                className="rounded-2xl border border-white/5 bg-white/[0.018] p-3"
               >
-                <div className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] mb-3 flex items-center gap-2 px-1">
-                  <div className="w-1 h-3 bg-blue-600 rounded-full" /> 아이템 선택
+                <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                  <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-400">
+                    <div className="h-3 w-1 rounded-full bg-blue-600" /> 아이템 선택
+                  </div>
+                  <span className="text-[10px] font-semibold text-zinc-600">{filteredItems.length}/{dbItems.length}</span>
                 </div>
                 
                 <input 
                   type="text" 
                   placeholder="아이템 이름 입력..." 
-                  className="w-full bg-black/40 border border-white/10 px-4 py-3 rounded-2xl text-xs font-semibold outline-none focus:border-blue-500/50 transition-all mb-3 placeholder:text-zinc-500"
+                  className="mb-2 w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2.5 text-xs font-semibold outline-none transition-all placeholder:text-zinc-600 focus:border-blue-500/40"
                   value={searchTerm} 
                   onChange={e => setSearchTerm(e.target.value)}
                 />
 
-                <div className="max-h-[40vh] lg:max-h-[60vh] overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                <div className="custom-scrollbar max-h-[36vh] space-y-1 overflow-y-auto pr-1 lg:max-h-[62vh]">
                   {filteredItems.map(item => (
                     <button 
                       key={item.id}
                       onClick={() => handleSelectItem(item)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all border ${selectedItem?.id === item.id ? "bg-blue-600/10 border-blue-500/40 text-white shadow-[0_0_15px_rgba(59,130,246,0.1)]" : "bg-white/[0.02] border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200"}`}
+                      className={`flex w-full items-center gap-2.5 rounded-xl border px-2.5 py-2 transition-all ${selectedItem?.id === item.id ? "border-blue-500/35 bg-blue-500/10 text-white" : "border-transparent bg-black/20 text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"}`}
                     >
-                      <div className="w-7 h-7 flex items-center justify-center shrink-0">
-                        <img src={getSecureUrl(item.iconUrl)} className="w-full h-full object-contain pixel-art" alt="" />
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center">
+                        <img src={getSecureUrl(item.iconUrl)} className="h-full w-full object-contain pixel-art" alt="" />
                       </div>
-                      <span className="font-semibold text-[11px] truncate flex-1 text-left tracking-tight">{item.name}</span>
+                      <div className="min-w-0 flex-1 text-left">
+                        <span className="block truncate text-[11px] font-semibold tracking-tight">{item.name}</span>
+                        <span className="mt-0.5 block truncate text-[9px] font-bold uppercase tracking-[0.08em] text-zinc-700">{item.category}</span>
+                      </div>
                     </button>
                   ))}
                   {filteredItems.length === 0 && (
-                    <div className="text-center py-10 text-xs font-bold text-zinc-400">
+                    <div className="rounded-xl border border-dashed border-white/5 bg-black/15 px-3 py-8 text-center text-xs font-bold text-zinc-500">
                       아이템이 없습니다.
-                      <div className="mt-2 text-[11px] font-medium text-zinc-500">서버 연결 또는 검색어를 확인해 주세요.</div>
+                      <div className="mt-2 text-[11px] font-medium text-zinc-600">검색어를 확인해 주세요.</div>
                     </div>
                   )}
                 </div>
@@ -155,7 +161,7 @@ function MarketIntelligenceContent({ initialTab }: MarketTabProps) {
             </aside>
 
             {/* 오른쪽 메인 컨텐츠 영역 */}
-            <div className="lg:col-span-9 w-full min-w-0">
+            <div className="min-w-0 w-full lg:col-span-9">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab + (selectedItem?.id || "none")}
@@ -166,12 +172,12 @@ function MarketIntelligenceContent({ initialTab }: MarketTabProps) {
                   className="w-full"
                 >
                   {/* 내부 컨텐츠 박스 */}
-                  <section className="bg-white/[0.02] border border-white/10 p-4 md:p-6 rounded-[28px] md:rounded-[36px] shadow-2xl backdrop-blur-md min-h-[480px] md:min-h-[68vh] flex flex-col w-full overflow-hidden">
+                  <section className="flex min-h-[460px] w-full flex-col overflow-hidden rounded-2xl border border-white/5 bg-white/[0.012] p-3 md:min-h-[64vh] md:p-4">
                     {selectedItem || activeTab === "ADMIN" ? (
                       <div className="w-full h-full">
                         {activeTab === "SEARCH" && <SearchTab selectedItem={selectedItem} />}
                         {activeTab === "CALC" && <CalcTab selectedItem={selectedItem} />}
-                        {activeTab === "ETC" && <EtcTab items={dbItems} />}
+                        {activeTab === "ETC" && <EtcTab selectedItem={selectedItem} />}
                         {activeTab === "ADMIN" && userRole === "ADMIN" ? (
                           <AdminTab items={dbItems} />
                         ) : activeTab === "ADMIN" ? (
@@ -183,12 +189,12 @@ function MarketIntelligenceContent({ initialTab }: MarketTabProps) {
                       </div>
                     ) : (
                       /* 아이템 미선택 시 가이드 화면 */
-                      <div className="flex-1 flex items-center justify-center py-20 md:py-24 text-center">
+                      <div className="flex flex-1 items-center justify-center py-16 text-center md:py-20">
                         <div className="max-w-2xl px-4">
-                          <p className="text-sm font-bold text-zinc-400 leading-relaxed break-keep">
+                          <p className="text-sm font-bold leading-relaxed text-zinc-400 break-keep">
                             분석할 아이템을 왼쪽 리스트에서 선택해주세요
                           </p>
-                          <p className="mt-3 text-xs font-medium text-zinc-500 leading-relaxed break-keep">
+                          <p className="mt-2 text-xs font-medium leading-relaxed text-zinc-500 break-keep">
                             {emptyStateDescription}
                           </p>
                         </div>

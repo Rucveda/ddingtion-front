@@ -557,11 +557,11 @@ function HomeComponent() {
                 </p>
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                   <button onClick={() => setActiveTab("AUCTION")} className="home-hero-cta home-hero-cta-auction">
-                    <span className="home-hero-cta-kicker">Live Market</span>
+                    <span className="home-hero-cta-kicker">Live Auction</span>
                     <span className="home-hero-cta-label">경매 보기</span>
                   </button>
                   <button onClick={() => setActiveTab("CALCULATOR")} className="home-hero-cta home-hero-cta-calc">
-                    <span className="home-hero-cta-kicker">Enhance Tool</span>
+                    <span className="home-hero-cta-kicker">Enhance Calculator</span>
                     <span className="home-hero-cta-label">강화 계산기</span>
                   </button>
                 </div>
@@ -589,7 +589,7 @@ function HomeComponent() {
                       <motion.span className="prism-text-overlay italic" data-text="가장 현명한 방법.">가장 현명한 방법.</motion.span>
                     </h1>
                     <p className="max-w-2xl text-base md:text-lg font-medium text-zinc-300 leading-7 break-keep">
-                      실시간 입찰과 즉시구매로 원하는 아이템을 빠르게 찾아보세요.
+                      실시간 입찰과 즉시구매로 원하는 아이템을 빠르게 구해보세요.
                     </p>
 
                     <div className="mt-7 inline-flex overflow-hidden rounded-2xl bg-white/[0.045] shadow-lg shadow-black/10 backdrop-blur-md">

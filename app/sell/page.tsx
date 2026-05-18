@@ -154,12 +154,16 @@ export default function SellItem() {
     }));
   };
 
-  const toggleOption = (type: 'enchantments' | 'imprints' | 'skills', name: string, maxTier: number) => {
+  const toggleOption = (type: 'enchantments' | 'imprints' | 'skills', name: string, maxTier: number, delta = 1) => {
     triggerHaptic();
     setForm(prev => {
       const current = { ...prev[type] };
-      if (!current[name]) current[name] = 1;
-      else if (current[name] < maxTier) current[name] += 1;
+      const currentLevel = current[name] || 0;
+      if (delta < 0) {
+        if (currentLevel <= 1) delete current[name];
+        else current[name] = currentLevel - 1;
+      } else if (!currentLevel) current[name] = 1;
+      else if (currentLevel < maxTier) current[name] = currentLevel + 1;
       else delete current[name];
       return { ...prev, [type]: current };
     });
@@ -353,7 +357,7 @@ export default function SellItem() {
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {WILD_BASE.map(([name, max]) => (
-                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} 
+                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, max as number, -1); }} 
                                 className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                 <span className="font-semibold text-[10px]">{name as string}</span>
                                 {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
@@ -367,7 +371,7 @@ export default function SellItem() {
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {WILD_SPECIAL.map(([name, max]) => (
-                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)}
+                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, max as number, -1); }}
                                 className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                 <span className="font-semibold text-[10px]">{name as string}</span>
                                 {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
@@ -395,7 +399,7 @@ export default function SellItem() {
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
                             {ISLAND_IMPRINTS.map(name => (
-                              <button key={name} type="button" onClick={() => toggleOption('imprints', name, 5)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.imprints[name] ? "bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                              <button key={name} type="button" onClick={() => toggleOption('imprints', name, 5)} onContextMenu={(e) => { e.preventDefault(); toggleOption('imprints', name, 5, -1); }} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.imprints[name] ? "bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                 <span className="font-semibold text-[10px]">{name}</span>
                                 {form.imprints[name] && <span className="font-extrabold text-[9px] bg-black/10 px-1.5 py-0.5 rounded-md">LV.{form.imprints[name]}</span>}
                               </button>
@@ -409,26 +413,26 @@ export default function SellItem() {
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                           <div className="space-y-3">
-                            <div className="text-[10px] font-extrabold text-cyan-400 uppercase tracking-[0.14em] border-l-2 border-cyan-500 pl-3">강화 랭크 / +{form.enhancementLevel}</div>
+                            <div className="text-[10px] font-extrabold text-blue-300 uppercase tracking-[0.14em] border-l-2 border-blue-500 pl-3">강화 랭크 / +{form.enhancementLevel}</div>
                             <div className="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
                               {["입문", "견습", "정예", "영웅"].map(rank => (
-                                <button key={rank} type="button" onClick={() => { triggerHaptic(); setForm({...form, enhancementRank: rank}); }} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.enhancementRank === rank ? "bg-cyan-600 text-white shadow-lg" : "text-zinc-600 hover:text-zinc-300"}`}>{rank}</button>
+                                <button key={rank} type="button" onClick={() => { triggerHaptic(); setForm({...form, enhancementRank: rank}); }} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.enhancementRank === rank ? "bg-blue-600 text-white shadow-lg" : "text-zinc-600 hover:text-zinc-300"}`}>{rank}</button>
                               ))}
                             </div>
                             <div className="flex items-center gap-4 bg-black/40 p-4 rounded-2xl border border-white/5 mt-2">
-                              <span className="text-2xl font-extrabold text-cyan-500 italic w-10">+{form.enhancementLevel}</span>
-                              <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="calc-range calc-range-cyan flex-1" />
+                              <span className="text-2xl font-extrabold text-blue-400 italic w-10">+{form.enhancementLevel}</span>
+                              <input type="range" min="0" max="15" value={form.enhancementLevel} onChange={e => { triggerHaptic(); setForm({...form, enhancementLevel: parseInt(e.target.value)}); }} className="calc-range flex-1" />
                             </div>
                           </div>
                           
                           <div className="space-y-3">
-                            <div className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] border-l-2 border-orange-500 pl-3">룬 장착</div>
+                            <div className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-[0.14em] border-l-2 border-indigo-500 pl-3">룬 장착</div>
                             <div className="grid grid-cols-3 gap-2">
                               {[0, 1, 2].map(idx => (
-                                <button key={idx} type="button" onClick={() => { triggerHaptic(); setActiveRuneSlot(activeRuneSlot === idx ? null : idx); }} className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all ${activeRuneSlot === idx ? 'border-orange-500 bg-orange-500/10 shadow-[0_0_10px_rgba(249,115,22,0.1)]' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
+                                <button key={idx} type="button" onClick={() => { triggerHaptic(); setActiveRuneSlot(activeRuneSlot === idx ? null : idx); }} className={`relative aspect-square rounded-xl border flex flex-col items-center justify-center transition-all ${activeRuneSlot === idx ? 'border-indigo-400 bg-indigo-500/10 shadow-[0_0_10px_rgba(99,102,241,0.1)]' : 'bg-black/40 border-white/5 hover:border-white/10'}`}>
                                   {form.runes[idx].type ? (
                                     <div className="text-center p-1">
-                                      <div className="text-[7px] font-extrabold text-orange-500 uppercase">{form.runes[idx].grade}</div>
+                                      <div className="text-[7px] font-extrabold text-indigo-300 uppercase">{form.runes[idx].grade}</div>
                                       <div className="text-[10px] font-extrabold text-zinc-200 leading-tight">{form.runes[idx].type.replace("의룬", "")}</div>
                                     </div>
                                   ) : (
@@ -445,14 +449,14 @@ export default function SellItem() {
 
                         <AnimatePresence>
                           {activeRuneSlot !== null && (
-                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-orange-500/[0.03] border border-orange-500/20 rounded-2xl p-5 space-y-5 overflow-hidden">
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-indigo-500/[0.03] border border-indigo-500/20 rounded-2xl p-5 space-y-5 overflow-hidden">
                               <div className="flex justify-between items-center">
-                                <div className="text-[10px] font-extrabold text-orange-400 uppercase tracking-[0.14em] flex items-center gap-2">룬 설정 #{activeRuneSlot + 1}</div>
+                                <div className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-[0.14em] flex items-center gap-2">룬 설정 #{activeRuneSlot + 1}</div>
                                 <button type="button" onClick={() => setActiveRuneSlot(null)} className="text-[10px] font-extrabold text-zinc-600 hover:text-white transition-colors">닫기</button>
                               </div>
                               <div className="space-y-3">
                                 <div className="text-[10px] font-extrabold text-zinc-600 ml-1">룬 등급</div>
-                                <div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} type="button" onClick={() => updateRune(g)} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.runes[activeRuneSlot!].grade === g ? 'bg-orange-500 text-black' : 'bg-white/[0.035] border border-white/5 text-zinc-600 hover:text-zinc-300'}`}>{g}</button>))}</div>
+                                <div className="flex gap-1.5">{RUNE_GRADES.map(g => (<button key={g} type="button" onClick={() => updateRune(g)} className={`min-h-[32px] flex-1 py-1.5 rounded-md text-[10px] font-extrabold transition-all ${form.runes[activeRuneSlot!].grade === g ? 'bg-indigo-500 text-white' : 'bg-white/[0.035] border border-white/5 text-zinc-600 hover:text-zinc-300'}`}>{g}</button>))}</div>
                               </div>
                               <div className="space-y-3">
                                 <div className="text-[10px] font-extrabold text-zinc-600 ml-1">룬 종류</div>
@@ -468,7 +472,7 @@ export default function SellItem() {
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                             {currentWeaponSkills.map(name => (
-                              <button key={name} type="button" onClick={() => toggleOption('skills', name, 7)} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                              <button key={name} type="button" onClick={() => toggleOption('skills', name, 7)} onContextMenu={(e) => { e.preventDefault(); toggleOption('skills', name, 7, -1); }} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.skills[name] ? "bg-purple-600 border-purple-400 text-white shadow-lg shadow-purple-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                 <span className="font-semibold text-[10px] truncate">{name}</span>
                                 {form.skills[name] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">Lv.{form.skills[name]}</span>}
                               </button>
