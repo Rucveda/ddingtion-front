@@ -32,6 +32,7 @@ export default function SellItem() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeRuneSlot, setActiveRuneSlot] = useState<number | null>(null);
+  const [relistSourceId, setRelistSourceId] = useState<string | null>(null);
 
   const [form, setForm] = useState({ 
     startPrice: "", buyNowPrice: "", durationDays: "1", description: "",
@@ -100,8 +101,50 @@ export default function SellItem() {
       });
   }, []);
 
+  useEffect(() => {
+    const sourceId = new URLSearchParams(window.location.search).get("relist");
+    if (!sourceId || dbItems.length === 0) return;
+
+    const loadRelistSource = async () => {
+      try {
+        const auction = await request(`/api/auctions/${sourceId}`);
+        if (!auction) return;
+        if (!["EXPIRED", "CANCELED"].includes(auction.status)) {
+          alert("만료되었거나 유찰된 경매만 다시 등록할 수 있습니다.");
+          return;
+        }
+        const item = dbItems.find((candidate) => candidate.id === Number(auction.itemId)) || auction.item;
+        if (!item) return;
+        setRelistSourceId(sourceId);
+        setSelectedItem(item);
+        setSearchTerm(item.name);
+        setShowDropdown(false);
+        setForm({
+          startPrice: String(auction.startPrice || ""),
+          buyNowPrice: auction.buyNowPrice ? String(auction.buyNowPrice) : "",
+          durationDays: "1",
+          description: auction.description || "",
+          enhancementLevel: Number(auction.enhancementLevel || 0),
+          enhancementRank: auction.enhancementRank || "입문",
+          enchantments: auction.enchantments || {},
+          imprints: auction.imprint || {},
+          skills: auction.skills || {},
+          runes: Array.isArray(auction.runes) && auction.runes.length === 3
+            ? auction.runes
+            : [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "", type: "" }],
+        });
+      } catch (error) {
+        console.error("재등록 원본 로드 실패:", error);
+        alert("기존 경매 정보를 불러오지 못했습니다.");
+      }
+    };
+
+    loadRelistSource();
+  }, [dbItems]);
+
   const handleSelectItem = (item: Item) => {
     triggerHaptic();
+    setRelistSourceId(null);
     setSelectedItem(item);
     setSearchTerm(item.name);
     setShowDropdown(false);
@@ -136,7 +179,7 @@ export default function SellItem() {
     if (!selectedItem) return;
     setIsLoading(true);
     try {
-      await request("/api/auctions", {
+      await request(relistSourceId ? `/api/auctions/${relistSourceId}/relist` : "/api/auctions", {
         method: "POST",
         body: JSON.stringify({ 
           itemId: selectedItem.id, 
@@ -145,7 +188,7 @@ export default function SellItem() {
           buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null 
         }),
       });
-      router.push("/?tab=AUCTION");
+      router.push(relistSourceId ? "/mypage" : "/?tab=AUCTION");
     } catch (error) { 
       console.error(error); 
       alert(error instanceof Error ? error.message : "아이템 등록 중 오류가 발생했습니다.");
@@ -168,8 +211,13 @@ export default function SellItem() {
           <aside className="lg:col-span-4 space-y-4">
             <section className="site-card p-4 md:p-5 rounded-[28px]">
               <h2 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] mb-4 flex items-center gap-2">
-                <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 등록
+                <div className="w-1 h-3 bg-blue-600 rounded-full" /> {relistSourceId ? "경매 다시 등록" : "경매 등록"}
               </h2>
+              {relistSourceId && (
+                <div className="mb-4 rounded-2xl border border-amber-500/15 bg-amber-500/10 px-4 py-3 text-xs font-semibold leading-relaxed text-amber-100/80">
+                  만료된 경매 정보를 불러왔습니다. 가격과 기간을 확인한 뒤 새 경매로 등록됩니다.
+                </div>
+              )}
               
               <div className="space-y-4">
                 <div className="relative">
@@ -266,7 +314,7 @@ export default function SellItem() {
                 disabled={isLoading || !selectedItem} 
                 className="site-btn site-btn-primary mt-5 w-full py-4 text-sm"
               >
-                {isLoading ? "등록 중..." : "아이템 등록하기"}
+                {isLoading ? "등록 중..." : relistSourceId ? "새 경매로 다시 등록" : "아이템 등록하기"}
               </button>
             </section>
           </aside>

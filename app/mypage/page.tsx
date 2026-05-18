@@ -72,6 +72,11 @@ export default function MyPage() {
     window.dispatchEvent(new Event("ddingtion_chat_open"));
   }, [triggerHaptic]);
 
+  const openRelistPage = useCallback((auctionId: number) => {
+    triggerHaptic();
+    router.push(`/sell?relist=${auctionId}`);
+  }, [router, triggerHaptic]);
+
   useEffect(() => {
     const fetchAllData = async () => {
       const storedUser = localStorage.getItem("user");
@@ -461,6 +466,7 @@ export default function MyPage() {
                   myAuctions.map((auction: any) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
+                    const canRelist = auction.status === "EXPIRED";
                     return (
                     <div key={auction.id} className="group relative bg-white/[0.02] border border-white/5 p-4 rounded-[22px] flex items-center justify-between hover:bg-white/[0.04] transition-all">
                       <div className="flex items-center gap-4 min-w-0">
@@ -496,6 +502,15 @@ export default function MyPage() {
                             className="h-9 px-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-[10px] font-extrabold text-yellow-200 hover:bg-yellow-500/15 transition-all"
                           >
                             채팅
+                          </button>
+                        )}
+                        {canRelist && (
+                          <button
+                            type="button"
+                            onClick={() => openRelistPage(auction.id)}
+                            className="h-9 rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 text-[10px] font-extrabold text-blue-200 transition-all hover:bg-blue-500/15"
+                          >
+                            다시 등록
                           </button>
                         )}
                         <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} className="site-btn site-btn-secondary h-9 w-9 p-0">
