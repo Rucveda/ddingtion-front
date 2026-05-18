@@ -30,6 +30,7 @@ export default function ChatWidget() {
   const [pendingReviewData, setPendingReviewData] = useState<any>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const roomsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -45,7 +46,7 @@ export default function ChatWidget() {
   }, []);
 
   // 채팅방 목록 불러오기
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     if (isLocalDev()) ensureLocalDummySession();
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -61,7 +62,15 @@ export default function ChatWidget() {
       console.error("목록 로드 실패:", error); 
       setRooms([]);
     }
-  };
+  }, []);
+
+  const scheduleFetchRooms = useCallback(() => {
+    if (roomsRefreshTimerRef.current) clearTimeout(roomsRefreshTimerRef.current);
+    roomsRefreshTimerRef.current = setTimeout(() => {
+      roomsRefreshTimerRef.current = null;
+      void fetchRooms();
+    }, 1200);
+  }, [fetchRooms]);
 
   const fetchMessages = async (roomId: number) => {
     if (isLocalDev()) ensureLocalDummySession();
@@ -119,7 +128,7 @@ export default function ChatWidget() {
       if (res) {
         if (!res.completed) {
           if (res.room) setSelectedRoom(res.room);
-          fetchRooms();
+          void fetchRooms();
           alert(res.message || "거래 확정이 기록되었습니다. 상대방의 확정을 기다려주세요.");
           return;
         }
@@ -135,7 +144,7 @@ export default function ChatWidget() {
 
         setSelectedRoom(null);
         setIsOpen(false);
-        fetchRooms();
+        void fetchRooms();
         setShowReviewModal(true);
       }
     } catch (e) { 
@@ -181,9 +190,9 @@ export default function ChatWidget() {
     // 💡 유지보수 패치: 하드코딩된 서버 주소 제거
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
-    fetchRooms();
+    void fetchRooms();
 
-    newSocket.on("refresh_chat_rooms", () => { fetchRooms(); });
+    newSocket.on("refresh_chat_rooms", scheduleFetchRooms);
     newSocket.on("new_message", (msg) => {
       // 💡 버그 패치: 도착한 메시지가 현재 내가 보고 있는 채팅방의 메시지일 때만 화면에 추가
       if (selectedRoomRef.current?.id === msg.roomId) {
@@ -193,7 +202,7 @@ export default function ChatWidget() {
         const token = localStorage.getItem("token");
         if (token) newSocket.emit("join_room", { roomId: msg.roomId, token });
       }
-      fetchRooms();
+      scheduleFetchRooms();
     });
 
     // 초기 로드 시 자동 열기 확인
@@ -204,11 +213,12 @@ export default function ChatWidget() {
     window.addEventListener(CHAT_OPEN_EVENT, checkAutoOpen); // 현재 탭 대응
     
     return () => { 
+      if (roomsRefreshTimerRef.current) clearTimeout(roomsRefreshTimerRef.current);
       newSocket.close(); 
       window.removeEventListener("storage", checkAutoOpen);
       window.removeEventListener(CHAT_OPEN_EVENT, checkAutoOpen);
     };
-  }, [isMounted, checkAutoOpen]);
+  }, [isMounted, checkAutoOpen, fetchRooms, scheduleFetchRooms]);
 
   useEffect(() => {
     if (isLocalDev() && selectedRoom?.id) {

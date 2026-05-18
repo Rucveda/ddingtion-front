@@ -99,6 +99,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
         level: filters.enhancementLevel.toString(), rank: filters.enhancementRank,
         enchantments: JSON.stringify(filters.enchantments), imprints: JSON.stringify(filters.imprints),
         skills: JSON.stringify(filters.skills), runes: JSON.stringify(filters.runes),
+        cacheTtl: "4",
       });
       const data = await request(`/api/auctions/market-analysis/${selectedItem.id}?${params.toString()}`);
       if (data) setAnalysis(data);
@@ -125,6 +126,22 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
     if (grade !== undefined) newRunes[activeRuneSlot].grade = grade;
     if (type !== undefined) newRunes[activeRuneSlot].type = type;
     setFilters({ ...filters, runes: newRunes });
+  };
+
+  const handleResetFilters = () => {
+    triggerHaptic();
+    if (!selectedItem) return;
+    const weaponGroup = Object.keys(RPG_WEAPON_INFO).find(key => selectedItem.name.includes(key));
+    const initialRank = weaponGroup ? (RPG_WEAPON_INFO as any)[weaponGroup].rank : "입문";
+    setFilters({
+      enhancementLevel: 0,
+      enhancementRank: initialRank,
+      enchantments: {},
+      imprints: {},
+      skills: {},
+      runes: [{ grade: "루키", type: "" }, { grade: "루키", type: "" }, { grade: "루키", type: "" }]
+    });
+    setActiveRuneSlot(null);
   };
 
   return (
@@ -183,14 +200,19 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
 
       {/* 분석 필터 설정 */}
       <div className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[32px] shadow-2xl backdrop-blur-md">
-        <div className="flex items-center gap-4 mb-5 border-b border-white/5 pb-4">
-          <div className="w-11 h-11 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
-            <img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" />
+        <div className="flex flex-col gap-3 mb-5 border-b border-white/5 pb-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
+              <img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold uppercase tracking-[-0.03em]">{selectedItem.name}</h3>
+              <p className="text-blue-400 font-extrabold text-[10px] uppercase tracking-[0.12em] mt-1">정밀 분석 필터</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-extrabold uppercase tracking-[-0.03em]">{selectedItem.name}</h3>
-            <p className="text-blue-400 font-extrabold text-[10px] uppercase tracking-[0.12em] mt-1">정밀 분석 필터</p>
-          </div>
+          <button onClick={handleResetFilters} className="site-btn site-btn-ghost site-btn-compact self-start md:self-auto">
+            선택 옵션 초기화
+          </button>
         </div>
 
         <div className="custom-scrollbar overflow-y-auto max-h-[460px] pr-2">

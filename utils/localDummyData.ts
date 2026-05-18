@@ -115,6 +115,7 @@ export const LOCAL_DUMMY_POSTS = [
     title: "로컬 개발용 커뮤니티 공지",
     content: "서버 연결 없이 커뮤니티 목록과 상세 화면을 확인하기 위한 더미 공지입니다.",
     type: "NOTICE",
+    category: "NOTICE",
     authorId: 0,
     author: { id: 0, ingameName: "Steve" },
     createdAt: new Date(now - 1000 * 60 * 90).toISOString(),
@@ -124,6 +125,7 @@ export const LOCAL_DUMMY_POSTS = [
     title: "거래 전 시세 확인 팁",
     content: "입찰 전 계산기 탭에서 강화 단계와 옵션 구성을 비교하면 적정가 판단에 도움이 됩니다.",
     type: "GENERAL",
+    category: "TRADE",
     authorId: 101,
     author: { id: 101, ingameName: "Alex" },
     createdAt: new Date(now - 1000 * 60 * 180).toISOString(),
@@ -186,10 +188,10 @@ const LOCAL_DUMMY_AUCTION_COMMENTS: Record<number, any[]> = {
 };
 
 const LOCAL_DUMMY_USERS = [
-  LOCAL_DUMMY_USER,
-  { id: 101, loginId: "Alex", ingameName: "Alex", role: "USER", isBanned: false, reputationScore: 4.7, successfulTrades: 34 },
-  { id: 102, loginId: "IslandPro", ingameName: "IslandPro", role: "USER", isBanned: false, reputationScore: 3.8, successfulTrades: 14 },
-  { id: 404, loginId: "BadTrader", ingameName: "BadTrader", role: "USER", isBanned: true, reputationScore: 1.3, successfulTrades: 2 },
+  { ...LOCAL_DUMMY_USER, discordLinked: true },
+  { id: 101, loginId: "Alex", ingameName: "Alex", role: "USER", isBanned: false, reputationScore: 4.7, successfulTrades: 34, discordLinked: true },
+  { id: 102, loginId: "IslandPro", ingameName: "IslandPro", role: "USER", isBanned: false, reputationScore: 3.8, successfulTrades: 14, discordLinked: false },
+  { id: 404, loginId: "BadTrader", ingameName: "BadTrader", role: "USER", isBanned: true, reputationScore: 1.3, successfulTrades: 2, discordLinked: true },
 ];
 
 const LOCAL_DUMMY_REPORTS = [
@@ -227,6 +229,8 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
   const query = url.includes("?") ? new URLSearchParams(url.split("?")[1]) : null;
 
   if (method !== "GET") {
+    if (path === "/api/auth/password-reset/discord/authorize") return { url: "/reset-password?token=local-dev-reset-token" };
+    if (path === "/api/auth/password-reset/confirm") return { message: "로컬 더미 비밀번호 재설정 완료" };
     if (path === "/api/chat/rooms/admin") return LOCAL_DUMMY_CHAT_ROOMS[1];
     if (path.includes("/close")) return { completed: false, message: "로컬 더미 거래 확정이 기록되었습니다.", room: LOCAL_DUMMY_CHAT_ROOMS[0] };
     if (path.includes("/report")) return { message: "로컬 더미 신고가 접수되었습니다.", reportId: 3999 };

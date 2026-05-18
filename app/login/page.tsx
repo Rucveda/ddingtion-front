@@ -10,6 +10,9 @@ import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [resetLoginId, setResetLoginId] = useState("");
+  const [showReset, setShowReset] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLongWait, setIsLongWait] = useState(false);
   const router = useRouter();
@@ -63,6 +66,27 @@ export default function LoginPage() {
       clearTimeout(timeoutId); // 💡 완료되거나 실패하면 타이머 정리
       if (!isLongWait) setIsLongWait(false);
       setIsLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetLoginId.trim() || resetLoading) return;
+    triggerHaptic();
+    setResetLoading(true);
+    try {
+      const data = await request("/api/auth/password-reset/discord/authorize", {
+        method: "POST",
+        body: JSON.stringify({ loginId: resetLoginId.trim() }),
+      });
+      if (data?.url) {
+        window.location.href = data.url as string;
+        return;
+      }
+      alert("비밀번호 재설정 인증 주소를 받지 못했습니다.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "비밀번호 재설정을 시작할 수 없습니다.");
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -143,6 +167,42 @@ export default function LoginPage() {
                 </motion.div>
               )}
             </form>
+
+            <div className="mt-3 rounded-[24px] border border-white/5 bg-white/[0.02] p-4">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  setShowReset((prev) => !prev);
+                  setResetLoginId(loginId);
+                }}
+                className="site-btn site-btn-secondary w-full"
+              >
+                비밀번호 재설정
+              </button>
+              {showReset && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-xs font-medium leading-relaxed text-zinc-500 break-keep">
+                    Discord 인증으로 본인 확인 후 새 비밀번호를 설정합니다. 기존에 Discord 연동된 계정만 사용할 수 있습니다.
+                  </p>
+                  <input
+                    type="text"
+                    value={resetLoginId}
+                    onChange={handleInputChange(setResetLoginId)}
+                    placeholder="마인크래프트 닉네임"
+                    className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-semibold text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/40"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    disabled={!resetLoginId.trim() || resetLoading}
+                    className="site-btn site-btn-primary w-full"
+                  >
+                    {resetLoading ? "인증 준비 중..." : "Discord로 재설정"}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mt-8 text-center">

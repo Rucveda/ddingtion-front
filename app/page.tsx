@@ -25,7 +25,7 @@ interface Auction {
   buyNowPrice?: number | string | null;
 }
 
-interface User { id: number; ingameName: string; role: string; }
+interface User { id: number; ingameName: string; role: string; discordLinked?: boolean; }
 
 type TabType = "HOME" | "COMMUNITY" | "CALCULATOR" | "AUCTION";
 type FilterSection = "category" | "priceRange" | "timeRange" | "detail";
@@ -92,6 +92,7 @@ function HomeComponent() {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userDiscordLinked, setUserDiscordLinked] = useState(false);
   const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number }[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>("HOME");
   const [marketSubTab, setMarketSubTab] = useState<"SEARCH" | "CALC" | "ETC" | "ADMIN">("SEARCH");
@@ -177,6 +178,7 @@ function HomeComponent() {
       try {
         const parsedUser: User = JSON.parse(storedUser);
         setUserRole(parsedUser.role ? parsedUser.role.toUpperCase() : "USER");
+        setUserDiscordLinked(Boolean(parsedUser.discordLinked));
       } catch (e) { console.error(e); }
     }
     const fetchAuctions = async () => {
@@ -553,9 +555,15 @@ function HomeComponent() {
                   가치 있는 장비들의 시세를 계산 및 분석하고,<br />
                   경매를 통한 최적의 거래 기회를 찾아드립니다.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <button onClick={() => setActiveTab("AUCTION")} className="site-btn site-btn-primary px-7 py-4 text-sm whitespace-nowrap md:px-8">경매 보기</button>
-                  <button onClick={() => setActiveTab("CALCULATOR")} className="site-btn site-btn-secondary px-7 py-4 text-sm whitespace-nowrap md:px-8">강화 계산기</button>
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+                  <button onClick={() => setActiveTab("AUCTION")} className="home-hero-cta home-hero-cta-auction">
+                    <span className="home-hero-cta-kicker">Live Market</span>
+                    <span className="home-hero-cta-label">경매 보기</span>
+                  </button>
+                  <button onClick={() => setActiveTab("CALCULATOR")} className="home-hero-cta home-hero-cta-calc">
+                    <span className="home-hero-cta-kicker">Enhance Tool</span>
+                    <span className="home-hero-cta-label">강화 계산기</span>
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -886,7 +894,7 @@ function HomeComponent() {
 
           {activeTab === "COMMUNITY" && (
             <motion.div key="community-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-20 pb-40 relative z-10">
-              <PostEditor userRole={userRole || "USER"} />
+              <PostEditor userRole={userRole || "USER"} userDiscordLinked={userDiscordLinked} />
             </motion.div>
           )}
         </AnimatePresence>

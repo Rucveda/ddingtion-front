@@ -28,6 +28,7 @@ interface UserData {
   isBanned: boolean; 
   reputationScore: number;
   successfulTrades: number;
+  discordLinked?: boolean;
 }
 
 interface ChatRoom { 
@@ -48,6 +49,14 @@ interface ReportData {
   room: { id: number };
 }
 
+type PaginationState = {
+  page: number;
+  total: number;
+  hasMore: boolean;
+};
+
+const DEFAULT_PAGINATION: PaginationState = { page: 1, total: 0, hasMore: false };
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -59,6 +68,10 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [supportRooms, setSupportRooms] = useState<ChatRoom[]>([]);
   const [reports, setReports] = useState<ReportData[]>([]);
+  const [userPagination, setUserPagination] = useState<PaginationState>(DEFAULT_PAGINATION);
+  const [reportPagination, setReportPagination] = useState<PaginationState>(DEFAULT_PAGINATION);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
 
   const [userSearch, setUserSearch] = useState("");
   const [selectedSupportRoom, setSelectedSupportRoom] = useState<ChatRoom | null>(null);
@@ -81,10 +94,24 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const fetchUsers = useCallback(async () => {
-    const data = await request("/api/admin/users");
-    setUsers(Array.isArray(data) ? data : []);
-  }, []);
+  const fetchUsers = useCallback(async (page = 1, append = false) => {
+    setIsLoadingUsers(true);
+    try {
+      const params = new URLSearchParams({ page: String(page), limit: "30" });
+      if (userSearch.trim()) params.set("q", userSearch.trim());
+      const data = await request(`/api/admin/users?${params.toString()}`);
+      if (Array.isArray(data)) {
+        setUsers(data);
+        setUserPagination({ page: 1, total: data.length, hasMore: false });
+        return;
+      }
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setUsers((prev) => append ? [...prev, ...items] : items);
+      setUserPagination(data?.pagination || { page, total: items.length, hasMore: false });
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  }, [userSearch]);
 
   const changeUserRole = async (id: number, newRole: string) => {
     triggerHaptic();
@@ -92,7 +119,7 @@ export default function AdminDashboard() {
       method: "PATCH", 
       body: JSON.stringify({ role: newRole }) 
     });
-    if (data) fetchUsers();
+    if (data) fetchUsers(1, false);
   };
 
   const toggleUserBan = async (id: number, currentBanStatus: boolean) => {
@@ -104,7 +131,14 @@ export default function AdminDashboard() {
       method: "PATCH", 
       body: JSON.stringify({ isBanned: !currentBanStatus }) 
     });
-    if (data) fetchUsers();
+    if (data) fetchUsers(1, false);
+  };
+
+  const anonymizeUser = async (id: number, label: string) => {
+    triggerHaptic();
+    if (!confirm(`${label} 계정을 익명화하시겠습니까?\n로그인/닉네임/Discord 연동은 제거되고 거래 기록은 보존됩니다.`)) return;
+    const data = await request(`/api/admin/users/${id}/anonymize`, { method: "PATCH" });
+    if (data) fetchUsers(1, false);
   };
 
   const fetchSupportRooms = useCallback(async () => {
@@ -117,9 +151,21 @@ export default function AdminDashboard() {
     setAuctions(Array.isArray(data) ? data : []);
   }, []);
 
-  const fetchReports = useCallback(async () => {
-    const data = await request("/api/admin/reports");
-    setReports(Array.isArray(data) ? data : []);
+  const fetchReports = useCallback(async (page = 1, append = false) => {
+    setIsLoadingReports(true);
+    try {
+      const data = await request(`/api/admin/reports?page=${page}&limit=20`);
+      if (Array.isArray(data)) {
+        setReports(data);
+        setReportPagination({ page: 1, total: data.length, hasMore: false });
+        return;
+      }
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setReports((prev) => append ? [...prev, ...items] : items);
+      setReportPagination(data?.pagination || { page, total: items.length, hasMore: false });
+    } finally {
+      setIsLoadingReports(false);
+    }
   }, []);
 
   const handleTabChange = (tab: any) => {
@@ -164,6 +210,14 @@ export default function AdminDashboard() {
     handleTabChange(activeTab);
     return () => { newSocket.close(); };
   }, [router]);
+
+  useEffect(() => {
+    if (activeTab !== "USERS" || !isAdmin) return;
+    const timer = setTimeout(() => {
+      void fetchUsers(1, false);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [activeTab, fetchUsers, isAdmin]);
 
   const resolveReport = async (reportId: number) => {
     triggerHaptic();
@@ -213,13 +267,7 @@ export default function AdminDashboard() {
     if (data) fetchAuctions();
   };
 
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => 
-      u.ingameName.toLowerCase().includes(userSearch.toLowerCase()) || 
-      u.loginId.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.id.toString() === userSearch
-    );
-  }, [users, userSearch]);
+  const filteredUsers = useMemo(() => users, [users]);
 
   if (!isAdmin) return null;
 
@@ -259,9 +307,14 @@ export default function AdminDashboard() {
               {activeTab === "USERS" && (
                 <motion.div key="users" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-5">
                   <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
-                      유저 데이터베이스
-                    </h2>
+                    <div>
+                      <h2 className="text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
+                        유저 데이터베이스
+                      </h2>
+                      <p className="mt-1 text-[10px] font-semibold text-zinc-600">
+                        {users.length.toLocaleString()} / {userPagination.total.toLocaleString()}명 로드
+                      </p>
+                    </div>
                     <input 
                       type="text" placeholder="UID, ID, Alias 검색..." 
                       className="w-full rounded-xl border border-white/10 bg-black/35 px-3 py-2 text-xs font-medium text-zinc-300 outline-none transition-all placeholder:text-zinc-700 focus:border-red-500/50 sm:w-72" 
@@ -275,7 +328,7 @@ export default function AdminDashboard() {
                           <th className="px-3 py-2">UID</th>
                           <th className="px-3 py-2">계정</th>
                           <th className="px-3 py-2">닉네임</th>
-                          <th className="px-3 py-2">권한</th>
+                          <th className="px-3 py-2">권한/인증</th>
                           <th className="px-3 py-2 text-right">관리</th>
                         </tr>
                       </thead>
@@ -289,41 +342,73 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-3 py-2.5 text-xs font-semibold text-zinc-300">{u.ingameName}</td>
                             <td className="px-3 py-2.5">
-                              <select 
-                                value={u.role} 
-                                onChange={(e) => changeUserRole(u.id, e.target.value)}
-                                className={`rounded-lg border border-white/5 bg-zinc-900 px-2 py-1 text-[10px] font-semibold uppercase outline-none transition-all focus:border-red-500/50 ${u.role === 'ADMIN' ? 'text-red-400' : u.role === 'WRITER' ? 'text-blue-400' : 'text-zinc-500'}`}
-                              >
-                                <option value="USER">User</option>
-                                <option value="WRITER">Writer</option>
-                                <option value="ADMIN">Admin</option>
-                              </select>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <select 
+                                  value={u.role} 
+                                  onChange={(e) => changeUserRole(u.id, e.target.value)}
+                                  className={`rounded-lg border border-white/5 bg-zinc-900 px-2 py-1 text-[10px] font-semibold uppercase outline-none transition-all focus:border-red-500/50 ${u.role === 'ADMIN' ? 'text-red-400' : u.role === 'WRITER' ? 'text-blue-400' : 'text-zinc-500'}`}
+                                >
+                                  <option value="USER">User</option>
+                                  <option value="WRITER">Writer</option>
+                                  <option value="ADMIN">Admin</option>
+                                </select>
+                                <span className={`rounded-md border px-2 py-1 text-[9px] font-semibold ${u.discordLinked ? "border-indigo-500/20 bg-indigo-500/10 text-indigo-200" : "border-white/5 bg-white/[0.025] text-zinc-600"}`}>
+                                  {u.discordLinked ? "Discord" : "미연동"}
+                                </span>
+                              </div>
                             </td>
                             <td className="rounded-r-xl px-3 py-2.5 text-right">
-                               <button 
-                                 onClick={() => toggleUserBan(u.id, u.isBanned)} 
-                                 className={`rounded-lg border px-3 py-1.5 text-[10px] font-semibold transition-all ${
-                                   u.isBanned 
-                                   ? "bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500 hover:text-white" 
-                                   : "bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500 hover:text-white"
-                                 }`}
-                               >
-                                 {u.isBanned ? "차단 해제" : "차단"}
-                               </button>
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  onClick={() => anonymizeUser(u.id, u.ingameName)}
+                                  className="site-btn site-btn-secondary site-btn-compact"
+                                >
+                                  익명화
+                                </button>
+                                <button 
+                                  onClick={() => toggleUserBan(u.id, u.isBanned)} 
+                                  className={`site-btn site-btn-compact ${
+                                    u.isBanned 
+                                    ? "border-green-500/20 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white" 
+                                    : "site-btn-danger"
+                                  }`}
+                                >
+                                  {u.isBanned ? "차단 해제" : "차단"}
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  {userPagination.hasMore && (
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => fetchUsers(userPagination.page + 1, true)}
+                        disabled={isLoadingUsers}
+                        className="site-btn site-btn-secondary"
+                      >
+                        {isLoadingUsers ? "불러오는 중..." : "유저 더 보기"}
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
               {activeTab === "REPORTS" && (
                 <motion.div key="reports" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-5">
-                  <h2 className="mb-4 text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
-                    신고 관리
-                  </h2>
+                  <div className="mb-4 flex items-end justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
+                        신고 관리
+                      </h2>
+                      <p className="mt-1 text-[10px] font-semibold text-zinc-600">
+                        {reports.length.toLocaleString()} / {reportPagination.total.toLocaleString()}건 로드
+                      </p>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-1 gap-2.5">
                     {reports.map((r) => (
                       <div key={r.id} className={`flex flex-col gap-3 rounded-2xl border bg-white/[0.015] p-4 transition-all ${r.isResolved ? "opacity-40 border-white/5" : "border-red-500/20 hover:bg-white/[0.035]"}`}>
@@ -352,6 +437,18 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+                  {reportPagination.hasMore && (
+                    <div className="mt-4 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => fetchReports(reportPagination.page + 1, true)}
+                        disabled={isLoadingReports}
+                        className="site-btn site-btn-secondary"
+                      >
+                        {isLoadingReports ? "불러오는 중..." : "신고 더 보기"}
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               )}
 

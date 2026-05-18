@@ -11,6 +11,9 @@ import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrom
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
 
+const getMinimumBid = (currentPrice: number) =>
+  currentPrice + Math.max(1, Math.ceil(currentPrice * 0.1));
+
 export default function AuctionDetail() {
   const { id } = useParams();
   const router = useRouter();
@@ -26,6 +29,8 @@ export default function AuctionDetail() {
   const [commentInput, setCommentInput] = useState("");
   const [isCommenting, setIsCommenting] = useState(false);
   const [tradePolicyLoaded, setTradePolicyLoaded] = useState(false);
+  const [marketAnalysis, setMarketAnalysis] = useState<any>(null);
+  const [marketAnalysisLoading, setMarketAnalysisLoading] = useState(false);
   const GAME_MAX_PRICE = 10000000000;
 
   const needsDiscordForTrade =
@@ -136,7 +141,7 @@ export default function AuctionDetail() {
         const data = await request(`/api/auctions/${id}`);
         if (data) {
           setAuction(data);
-          setBidAmount(Math.floor(Number(data.currentPrice) * 1.1).toString());
+          setBidAmount(getMinimumBid(Number(data.currentPrice)).toString());
         }
       } catch (err) { console.error(err); }
     };
@@ -159,6 +164,68 @@ export default function AuctionDetail() {
     });
     return () => { newSocket.close(); };
   }, [id, router]);
+
+  const marketAnalysisQuery = useMemo(() => {
+    if (!auction?.itemId) return "";
+    const params = new URLSearchParams();
+    params.set("level", String(auction.enhancementLevel || 0));
+    if (auction.enhancementRank) params.set("rank", String(auction.enhancementRank));
+    if (auction.enchantments && Object.keys(auction.enchantments).length > 0) {
+      params.set("enchantments", JSON.stringify(auction.enchantments));
+    }
+    if (auction.imprint && Object.keys(auction.imprint).length > 0) {
+      params.set("imprints", JSON.stringify(auction.imprint));
+    }
+    if (auction.skills && Object.keys(auction.skills).length > 0) {
+      params.set("skills", JSON.stringify(auction.skills));
+    }
+    if (Array.isArray(auction.runes) && auction.runes.some((r: any) => r?.type)) {
+      params.set("runes", JSON.stringify(auction.runes.filter((r: any) => r?.type)));
+    }
+    return params.toString();
+  }, [auction]);
+
+  useEffect(() => {
+    if (!auction?.itemId) return;
+    let cancelled = false;
+    setMarketAnalysisLoading(true);
+    const analysisUrl = `/api/auctions/market-analysis/${auction.itemId}${marketAnalysisQuery ? `?${marketAnalysisQuery}` : ""}`;
+    const cacheKey = `market-analysis:${analysisUrl}`;
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Date.now() - parsed.createdAt < 60_000) {
+            setMarketAnalysis(parsed.data);
+            setMarketAnalysisLoading(false);
+            return;
+          }
+        }
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+
+    request(analysisUrl)
+      .then((data) => {
+        if (!cancelled) {
+          setMarketAnalysis(data || null);
+          if (typeof window !== "undefined" && data) {
+            sessionStorage.setItem(cacheKey, JSON.stringify({ data, createdAt: Date.now() }));
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMarketAnalysis(null);
+      })
+      .finally(() => {
+        if (!cancelled) setMarketAnalysisLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [auction?.itemId, marketAnalysisQuery]);
 
   const fetchComments = useCallback(async () => {
     try {
@@ -204,7 +271,8 @@ export default function AuctionDetail() {
     }
     if (!canAuctionTrade) return alert("현재 입찰할 수 없는 경매 상태입니다.");
     if (isSeller) return alert("본인이 등록한 물품에는 입찰할 수 없습니다.");
-    if (Number(bidAmount) <= Number(auction.currentPrice)) return alert("현재가보다 높은 금액을 입력해야 합니다.");
+    const minimumBid = getMinimumBid(Number(auction.currentPrice));
+    if (Number(bidAmount) < minimumBid) return alert(`최소 입찰가는 ${minimumBid.toLocaleString()}G 입니다.`);
     if (isLocalDev()) {
       setAuction((prev: any) => ({ ...prev, currentPrice: bidAmount, lastBidder: currentUser.ingameName, lastBidderId: currentUser.id, bidCount: (prev.bidCount || 0) + 1 }));
       alert("로컬 더미 입찰이 반영되었습니다.");
@@ -321,7 +389,7 @@ export default function AuctionDetail() {
   const currentPrice = Number(auction.currentPrice);
   const startPrice = Number(auction.startPrice);
   const buyNowPrice = auction.buyNowPrice ? Number(auction.buyNowPrice) : null;
-  const minimumBid = Math.floor(currentPrice * 1.1);
+  const minimumBid = getMinimumBid(currentPrice);
   const priceIncreaseRate = startPrice > 0 ? Math.round(((currentPrice - startPrice) / startPrice) * 100) : 0;
   const buyNowGap = buyNowPrice ? buyNowPrice - currentPrice : null;
   const auctionStatus = statusUI[auction.status] || {
@@ -330,7 +398,11 @@ export default function AuctionDetail() {
     description: "현재 경매 상태를 확인해 주세요.",
   };
   const marketAverage = auction.marketSummary?.averagePrice ? Number(auction.marketSummary.averagePrice) : null;
-  const marketDiffRate = marketAverage ? Math.round(((currentPrice - marketAverage) / marketAverage) * 100) : null;
+  const estimatedFairPrice = marketAnalysis?.fairPrice ? Number(marketAnalysis.fairPrice) : null;
+  const estimatedDiffRate = estimatedFairPrice ? Math.round(((currentPrice - estimatedFairPrice) / estimatedFairPrice) * 100) : null;
+  const analysisSampleCount = Array.isArray(marketAnalysis?.history)
+    ? marketAnalysis.history.length
+    : auction.marketSummary?.count || 0;
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative overflow-x-hidden selection:bg-white selection:text-black">
@@ -388,18 +460,26 @@ export default function AuctionDetail() {
                   <p className="mt-1 text-[11px] font-semibold text-zinc-500">거래 {auction.seller?.successfulTrades || 0}건 · 평가 {auction.seller?.reviewCount || 0}건</p>
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-black/20 p-3">
-                  <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-600">최근 시세</p>
-                  {marketAverage ? (
+                  <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-600">예상 적정가</p>
+                  {marketAnalysisLoading ? (
                     <>
-                      <p className="font-mono text-xl font-black text-yellow-300">{formatGold(marketAverage)}<span className="ml-1 text-xs font-bold text-zinc-700">G</span></p>
-                      <p className={`mt-1 text-[11px] font-semibold ${marketDiffRate && marketDiffRate > 0 ? "text-red-300/80" : "text-emerald-300/80"}`}>
-                        현재가가 평균 대비 {marketDiffRate && marketDiffRate > 0 ? "+" : ""}{marketDiffRate}%
+                      <p className="font-mono text-xl font-black text-zinc-500">분석 중</p>
+                      <p className="mt-1 text-[11px] font-semibold text-zinc-600">옵션 기반 시세 계산 중</p>
+                    </>
+                  ) : estimatedFairPrice ? (
+                    <>
+                      <p className="font-mono text-xl font-black text-yellow-300">{formatGold(estimatedFairPrice)}<span className="ml-1 text-xs font-bold text-zinc-700">G</span></p>
+                      <p className={`mt-1 text-[11px] font-semibold ${estimatedDiffRate && estimatedDiffRate > 0 ? "text-red-300/80" : "text-emerald-300/80"}`}>
+                        현재가가 추정가 대비 {estimatedDiffRate && estimatedDiffRate > 0 ? "+" : ""}{estimatedDiffRate}%
+                      </p>
+                      <p className="mt-1 text-[10px] font-semibold text-zinc-600">
+                        옵션 반영 · 참고 거래 {analysisSampleCount}건{marketAverage ? ` · 유사 평균 ${formatGold(marketAverage)}G` : ""}
                       </p>
                     </>
                   ) : (
                     <>
                       <p className="font-mono text-xl font-black text-zinc-500">데이터 없음</p>
-                      <p className="mt-1 text-[11px] font-semibold text-zinc-600">동일 강화/등급 거래 기록 부족</p>
+                      <p className="mt-1 text-[11px] font-semibold text-zinc-600">옵션 기반 추정 데이터 부족</p>
                     </>
                   )}
                 </div>
@@ -579,11 +659,11 @@ export default function AuctionDetail() {
           {/* --- 우측: 조작 터미널 --- */}
           <div className="lg:col-span-4 space-y-4">
             <section className="site-card p-4 md:p-5 rounded-[28px]">
-              <h2 className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] mb-4 flex items-center gap-2">
-                <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 입찰 메뉴
+              <h2 className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+                <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 정보
               </h2>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                 {(needsDiscordForTrade || verifyingSession) && (
                   <div className="rounded-2xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-[11px] font-bold text-indigo-200 leading-relaxed">
                     {verifyingSession
@@ -639,18 +719,22 @@ export default function AuctionDetail() {
                   </div>
                 </div>
 
-                <div className="bg-black/40 p-4 rounded-2xl border border-white/5 relative">
-                  <label className="text-[10px] font-extrabold text-yellow-400 uppercase mb-2 block tracking-[0.12em]">현재 최고가</label>
-                  <div className="flex items-baseline gap-2 overflow-hidden min-w-0">
-                    <span className="text-2xl md:text-3xl font-mono font-black text-yellow-400 whitespace-nowrap truncate">{formatGold(Number(auction.currentPrice))}</span>
-                    <span className="text-yellow-900 font-black shrink-0">G</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3 pt-2 border-t border-white/5">
-                  <div className="bg-black/40 p-4 rounded-2xl border border-white/10 relative">
-                    <label className="text-[10px] font-extrabold text-blue-400 uppercase mb-2 block tracking-[0.12em]">내 입찰 금액</label>
-                    <div className="flex items-baseline gap-2 overflow-hidden relative">
+                <div className="mt-1 space-y-3 border-t border-white/5 pt-4">
+                  <h3 className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                    <div className="h-3 w-1 rounded-full bg-blue-600" /> 경매 입찰
+                  </h3>
+                  <div className="rounded-2xl border border-white/10 bg-black/40 p-3.5">
+                    <div>
+                      <label className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] text-yellow-400">현재 최고가</label>
+                      <div className="flex min-w-0 items-baseline gap-2 overflow-hidden">
+                        <span className="truncate whitespace-nowrap font-mono text-2xl font-black text-yellow-400 md:text-3xl">{formatGold(Number(auction.currentPrice))}</span>
+                        <span className="shrink-0 font-black text-yellow-900">G</span>
+                      </div>
+                    </div>
+                    <div className="my-3 h-px w-full bg-white/10" />
+                    <div>
+                      <label className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-400">내 입찰 금액</label>
+                      <div className="relative flex items-baseline gap-2 overflow-hidden">
                       <input
                         type="text"
                         inputMode="numeric"
@@ -660,30 +744,31 @@ export default function AuctionDetail() {
                         className={`w-full bg-transparent text-2xl md:text-3xl font-mono font-black text-white outline-none min-w-0 ${isError ? 'shake-active' : ''}`}
                       />
                       <span className="text-blue-900 font-black shrink-0 relative top-1">G</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
                     {[10, 20, 50].map(pct => (
-                      <button key={pct} disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession} onClick={() => setBidAmount(Math.floor(Number(auction.currentPrice) * (1 + pct / 100)).toString())} className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap">+{pct}%</button>
+                      <button key={pct} disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession} onClick={() => setBidAmount((currentPrice + Math.max(1, Math.ceil(currentPrice * (pct / 100)))).toString())} className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap">+{pct}%</button>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-2.5 pt-2">
+                <div className="space-y-2.5 pt-1">
                     <button
                     disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
                     onClick={handleBid}
-                    className="site-btn site-btn-primary w-full whitespace-nowrap py-4 text-sm"
+                    className="auction-bid-btn whitespace-nowrap"
                   >
-                    {!canAuctionTrade ? "입찰 불가 상태" : isSeller ? "내 물품 입찰 불가" : needsDiscordForTrade ? "디스코드 인증 필요" : verifyingSession ? "인증 확인 중…" : "경매 입찰 신청"}
+                    {!canAuctionTrade ? "입찰 불가 상태" : isSeller ? "내 물품 입찰 불가" : needsDiscordForTrade ? "디스코드 인증 필요" : verifyingSession ? "인증 확인 중…" : "상위 입찰하기"}
                   </button>
 
                   {auction.buyNowPrice && auction.status === 'ACTIVE' && (
                     <button
                       disabled={isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
                       onClick={handleBuyNow}
-                      className="site-btn site-btn-secondary w-full whitespace-nowrap"
+                      className="auction-buy-now-btn whitespace-nowrap"
                     >
                       {isProcessing ? "처리 중..." : `즉시 구매 (${formatGold(Number(auction.buyNowPrice))})`}
                     </button>

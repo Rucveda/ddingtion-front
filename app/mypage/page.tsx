@@ -54,6 +54,9 @@ export default function MyPage() {
   const [myBidAuctions, setMyBidAuctions] = useState<any[]>([]);
   const [loading, setLoading] = useState(() => !isLocalDev());
   const [linkingDiscord, setLinkingDiscord] = useState(false);
+  const [isMinecraftNameEditorOpen, setIsMinecraftNameEditorOpen] = useState(false);
+  const [minecraftNameInput, setMinecraftNameInput] = useState("");
+  const [savingMinecraftName, setSavingMinecraftName] = useState(false);
   const router = useRouter();
 
   const triggerHaptic = useCallback(() => {
@@ -96,15 +99,17 @@ export default function MyPage() {
       }
 
       try {
-        const freshUser = await request("/api/auth/me");
+        const [freshUser, auctionData, bidData] = await Promise.all([
+          request("/api/auth/me"),
+          request("/api/auctions/my-auctions"),
+          request("/api/auctions/my-bids"),
+        ]);
         if (freshUser) {
           setUser(freshUser);
           localStorage.setItem("user", JSON.stringify(freshUser));
-          const auctionData = await request("/api/auctions/my-auctions");
-          setMyAuctions(Array.isArray(auctionData) ? auctionData : []);
-          const bidData = await request("/api/auctions/my-bids");
-          setMyBidAuctions(Array.isArray(bidData) ? bidData : []);
         }
+        setMyAuctions(Array.isArray(auctionData) ? auctionData : []);
+        setMyBidAuctions(Array.isArray(bidData) ? bidData : []);
       } catch (err) {
         console.error("데이터 동기화 에러:", err);
       } finally {
@@ -129,6 +134,7 @@ export default function MyPage() {
     const reasonText: Record<string, string> = {
       guild: "지정된 디스코드 서버에 가입된 계정만 연동할 수 있습니다.",
       in_use: "이 디스코드 계정은 이미 다른 사이트 계정에 연결되어 있습니다.",
+      in_use_banned: "이 디스코드 계정은 차단된 기존 계정에 연결되어 있습니다. 관리자에게 기존 계정의 디스코드 연동 해제를 요청해 주세요.",
       invalid_state: "인증 세션이 만료되었습니다. 다시 시도해 주세요.",
       missing_params: "디스코드 응답이 올바르지 않습니다.",
       forbidden: "연동할 수 없는 계정입니다.",
@@ -160,6 +166,10 @@ export default function MyPage() {
     void run();
   }, []);
 
+  useEffect(() => {
+    if (user) setMinecraftNameInput(user.loginId || user.ingameName || "");
+  }, [user?.loginId, user?.ingameName]);
+
   const handleDiscordLink = useCallback(async () => {
     setLinkingDiscord(true);
     try {
@@ -175,6 +185,39 @@ export default function MyPage() {
       setLinkingDiscord(false);
     }
   }, []);
+
+  const handleMinecraftNameUpdate = useCallback(async () => {
+    const minecraftName = minecraftNameInput.trim();
+    if (!minecraftName || minecraftName === (user.loginId || user.ingameName)) return;
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(minecraftName)) {
+      alert("마인크래프트 닉네임은 영문, 숫자, _ 조합의 3~16자여야 합니다.");
+      return;
+    }
+    triggerHaptic();
+    setSavingMinecraftName(true);
+    try {
+      if (isLocalDev()) {
+        const nextUser = { ...user, loginId: minecraftName, ingameName: minecraftName };
+        setUser(nextUser);
+        localStorage.setItem("user", JSON.stringify(nextUser));
+        return;
+      }
+      const updated = await request("/api/auth/me/minecraft-name", {
+        method: "PATCH",
+        body: JSON.stringify({ minecraftName }),
+      });
+      if (updated) {
+        setUser(updated);
+        localStorage.setItem("user", JSON.stringify(updated));
+        setIsMinecraftNameEditorOpen(false);
+        alert("마인크래프트 닉네임이 변경되었습니다. 다음 로그인부터 새 닉네임을 사용하세요.");
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "마인크래프트 닉네임 변경에 실패했습니다.");
+    } finally {
+      setSavingMinecraftName(false);
+    }
+  }, [minecraftNameInput, triggerHaptic, user]);
 
   if (loading) return (
     <div className="min-h-screen bg-[#010101] flex items-center justify-center">
@@ -316,16 +359,17 @@ export default function MyPage() {
             </div>
           </section>
 
-          <section
-            className={`p-5 sm:p-6 rounded-[28px] border ${
-              user.discordLinked
-                ? "border-emerald-500/20 bg-emerald-500/5"
-                : user.discordVerificationRequired
-                  ? "border-indigo-500/30 bg-indigo-500/[0.07]"
-                  : "border-amber-500/20 bg-amber-500/[0.04]"
-            }`}
-          >
-            <div className="flex h-full flex-col justify-between gap-4">
+          <div className="space-y-3">
+            <section
+              className={`p-5 sm:p-6 rounded-[28px] border ${
+                user.discordLinked
+                  ? "border-emerald-500/20 bg-emerald-500/5"
+                  : user.discordVerificationRequired
+                    ? "border-indigo-500/30 bg-indigo-500/[0.07]"
+                    : "border-amber-500/20 bg-amber-500/[0.04]"
+              }`}
+            >
+              <div className="flex h-full flex-col justify-between gap-4">
               <div>
                 <p className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] mb-1.5">
                   신뢰 기반 거래
@@ -358,8 +402,52 @@ export default function MyPage() {
                       : "준비 중"}
                 </button>
               )}
-            </div>
-          </section>
+              </div>
+            </section>
+              <div className="rounded-2xl border border-white/5 bg-black/15 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">Minecraft ID</p>
+                    <p className="mt-1 truncate text-xs font-semibold text-zinc-300">{minecraftName}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      setIsMinecraftNameEditorOpen((prev) => !prev);
+                      setMinecraftNameInput(minecraftName);
+                    }}
+                    className="site-btn site-btn-secondary site-btn-compact shrink-0"
+                  >
+                    {isMinecraftNameEditorOpen ? "닫기" : "변경"}
+                  </button>
+                </div>
+                {isMinecraftNameEditorOpen && (
+                  <div className="mt-3 border-t border-white/5 pt-3">
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={minecraftNameInput}
+                        onChange={(e) => setMinecraftNameInput(e.target.value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, ""))}
+                        className="w-full rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-zinc-100 outline-none placeholder:text-zinc-700 focus:border-blue-500/40"
+                        placeholder="새 마인크래프트 닉네임"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleMinecraftNameUpdate}
+                        disabled={savingMinecraftName || !minecraftNameInput.trim() || minecraftNameInput.trim() === minecraftName}
+                        className="site-btn site-btn-primary site-btn-compact w-full"
+                      >
+                        {savingMinecraftName ? "저장 중..." : "변경 저장"}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[10px] font-medium leading-relaxed text-zinc-600">
+                      로그인 ID와 표시 닉네임이 함께 변경됩니다.
+                    </p>
+                  </div>
+                )}
+              </div>
+          </div>
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">

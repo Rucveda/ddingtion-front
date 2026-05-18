@@ -107,20 +107,20 @@ export default function NotificationCenter() {
   };
 
   return (
-    <div className="fixed bottom-24 right-6 z-[9999] flex flex-col items-end font-sans">
+    <div className="fixed bottom-24 right-3 z-[9999] flex max-w-[calc(100vw-1.5rem)] flex-col items-end font-sans sm:right-6 sm:max-w-none">
       <AnimatePresence>
         {isOpen && (
           <motion.div 
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="w-80 bg-black/95 border border-white/10 rounded-[32px] shadow-2xl mb-4 backdrop-blur-3xl overflow-hidden flex flex-col"
+            className="mb-4 flex w-[calc(100vw-1.5rem)] max-w-80 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-black/95 shadow-2xl backdrop-blur-3xl sm:w-80"
           >
-            <div className="flex justify-between items-center p-6 pb-4 border-b border-white/5 bg-white/[0.02]">
+            <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-white/[0.02] p-5 pb-4 sm:p-6 sm:pb-4">
               <div>
                 <h3 className="text-sm font-bold text-zinc-100 tracking-tight">알림 센터</h3>
               </div>
-              <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-8 w-8 rounded-full p-0">✕</button>
+              <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-9 w-9 shrink-0 rounded-full p-0">✕</button>
             </div>
 
             <div className="max-h-72 overflow-y-auto space-y-2 p-4 custom-scrollbar">
@@ -139,13 +139,13 @@ export default function NotificationCenter() {
                         : 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.05)]'
                     }`}
                   >
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="mb-2 flex items-start justify-between gap-2">
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${n.isRead ? 'border-zinc-700 text-zinc-500' : 'border-red-500/40 text-red-500'} tracking-tight`}>
                         {n.type === 'OUTBID' ? '상위 입찰' : n.type}
                       </span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
-                        className="site-btn site-btn-ghost h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                        className="site-btn site-btn-ghost h-8 w-8 shrink-0 rounded-full p-0 opacity-60 group-hover:opacity-100 sm:opacity-0"
                       >
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 6L6 18M6 6l12 12"/></svg>
                       </button>
@@ -160,7 +160,7 @@ export default function NotificationCenter() {
             {safeNotifications.length > 0 && (
               <button 
                 onClick={clearAll}
-                className="site-btn site-btn-danger w-full rounded-none border-x-0 border-b-0 py-4"
+                className="site-btn site-btn-danger w-full rounded-none border-x-0 border-b-0 py-4 shadow-none"
               >
                 모든 기록 파기
               </button>

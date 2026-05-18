@@ -15,6 +15,14 @@ import {
   RPG_SKILL_SYSTEM
 } from "./marketData";
 
+type PaginationState = {
+  page: number;
+  total: number;
+  hasMore: boolean;
+};
+
+const DEFAULT_PAGINATION: PaginationState = { page: 1, total: 0, hasMore: false };
+
 export default function AdminTab({ items: initialItems }: { items: any[] }) {
   // --- 상태 관리 ---
   const [items, setItems] = useState(initialItems);
@@ -22,6 +30,8 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
   const [isLoading, setIsLoading] = useState(false);
   const [variables, setVariables] = useState<any[]>([]);
   const [marketHistory, setMarketHistory] = useState<any[]>([]);
+  const [historyPagination, setHistoryPagination] = useState<PaginationState>(DEFAULT_PAGINATION);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
   const [activeManageTab, setActiveManageTab] = useState<"ENGINE" | "DATABASE" | "HISTORY">("ENGINE");
   const [activeVarTab, setActiveVarTab] = useState<string>("RPG");
@@ -74,9 +84,21 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     if (Array.isArray(data)) setVariables(data);
   }, []);
 
-  const fetchMarketHistory = useCallback(async () => {
-    const data = await request("/api/admin/market/history");
-    if (Array.isArray(data)) setMarketHistory(data);
+  const fetchMarketHistory = useCallback(async (page = 1, append = false) => {
+    setIsHistoryLoading(true);
+    try {
+      const data = await request(`/api/admin/market/history?page=${page}&limit=30`);
+      if (Array.isArray(data)) {
+        setMarketHistory(data);
+        setHistoryPagination({ page: 1, total: data.length, hasMore: false });
+        return;
+      }
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setMarketHistory((prev) => append ? [...prev, ...items] : items);
+      setHistoryPagination(data?.pagination || { page, total: items.length, hasMore: false });
+    } finally {
+      setIsHistoryLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -235,6 +257,7 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
     try {
       await request(`/api/admin/market/history/${historyId}`, { method: "DELETE" });
       setMarketHistory(prev => prev.filter(h => h.id !== historyId));
+      setHistoryPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
     } catch (err) { alert("삭제 실패"); }
   };
 
@@ -426,7 +449,9 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
           <motion.div key="history" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="overflow-hidden rounded-[24px] border border-white/5 bg-white/[0.018]">
             <div className="flex items-center justify-between border-b border-white/5 p-4 text-sm font-extrabold tracking-[-0.02em] text-zinc-100 md:p-5">
               <span>전체 거래 기록 리스트</span>
-              <span className="text-[10px] font-semibold text-zinc-600">Total: {marketHistory.length}</span>
+              <span className="text-[10px] font-semibold text-zinc-600">
+                {marketHistory.length.toLocaleString()} / {historyPagination.total.toLocaleString()} loaded
+              </span>
             </div>
             <div className="overflow-x-auto custom-scrollbar">
               <table className="w-full min-w-[720px] text-left">
@@ -464,6 +489,18 @@ export default function AdminTab({ items: initialItems }: { items: any[] }) {
                 </tbody>
               </table>
             </div>
+            {historyPagination.hasMore && (
+              <div className="border-t border-white/5 p-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => fetchMarketHistory(historyPagination.page + 1, true)}
+                  disabled={isHistoryLoading}
+                  className="site-btn site-btn-secondary"
+                >
+                  {isHistoryLoading ? "불러오는 중..." : "거래 기록 더 보기"}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { request } from "@/utils/api";
 
+const NOTICE_CACHE_KEY = "ddingtion_latest_notice_cache";
+const NOTICE_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export default function NoticePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const [notice, setNotice] = useState<any>(null);
@@ -14,8 +17,25 @@ export default function NoticePopup() {
 
     const loadNotice = async () => {
       try {
-        // 💡 중요: 전체 경로 확인 요망
-        const data = await request("/api/posts?type=NOTICE");
+        let data: any[] | null = null;
+        const cached = sessionStorage.getItem(NOTICE_CACHE_KEY);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Date.now() - parsed.createdAt < NOTICE_CACHE_TTL_MS) {
+              data = parsed.data;
+            }
+          } catch {
+            sessionStorage.removeItem(NOTICE_CACHE_KEY);
+          }
+        }
+
+        if (!data) {
+          data = await request("/api/posts?type=NOTICE");
+          if (Array.isArray(data)) {
+            sessionStorage.setItem(NOTICE_CACHE_KEY, JSON.stringify({ data, createdAt: Date.now() }));
+          }
+        }
         
         if (!isMounted) return; // 💡 패치: 이미 언마운트된 첫 번째 Effect의 비동기 결과 무시
         

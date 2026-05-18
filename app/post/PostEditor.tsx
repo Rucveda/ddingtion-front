@@ -4,23 +4,42 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function PostEditor({ userRole }: { userRole: string }) {
+const POST_CATEGORY_OPTIONS = [
+  { id: "ALL", label: "전체" },
+  { id: "GENERAL", label: "일반" },
+  { id: "WILD", label: "WILD" },
+  { id: "ISLAND", label: "ISLAND" },
+  { id: "RPG", label: "RPG" },
+  { id: "TRADE", label: "거래" },
+  { id: "QUESTION", label: "질문" },
+];
+
+const WRITABLE_POST_CATEGORIES = POST_CATEGORY_OPTIONS.filter((category) => category.id !== "ALL");
+const getPostCategoryLabel = (category?: string) =>
+  POST_CATEGORY_OPTIONS.find((option) => option.id === (category || "GENERAL"))?.label || "일반";
+
+export default function PostEditor({ userRole, userDiscordLinked = false }: { userRole: string; userDiscordLinked?: boolean }) {
   const [posts, setPosts] = useState<any[]>([]);
   const [isWriting, setIsWriting] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
-  const [form, setForm] = useState({ title: "", content: "", type: "GENERAL" });
+  const [form, setForm] = useState({ title: "", content: "", type: "GENERAL", category: "GENERAL" });
   const [isLoading, setIsLoading] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
 
-  const canWrite = userRole === "ADMIN" || userRole === "WRITER";
+  const canWrite = userRole === "ADMIN" || userRole === "WRITER" || userDiscordLinked;
   const isAdmin = userRole === "ADMIN";
   const getPostTypeLabel = (type: string) => type === "NOTICE" ? "공지" : "일반";
   const { latestNotices, communityPosts } = useMemo(() => {
     const sortedPosts = [...posts].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return {
       latestNotices: sortedPosts.filter((post) => post.type === "NOTICE").slice(0, 3),
-      communityPosts: sortedPosts.filter((post) => post.type !== "NOTICE"),
+      communityPosts: sortedPosts.filter((post) => {
+        if (post.type === "NOTICE") return false;
+        if (categoryFilter === "ALL") return true;
+        return (post.category || "GENERAL") === categoryFilter;
+      }),
     };
-  }, [posts]);
+  }, [posts, categoryFilter]);
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -58,7 +77,7 @@ export default function PostEditor({ userRole }: { userRole: string }) {
     setIsLoading(true);
     try {
       await request("/api/posts", { method: "POST", body: JSON.stringify(form) });
-      setForm({ title: "", content: "", type: "GENERAL" });
+      setForm({ title: "", content: "", type: "GENERAL", category: "GENERAL" });
       setIsWriting(false);
       fetchPosts();
     } catch (err: any) {
@@ -113,6 +132,11 @@ export default function PostEditor({ userRole }: { userRole: string }) {
                   <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold ${selectedPost.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
                     {getPostTypeLabel(selectedPost.type)}
                   </span>
+                  {selectedPost.type !== "NOTICE" && (
+                    <span className="rounded-lg border border-cyan-500/15 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-200">
+                      {getPostCategoryLabel(selectedPost.category)}
+                    </span>
+                  )}
                   <span className="text-[11px] font-medium text-zinc-600">
                     {new Date(selectedPost.createdAt).toLocaleString()}
                   </span>
@@ -177,6 +201,23 @@ export default function PostEditor({ userRole }: { userRole: string }) {
               )}
             </div>
 
+            <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+              {POST_CATEGORY_OPTIONS.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setCategoryFilter(category.id)}
+                  className={`shrink-0 rounded-xl border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.08em] transition-all ${
+                    categoryFilter === category.id
+                      ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-100"
+                      : "border-white/5 bg-white/[0.02] text-zinc-600 hover:border-white/10 hover:text-zinc-300"
+                  }`}
+                >
+                  {category.label}
+                </button>
+              ))}
+            </div>
+
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
               <div className="order-2 grid grid-cols-1 gap-3 lg:order-1">
                 {posts.length === 0 ? (
@@ -198,6 +239,9 @@ export default function PostEditor({ userRole }: { userRole: string }) {
                     <div className="mb-2.5 flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-semibold ${post.type === 'NOTICE' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400'}`}>
                         {getPostTypeLabel(post.type)}
+                      </span>
+                      <span className="rounded bg-cyan-500/10 px-2 py-0.5 text-[9px] font-semibold text-cyan-300">
+                        {getPostCategoryLabel(post.category)}
                       </span>
                       <span className="text-[10px] font-medium text-zinc-600">
                         {new Date(post.createdAt).toLocaleDateString()}
@@ -262,14 +306,14 @@ export default function PostEditor({ userRole }: { userRole: string }) {
                 </button>
                 <div className="flex w-fit rounded-xl border border-white/10 bg-black/40 p-1">
                   <button
-                    onClick={() => setForm({ ...form, type: "GENERAL" })}
+                    onClick={() => setForm({ ...form, type: "GENERAL", category: form.category === "NOTICE" ? "GENERAL" : form.category })}
                     className={`rounded-lg px-4 py-1.5 text-[10px] font-semibold transition-all ${form.type === "GENERAL" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     일반 게시글
                   </button>
                   {isAdmin && (
                     <button
-                      onClick={() => setForm({ ...form, type: "NOTICE" })}
+                      onClick={() => setForm({ ...form, type: "NOTICE", category: "NOTICE" })}
                       className={`ml-1 rounded-lg px-4 py-1.5 text-[10px] font-semibold transition-all ${form.type === "NOTICE" ? "bg-blue-600 text-white" : "text-zinc-500 hover:text-zinc-300"}`}
                     >
                       시스템 공지
@@ -277,6 +321,28 @@ export default function PostEditor({ userRole }: { userRole: string }) {
                   )}
                 </div>
               </div>
+
+              {form.type === "GENERAL" && (
+                <div className="mb-4">
+                  <p className="mb-2 px-1 text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-600">말머리</p>
+                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {WRITABLE_POST_CATEGORIES.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, category: category.id })}
+                        className={`shrink-0 rounded-xl border px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.08em] transition-all ${
+                          form.category === category.id
+                            ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-100"
+                            : "border-white/5 bg-black/25 text-zinc-600 hover:border-white/10 hover:text-zinc-300"
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <input
                 className="mb-4 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-base font-semibold text-white outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/50"

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { RPG_MAT_LIST } from "./marketData";
 
-const DEFAULT_PRICES: Record<string, string> = {
+export const DEFAULT_PRICES: Record<string, string> = {
   "LOW_LIFE": "11000", "MID_LIFE": "33500", "HIGH_LIFE": "66500",
   "ISLAND_SCROLL": "100000",
   "RUNE_1": "0", "RUNE_2": "0", "RUNE_3": "0",
@@ -55,11 +55,42 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
     setIsSaved(true);
   };
 
+  const importPricePreset = (data: {
+    prices?: Record<string, string>;
+    enchantPrices?: Record<string, { price: string; rate: string }>;
+    imprintPrices?: Record<string, string>;
+  }) => {
+    const nextPrices = { ...prices, ...(data.prices || {}) };
+    const nextEnchantPrices = { ...enchantPrices, ...(data.enchantPrices || {}) };
+    const nextImprintPrices = { ...imprintPrices, ...(data.imprintPrices || {}) };
+    setPrices(nextPrices);
+    setEnchantPrices(nextEnchantPrices);
+    setImprintPrices(nextImprintPrices);
+    localStorage.setItem("ddingtion_market_total_data", JSON.stringify({
+      prices: nextPrices,
+      enchantPrices: nextEnchantPrices,
+      imprintPrices: nextImprintPrices,
+    }));
+    setIsSaved(true);
+  };
+
+  const resetAllPrices = () => {
+    setPrices(DEFAULT_PRICES);
+    setEnchantPrices({});
+    setImprintPrices({});
+    localStorage.setItem("ddingtion_market_total_data", JSON.stringify({
+      prices: DEFAULT_PRICES,
+      enchantPrices: {},
+      imprintPrices: {},
+    }));
+    setIsSaved(true);
+  };
+
   return (
     <MarketContext.Provider value={{ 
       prices, enchantPrices, imprintPrices, 
       updatePrice, updateEnchantPrice, updateImprintPrice, 
-      saveAllPrices, isSaved,
+      saveAllPrices, importPricePreset, resetAllPrices, isSaved,
       // 🛠️ [패치] 공유 변수 및 설정 함수 노출
       calcResult, 
       setCalcResult 

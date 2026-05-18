@@ -17,15 +17,17 @@ import {
   SKILL_SLOT_SEAL_COSTS,
   RPG_WEAPON_INFO
 } from "./marketData";
-import { useMarket } from "./MarketContext";
+import { DEFAULT_PRICES, useMarket } from "./MarketContext";
 
 export default function CalcTab({ selectedItem }: { selectedItem: any }) {
-  const { prices, enchantPrices, updateEnchantPrice, saveAllPrices, updatePrice, setCalcResult } = useMarket();
+  const { prices, enchantPrices, imprintPrices, updateEnchantPrice, saveAllPrices, importPricePreset, resetAllPrices, updatePrice, setCalcResult } = useMarket();
   const [rpgRank, setRpgRank] = useState("입문");
   const [activeRuneSlot, setActiveRuneSlot] = useState<number | null>(null);
 
   const [isPriceFeedbackActive, setIsPriceFeedbackActive] = useState(false);
   const [isFilterFeedbackActive, setIsFilterFeedbackActive] = useState(false);
+  const [importCode, setImportCode] = useState("");
+  const [shareFeedback, setShareFeedback] = useState("");
 
   const initialFilters = {
     enhancementLevel: 0,
@@ -75,12 +77,114 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     setTimeout(() => setIsPriceFeedbackActive(false), 1500);
   };
 
+  const handleResetPrices = () => {
+    triggerHaptic();
+    if (!confirm("저장된 시세 입력값을 모두 초기화할까요?")) return;
+    resetAllPrices();
+    setImportCode("");
+    setShareFeedback("시세 초기화됨");
+    setTimeout(() => setShareFeedback(""), 1800);
+  };
+
   const handleSaveFilters = () => {
     triggerHaptic();
     if (!selectedItem) return;
     localStorage.setItem(`preset_${selectedItem.id}`, JSON.stringify(filters));
     setIsFilterFeedbackActive(true);
     setTimeout(() => setIsFilterFeedbackActive(false), 1500);
+  };
+
+  const handleResetFilters = () => {
+    triggerHaptic();
+    if (!selectedItem) return;
+    if (!confirm("현재 아이템의 선택 옵션을 초기화할까요?")) return;
+    setFilters(initialFilters);
+    setActiveRuneSlot(null);
+    const weaponGroup = Object.keys(RPG_WEAPON_INFO).find(key => selectedItem.name.includes(key));
+    setRpgRank(weaponGroup ? RPG_WEAPON_INFO[weaponGroup].rank : "입문");
+    localStorage.removeItem(`preset_${selectedItem.id}`);
+    setIsFilterFeedbackActive(true);
+    setTimeout(() => setIsFilterFeedbackActive(false), 1500);
+  };
+
+  const encodePreset = (payload: unknown) => {
+    const json = JSON.stringify(payload);
+    const bytes = new TextEncoder().encode(json);
+    const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/g, "");
+  };
+
+  const decodePreset = (code: string) => {
+    const normalized = code.trim().replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  };
+
+  const handleExportPricePreset = async () => {
+    triggerHaptic();
+    const compactPrices = Object.entries(prices).filter(([key, value]) => {
+      return String(value ?? "") !== String(DEFAULT_PRICES[key] ?? "");
+    });
+    const compactEnchantPrices = Object.entries(enchantPrices).map(([name, data]) => [
+      name,
+      data.price || "",
+      data.rate || "",
+    ]);
+    const compactImprintPrices = Object.entries(imprintPrices);
+    const payload = {
+      v: 2,
+      p: compactPrices,
+      e: compactEnchantPrices,
+      i: compactImprintPrices,
+    };
+    const code = encodePreset(payload);
+    setImportCode(code);
+    setShareFeedback("공유 코드 생성됨");
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(code).catch(() => null);
+      setShareFeedback("공유 코드 복사됨");
+    }
+    setTimeout(() => setShareFeedback(""), 1800);
+  };
+
+  const handleImportPricePreset = () => {
+    triggerHaptic();
+    try {
+      const parsed = decodePreset(importCode);
+      if (parsed?.v === 2) {
+        const restoredPrices = Object.fromEntries(Array.isArray(parsed.p) ? parsed.p : []);
+        const restoredEnchantPrices = Object.fromEntries(
+          (Array.isArray(parsed.e) ? parsed.e : []).map(([name, price, rate]: string[]) => [
+            name,
+            { price: price || "", rate: rate || "" },
+          ])
+        );
+        const restoredImprintPrices = Object.fromEntries(Array.isArray(parsed.i) ? parsed.i : []);
+        importPricePreset({
+          prices: restoredPrices,
+          enchantPrices: restoredEnchantPrices,
+          imprintPrices: restoredImprintPrices,
+        });
+      } else if (parsed?.v === 1 && parsed.prices) {
+        importPricePreset({
+          prices: parsed.prices,
+          enchantPrices: parsed.enchantPrices || {},
+          imprintPrices: parsed.imprintPrices || {},
+        });
+      } else {
+        throw new Error("invalid preset");
+      }
+      setImportCode("");
+      setShareFeedback("공유 시세 적용됨");
+      setTimeout(() => setShareFeedback(""), 1800);
+    } catch {
+      alert("공유 코드를 읽을 수 없습니다. 전체 문자열을 다시 붙여넣어 주세요.");
+    }
   };
 
   const category = selectedItem?.category.toUpperCase().includes("WILD") ? "WILD" : selectedItem?.category.toUpperCase().includes("ISLAND") ? "ISLAND" : selectedItem?.category.toUpperCase().includes("RPG") ? "RPG" : "OTHER";
@@ -295,10 +399,40 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
       </div>
 
       <section className="bg-blue-600/[0.03] border border-blue-500/20 p-5 rounded-[30px] shadow-xl backdrop-blur-md">
-        <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex flex-col gap-3 mb-4 px-1 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3"><div className="w-1.5 h-4 bg-blue-500 rounded-full" /><h3 className="text-[11px] font-extrabold text-zinc-300 uppercase tracking-[0.14em]">시세 입력</h3></div>
-          <button onClick={handleSavePrices} className={`site-btn site-btn-compact ${isPriceFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-primary"}`}>
-            {isPriceFeedbackActive ? "✓ 시세 저장됨" : "현재 시세 저장"}
+          <div className="flex flex-wrap items-center gap-2">
+            {shareFeedback && (
+              <span className="rounded-full border border-green-500/15 bg-green-500/8 px-2.5 py-1 text-[9px] font-semibold leading-none tracking-[-0.01em] text-green-300/85">
+                {shareFeedback}
+              </span>
+            )}
+            <button onClick={handleExportPricePreset} className="site-btn site-btn-secondary site-btn-compact">
+              공유 코드 생성
+            </button>
+            <button onClick={handleResetPrices} className="site-btn site-btn-ghost site-btn-compact">
+              시세 초기화
+            </button>
+            <button onClick={handleSavePrices} className={`site-btn site-btn-compact ${isPriceFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-primary"}`}>
+              {isPriceFeedbackActive ? "✓ 시세 저장됨" : "현재 시세 저장"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-[1fr_auto]">
+          <input
+            value={importCode}
+            onChange={(e) => setImportCode(e.target.value.trim())}
+            className="min-w-0 rounded-xl border border-white/10 bg-black/35 px-3 py-2 font-mono text-[10px] font-semibold text-zinc-300 outline-none placeholder:text-zinc-700 focus:border-blue-500/40"
+            placeholder="공유받은 시세 코드를 붙여넣기"
+          />
+          <button
+            type="button"
+            onClick={handleImportPricePreset}
+            disabled={!importCode.trim()}
+            className="site-btn site-btn-primary site-btn-compact"
+          >
+            코드 적용
           </button>
         </div>
 
@@ -379,9 +513,12 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
       </section>
 
       <section className="bg-white/[0.02] border border-white/5 p-5 md:p-6 rounded-[32px] shadow-2xl backdrop-blur-md">
-        <div className="flex items-center justify-between mb-5 border-b border-white/5 pb-4 px-1">
+        <div className="flex flex-col gap-3 mb-5 border-b border-white/5 pb-4 px-1 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4"><div className="w-11 h-11 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner"><img src={getSecureUrl(selectedItem.iconUrl)} className="w-8 h-8 pixel-art" alt="" /></div><div><h3 className="text-lg font-extrabold uppercase tracking-[-0.03em]">{selectedItem.name}</h3><p className="text-blue-400 font-extrabold text-[10px] uppercase tracking-[0.12em] mt-1">아이템 커스텀 설정</p></div></div>
-          <button onClick={handleSaveFilters} className={`site-btn site-btn-compact ${isFilterFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-secondary"}`}>{isFilterFeedbackActive ? "✓ 설정 저장됨" : "선택 옵션 저장"}</button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button onClick={handleResetFilters} className="site-btn site-btn-ghost site-btn-compact">선택 옵션 초기화</button>
+            <button onClick={handleSaveFilters} className={`site-btn site-btn-compact ${isFilterFeedbackActive ? "border-green-500/30 bg-green-500/15 text-green-100" : "site-btn-secondary"}`}>{isFilterFeedbackActive ? "✓ 설정 저장됨" : "선택 옵션 저장"}</button>
+          </div>
         </div>
 
         <div className="custom-scrollbar overflow-y-auto max-h-[430px] pr-2">
