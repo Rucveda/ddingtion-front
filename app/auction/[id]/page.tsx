@@ -18,6 +18,7 @@ import {
   getBidIncrementDetails,
   getMinBidIncrement,
   getMinimumBid,
+  parseBidPrice,
 } from "@/utils/bidIncrement";
 
 export default function AuctionDetail() {
@@ -61,6 +62,7 @@ export default function AuctionDetail() {
   }, []);
 
   const formatGold = (amount: number) => {
+    if (!Number.isFinite(amount)) return "0";
     if (amount >= 100000000) {
       const eok = Math.floor(amount / 100000000);
       const man = Math.floor((amount % 100000000) / 10000);
@@ -150,7 +152,7 @@ export default function AuctionDetail() {
         const data = await request(`/api/auctions/${id}`);
         if (data) {
           setAuction(data);
-          setBidAmount(getMinimumBid(Number(data.currentPrice), data.endTime).toString());
+          setBidAmount(getMinimumBid(parseBidPrice(data.currentPrice), data.endTime).toString());
         }
       } catch (err) { console.error(err); }
     };
@@ -290,7 +292,7 @@ export default function AuctionDetail() {
     }
     if (!canAuctionTrade) return alert("현재 입찰할 수 없는 경매 상태입니다.");
     if (isSeller) return alert("본인이 등록한 물품에는 입찰할 수 없습니다.");
-    const minimumBid = getMinimumBid(Number(auction.currentPrice), auction.endTime);
+    const minimumBid = getMinimumBid(parseBidPrice(auction.currentPrice), auction.endTime);
     if (Number(bidAmount) < minimumBid) {
       return alert(`최소 입찰가는 ${minimumBid.toLocaleString()}G 입니다. (마감이 가까울수록 최소 인상이 커집니다)`);
     }
@@ -400,7 +402,7 @@ export default function AuctionDetail() {
     }
   };
 
-  const currentPrice = Number(auction?.currentPrice || 0);
+  const currentPrice = parseBidPrice(auction?.currentPrice);
   const bidDetails = useMemo(
     () => getBidIncrementDetails(currentPrice, auction?.endTime, new Date(nowTs)),
     [currentPrice, auction?.endTime, nowTs],
@@ -413,8 +415,8 @@ export default function AuctionDetail() {
     </div>
   );
 
-  const startPrice = Number(auction.startPrice);
-  const buyNowPrice = auction.buyNowPrice ? Number(auction.buyNowPrice) : null;
+  const startPrice = parseBidPrice(auction.startPrice);
+  const buyNowPrice = auction.buyNowPrice ? parseBidPrice(auction.buyNowPrice) : null;
   const { minimumBid, effectiveIncrement: minBidIncrement, priceTierLabel: bidIncrementTierLabel } = bidDetails;
   const priceIncreaseRate = startPrice > 0 ? Math.round(((currentPrice - startPrice) / startPrice) * 100) : 0;
   const buyNowGap = buyNowPrice ? buyNowPrice - currentPrice : null;
@@ -767,7 +769,7 @@ export default function AuctionDetail() {
                     <div>
                       <label className="mb-2 block text-[10px] font-extrabold uppercase tracking-[0.12em] text-yellow-400">현재 최고가</label>
                       <div className="flex min-w-0 items-baseline gap-2 overflow-hidden">
-                        <span className="truncate whitespace-nowrap font-mono text-2xl font-black text-yellow-400 md:text-3xl">{formatGold(Number(auction.currentPrice))}</span>
+                        <span className="truncate whitespace-nowrap font-mono text-2xl font-black text-yellow-400 md:text-3xl">{formatGold(currentPrice)}</span>
                         <span className="shrink-0 font-black text-yellow-900">G</span>
                       </div>
                     </div>
@@ -795,7 +797,7 @@ export default function AuctionDetail() {
                       onClick={() => setBidAmount(getMinimumBid(currentPrice, auction.endTime).toString())}
                       className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap"
                     >
-                      최소 (+{formatGold(minBidIncrement)})
+                      최소 (+{minBidIncrement.toLocaleString()})
                     </button>
                     {[10, 20, 50].map((pct) => (
                       <button
@@ -830,7 +832,7 @@ export default function AuctionDetail() {
                       onClick={handleBuyNow}
                       className="auction-buy-now-btn whitespace-nowrap"
                     >
-                      {isProcessing ? "처리 중..." : `즉시 구매 (${formatGold(Number(auction.buyNowPrice))})`}
+                      {isProcessing ? "처리 중..." : `즉시 구매 (${formatGold(buyNowPrice ?? 0)})`}
                     </button>
                   )}
                 </div>
@@ -848,7 +850,7 @@ export default function AuctionDetail() {
                         {!bidRulesOpen && (
                           <p className="mt-1 text-[11px] font-medium leading-relaxed text-zinc-400">
                             지금 최소 인상{" "}
-                            <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
+                            <span className="font-mono text-blue-300">+{minBidIncrement.toLocaleString()} G</span>
                             {" "}({bidIncrementTierLabel} · {bidDetails.timeBand.label})
                             {bidDetails.extendsOnBid && (
                               <span className="text-amber-200/90"> · 입찰 시 {BID_EXTENSION_MINUTES}분 연장</span>
@@ -873,7 +875,7 @@ export default function AuctionDetail() {
                             {PRICE_INCREMENT_TIERS.map((tier) => (
                               <li key={tier.label} className="flex justify-between gap-2">
                                 <span>{tier.label}</span>
-                                <span className="font-mono text-zinc-300">+{Number(tier.increment).toLocaleString()} G</span>
+                                <span className="font-mono text-zinc-300">+{tier.increment.toLocaleString()} G</span>
                               </li>
                             ))}
                           </ul>
@@ -905,8 +907,8 @@ export default function AuctionDetail() {
                         <div className="rounded-xl border border-white/5 bg-black/25 px-3 py-2.5 text-[11px] leading-relaxed text-zinc-400">
                           <p>
                             <span className="font-semibold text-zinc-200">지금 적용:</span>{" "}
-                            {bidIncrementTierLabel} 기본 {formatGold(bidDetails.baseIncrement)} G × {bidDetails.multiplier}배 ={" "}
-                            <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
+                            {bidIncrementTierLabel} 기본 {bidDetails.baseIncrement.toLocaleString()} G × {bidDetails.multiplier}배 ={" "}
+                            <span className="font-mono text-blue-300">+{minBidIncrement.toLocaleString()} G</span>
                           </p>
                           {bidDetails.nextBand && bidDetails.msUntilNextBand !== null && (
                             <p className="mt-1.5 text-amber-200/90">

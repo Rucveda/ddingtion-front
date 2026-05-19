@@ -4,12 +4,25 @@
 const MS_MINUTE = 60 * 1000;
 const MS_HOUR = 60 * MS_MINUTE;
 
-const TIER_THOUSAND = 1_000;
-const TIER_EOK = 100_000_000;
+/** 100만G (백만) / 1,000만G (천만) / 1억G (억) */
+const TIER_BAEKMAN = 1_000_000;
+const TIER_CHEONMAN = 10_000_000;
 
-const INCREMENT_HUNDREDS = 10_000;
-const INCREMENT_THOUSANDS = 100_000;
+const INCREMENT_BAEKMAN = 10_000;
+const INCREMENT_CHEONMAN = 100_000;
 const INCREMENT_EOK = 500_000;
+
+export const parseBidPrice = (value: unknown): number => {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "bigint") return Number(value);
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  }
+  const normalized = String(value).replace(/[,_\s]/g, "").trim();
+  if (!normalized) return 0;
+  const num = Number(normalized);
+  return Number.isFinite(num) ? Math.max(0, Math.floor(num)) : 0;
+};
 
 export const BID_EXTENSION_THRESHOLD_MS = 10 * MS_MINUTE;
 export const BID_EXTENSION_MS = 3 * MS_MINUTE;
@@ -37,22 +50,22 @@ export const BID_TIME_BANDS = [
 ] as const;
 
 export const PRICE_INCREMENT_TIERS = [
-  { label: "백 단위 (1,000G 미만)", increment: "10,000" },
-  { label: "천 단위 (1,000G ~ 1억G 미만)", increment: "100,000" },
-  { label: "억 단위 (1억G 이상)", increment: "500,000" },
+  { label: "백만 단위 (100만G 미만)", increment: INCREMENT_BAEKMAN },
+  { label: "천만 단위 (100만G ~ 1,000만G 미만)", increment: INCREMENT_CHEONMAN },
+  { label: "억 단위 (1,000만G 이상)", increment: INCREMENT_EOK },
 ] as const;
 
 export const getBaseMinBidIncrement = (currentPrice: number): number => {
-  const price = Math.max(0, Math.floor(currentPrice));
-  if (price < TIER_THOUSAND) return INCREMENT_HUNDREDS;
-  if (price < TIER_EOK) return INCREMENT_THOUSANDS;
+  const price = parseBidPrice(currentPrice);
+  if (price < TIER_BAEKMAN) return INCREMENT_BAEKMAN;
+  if (price < TIER_CHEONMAN) return INCREMENT_CHEONMAN;
   return INCREMENT_EOK;
 };
 
 export const getPriceTierLabel = (currentPrice: number): string => {
-  const price = Math.max(0, Math.floor(currentPrice));
-  if (price < TIER_THOUSAND) return "백 단위";
-  if (price < TIER_EOK) return "천 단위";
+  const price = parseBidPrice(currentPrice);
+  if (price < TIER_BAEKMAN) return "백만 단위";
+  if (price < TIER_CHEONMAN) return "천만 단위";
   return "억 단위";
 };
 
@@ -84,7 +97,7 @@ export const getMinimumBid = (
   currentPrice: number,
   endTime?: string | Date | null,
   now: Date = new Date(),
-): number => Math.max(0, Math.floor(currentPrice)) + getMinBidIncrement(currentPrice, endTime, now);
+): number => parseBidPrice(currentPrice) + getMinBidIncrement(currentPrice, endTime, now);
 
 /** @deprecated getPriceTierLabel 사용 권장 */
 export const getBidIncrementTierLabel = getPriceTierLabel;
@@ -106,7 +119,7 @@ export const getBidIncrementDetails = (
   endTime?: string | Date | null,
   now: Date = new Date(),
 ): BidIncrementDetails => {
-  const price = Math.max(0, Math.floor(currentPrice));
+  const price = parseBidPrice(currentPrice);
   const baseIncrement = getBaseMinBidIncrement(price);
   const timeCtx = endTime ? getTimeBidContext(endTime, now) : { multiplier: 1, band: BID_TIME_BANDS[0], remainingMs: 0, extendsOnBid: false };
   const effectiveIncrement = baseIncrement * timeCtx.multiplier;
