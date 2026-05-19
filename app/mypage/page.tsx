@@ -114,6 +114,20 @@ export default function MyPage() {
     }
   }, [user?.id]);
 
+  const handleCancelRevoke = useCallback(async (auctionId: number) => {
+    triggerHaptic();
+    if (!confirm("취소 요청을 철회하고 경매를 다시 진행하시겠습니까?")) return;
+    try {
+      const data = await request(`/api/auctions/${auctionId}/cancel-revoke`, { method: "POST" });
+      if (data) {
+        alert(data.message || "경매가 다시 진행됩니다.");
+        await refreshTradeLists();
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "취소 철회에 실패했습니다.");
+    }
+  }, [triggerHaptic, refreshTradeLists]);
+
   useEffect(() => {
     const fetchAllData = async () => {
       const storedUser = localStorage.getItem("user");
@@ -519,6 +533,7 @@ export default function MyPage() {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
                     const canRelist = auction.status === "EXPIRED";
+                    const canRevokeCancel = auction.status === "CANCEL_PENDING";
                     return (
                     <div key={auction.id} className="group relative bg-white/[0.02] border border-white/5 p-4 rounded-[22px] flex items-center justify-between hover:bg-white/[0.04] transition-all">
                       <div className="flex items-center gap-4 min-w-0">
@@ -539,6 +554,9 @@ export default function MyPage() {
                           {needsConfirm && (
                             <p className="mt-1 text-[11px] font-semibold text-yellow-300/80">거래 내용을 확인하고 확정해주세요.</p>
                           )}
+                          {canRevokeCancel && (
+                            <p className="mt-1 text-[11px] font-semibold text-amber-300/80">5분 내 철회하면 경매를 재개할 수 있습니다.</p>
+                          )}
                         </div>
                       </div>
                       
@@ -554,6 +572,15 @@ export default function MyPage() {
                             className="h-9 px-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-[10px] font-extrabold text-yellow-200 hover:bg-yellow-500/15 transition-all"
                           >
                             채팅
+                          </button>
+                        )}
+                        {canRevokeCancel && (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRevoke(auction.id)}
+                            className="h-9 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 text-[10px] font-extrabold text-emerald-200 transition-all hover:bg-emerald-500/15"
+                          >
+                            취소 철회
                           </button>
                         )}
                         {canRelist && (

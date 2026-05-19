@@ -139,7 +139,7 @@ export default function AuctionDetail() {
     CANCEL_PENDING: {
       label: "취소 보류",
       className: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-      description: "판매자 취소 요청 후 5분이 지나면 유찰 처리됩니다. 입찰은 중단됩니다.",
+      description: "판매자 취소 요청 후 5분이 지나면 유찰 처리됩니다. 판매자는 철회하여 경매를 재개할 수 있습니다.",
     },
   };
 
@@ -321,6 +321,33 @@ export default function AuctionDetail() {
   };
 
   const CHAT_OPEN_EVENT = "ddingtion_chat_open";
+  const handleCancelRevoke = async () => {
+    triggerHaptic();
+    if (!currentUser || !isSeller) return;
+    if (needsDiscordForTrade) {
+      alert("디스코드 인증이 필요합니다. 마이페이지에서 연동해 주세요.");
+      return router.push("/mypage");
+    }
+    if (!confirm("취소 요청을 철회하고 경매를 다시 진행하시겠습니까?")) return;
+
+    setIsProcessing(true);
+    try {
+      const data = await request(`/api/auctions/${id}/cancel-revoke`, { method: "POST" });
+      if (data) {
+        setAuction((prev: any) => ({
+          ...prev,
+          status: "ACTIVE",
+          cancelRequestedAt: null,
+        }));
+        alert(data.message || "경매가 다시 진행됩니다.");
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "취소 철회에 실패했습니다.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleCancelRequest = async () => {
     triggerHaptic();
     if (!currentUser || !isSeller) return;
@@ -876,6 +903,17 @@ export default function AuctionDetail() {
                       className="site-btn site-btn-secondary w-full whitespace-nowrap"
                     >
                       {isProcessing ? "처리 중..." : "경매 취소 요청 (5분 후 유찰)"}
+                    </button>
+                  )}
+
+                  {isSeller && auction.status === "CANCEL_PENDING" && (
+                    <button
+                      type="button"
+                      disabled={isProcessing || needsDiscordForTrade || verifyingSession}
+                      onClick={handleCancelRevoke}
+                      className="site-btn site-btn-primary w-full whitespace-nowrap"
+                    >
+                      {isProcessing ? "처리 중..." : "취소 철회 · 경매 재개"}
                     </button>
                   )}
 
