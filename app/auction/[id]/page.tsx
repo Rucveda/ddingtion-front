@@ -10,6 +10,7 @@ import { SOCKET_URL } from "@/utils/runtimeConfig";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
+import { subscribeSessionIdle } from "@/utils/authPreferences";
 import {
   BID_EXTENSION_MINUTES,
   BID_TIME_BANDS,
@@ -150,6 +151,15 @@ export default function AuctionDetail() {
     if (cat.includes("RPG")) return "RPG";
     return "OTHER";
   }, [auction]);
+
+  useEffect(() => {
+    return subscribeSessionIdle(() => {
+      setSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const initData = async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { request } from "@/utils/api"; 
@@ -8,6 +8,7 @@ import { io } from "socket.io-client";
 import { SOCKET_URL } from "@/utils/runtimeConfig";
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
+import { subscribeSessionIdle } from "@/utils/authPreferences";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -15,6 +16,7 @@ export default function NotificationCenter() {
   const [isReady, setIsReady] = useState(false);
   const [hasSession, setHasSession] = useState(false);
   const router = useRouter();
+  const socketRef = useRef<ReturnType<typeof io> | null>(null);
 
   const fetchLogs = useCallback(async () => {
     if (isLocalDev()) ensureLocalDummySession();
@@ -32,6 +34,16 @@ export default function NotificationCenter() {
       console.error("알림 로드 실패:", err);
       setNotifications([]);
     }
+  }, []);
+
+  useEffect(() => {
+    return subscribeSessionIdle(() => {
+      socketRef.current?.close();
+      socketRef.current = null;
+      setNotifications([]);
+      setIsOpen(false);
+      setHasSession(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -53,6 +65,7 @@ export default function NotificationCenter() {
     if (isLocalDev()) return;
 
     const socket = io(SOCKET_URL);
+    socketRef.current = socket;
     socket.emit("setup_notifications", user.id);
     
     socket.on("outbid_notification", () => {
@@ -63,7 +76,10 @@ export default function NotificationCenter() {
       fetchLogs();
     });
 
-    return () => { socket.close(); };
+    return () => {
+      socket.close();
+      if (socketRef.current === socket) socketRef.current = null;
+    };
   }, [fetchLogs]);
 
   const safeNotifications = Array.isArray(notifications) ? notifications : [];

@@ -8,6 +8,7 @@ import ReviewModal from "./ReviewModal";
 import { SOCKET_URL } from "@/utils/runtimeConfig";
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
+import { subscribeSessionIdle } from "@/utils/authPreferences";
 
 // 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
 const CHAT_OPEN_EVENT = "ddingtion_chat_open";
@@ -34,6 +35,20 @@ export default function ChatWidget() {
   const roomsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  useEffect(() => {
+    return subscribeSessionIdle(() => {
+      setSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+      setRooms([]);
+      setSelectedRoom(null);
+      setMessages([]);
+      setIsOpen(false);
+      setShowReport(false);
+    });
+  }, []);
 
   // 선택된 방이 바뀔 때마다 Ref 업데이트
   useEffect(() => {

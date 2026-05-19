@@ -1,3 +1,6 @@
+/** 무활동 로그아웃·수동 로그아웃 시 소켓 등 실시간 연결 해제용 */
+export const SESSION_IDLE_EVENT = "ddingtion_session_idle";
+
 /** 로그인 화면 설정·세션 저장 키 (localStorage.clear 시 보존) */
 export const AUTH_PREF_KEYS = {
   rememberLoginId: "ddingtion_remember_login_id",
@@ -49,4 +52,11 @@ export const clearAuthSession = (options?: { keepAutoLogin?: boolean }) => {
   if (!options?.keepAutoLogin) {
     localStorage.removeItem(AUTH_PREF_KEYS.autoLogin);
   }
+  window.dispatchEvent(new Event(SESSION_IDLE_EVENT));
+};
+
+export const subscribeSessionIdle = (handler: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(SESSION_IDLE_EVENT, handler);
+  return () => window.removeEventListener(SESSION_IDLE_EVENT, handler);
 };

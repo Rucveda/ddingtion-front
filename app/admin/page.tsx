@@ -9,6 +9,7 @@ import { SOCKET_URL } from "@/utils/runtimeConfig";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
+import { subscribeSessionIdle } from "@/utils/authPreferences";
 
 // --- Interfaces ---
 interface Auction { 
@@ -242,6 +243,15 @@ export default function AdminDashboard() {
     handleTabChange(activeTab);
     return () => { newSocket.close(); };
   }, [router]);
+
+  useEffect(() => {
+    return subscribeSessionIdle(() => {
+      setSocket((prev) => {
+        prev?.close();
+        return null;
+      });
+    });
+  }, []);
 
   useEffect(() => {
     if (activeTab !== "USERS" || !isAdmin) return;
