@@ -261,6 +261,16 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
     const postType = query?.get("type");
     return postType ? LOCAL_DUMMY_POSTS.filter((post) => post.type === postType) : LOCAL_DUMMY_POSTS;
   }
+  if (path === "/api/posts/category-guides") {
+    return {
+      guides: {
+        WILD: "WILD 카테고리 아이템 관련 글을 올려 주세요.",
+        ISLAND: "ISLAND(섬) 카테고리 아이템 관련 글을 올려 주세요.",
+        RPG: "RPG 카테고리 아이템 관련 글을 올려 주세요.",
+        MARKET_TALK: "시세·가격 토론 글을 올려 주세요.",
+      },
+    };
+  }
   if (path === "/api/chat/rooms") return LOCAL_DUMMY_CHAT_ROOMS;
   if (path === "/api/chat/rooms/admin") return LOCAL_DUMMY_CHAT_ROOMS[1];
   if (path.endsWith("/messages")) {
