@@ -222,33 +222,36 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div className="flex flex-col gap-2.5 -mt-2">
-                <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-zinc-400">
-                  <input
-                    type="checkbox"
-                    checked={rememberLoginId}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setRememberLoginIdState(checked);
-                      if (!checked) setRememberLoginId(false);
-                    }}
-                    className="h-4 w-4 rounded border-white/20 bg-black/40 accent-blue-500"
-                  />
+              <div className="-mt-2 flex items-center justify-center gap-5 sm:gap-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    const next = !rememberLoginId;
+                    setRememberLoginIdState(next);
+                    if (!next) setRememberLoginId(false);
+                  }}
+                  className={`login-pref-toggle${rememberLoginId ? " is-active" : ""}`}
+                  aria-pressed={rememberLoginId}
+                >
                   아이디 저장
-                </label>
-                <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-zinc-400">
-                  <input
-                    type="checkbox"
-                    checked={autoLogin}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setAutoLoginState(checked);
-                      if (checked) setRememberLoginIdState(true);
-                    }}
-                    className="h-4 w-4 rounded border-white/20 bg-black/40 accent-blue-500"
-                  />
+                </button>
+                <span className="text-zinc-800" aria-hidden>
+                  ·
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic();
+                    const next = !autoLogin;
+                    setAutoLoginState(next);
+                    if (next) setRememberLoginIdState(true);
+                  }}
+                  className={`login-pref-toggle${autoLogin ? " is-active" : ""}`}
+                  aria-pressed={autoLogin}
+                >
                   자동 로그인
-                </label>
+                </button>
               </div>
 
               <button
@@ -270,48 +273,45 @@ export default function LoginPage() {
                 </motion.div>
               )}
             </form>
-
-            <div className="mt-3 rounded-[24px] border border-white/5 bg-white/[0.02] p-4">
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic();
-                  setShowReset((prev) => !prev);
-                  setResetLoginId(loginId);
-                }}
-                className="site-btn site-btn-secondary w-full"
-              >
-                비밀번호 재설정
-              </button>
-              {showReset && (
-                <div className="mt-3 space-y-3">
-                  <p className="text-xs font-medium leading-relaxed text-zinc-500 break-keep">
-                    Discord 인증으로 본인 확인 후 새 비밀번호를 설정합니다. 기존에 Discord 연동된 계정만 사용할 수 있습니다.
-                  </p>
-                  <input
-                    type="text"
-                    value={resetLoginId}
-                    onChange={handleInputChange(setResetLoginId)}
-                    placeholder="마인크래프트 닉네임"
-                    className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-semibold text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/40"
-                  />
-                  <button
-                    type="button"
-                    onClick={handlePasswordReset}
-                    disabled={!resetLoginId.trim() || resetLoading}
-                    className="site-btn site-btn-primary w-full"
-                  >
-                    {resetLoading ? "인증 준비 중..." : "Discord로 재설정"}
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex flex-col items-center gap-3 text-center">
             <Link href="/register" onClick={triggerHaptic} className="site-btn site-btn-ghost site-btn-compact">
               계정 생성하기
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic();
+                setShowReset((prev) => !prev);
+                setResetLoginId(loginId);
+              }}
+              className="site-btn site-btn-ghost site-btn-compact"
+            >
+              비밀번호 재설정
+            </button>
+            {showReset && (
+              <div className="mt-1 w-full max-w-[400px] space-y-3 rounded-[24px] border border-white/5 bg-white/[0.02] p-4 text-left">
+                <p className="text-xs font-medium leading-relaxed text-zinc-500 break-keep">
+                  Discord 인증으로 본인 확인 후 새 비밀번호를 설정합니다. 기존에 Discord 연동된 계정만 사용할 수 있습니다.
+                </p>
+                <input
+                  type="text"
+                  value={resetLoginId}
+                  onChange={handleInputChange(setResetLoginId)}
+                  placeholder="마인크래프트 닉네임"
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm font-semibold text-zinc-100 outline-none transition-all placeholder:text-zinc-700 focus:border-blue-500/40"
+                />
+                <button
+                  type="button"
+                  onClick={handlePasswordReset}
+                  disabled={!resetLoginId.trim() || resetLoading}
+                  className="site-btn site-btn-primary w-full"
+                >
+                  {resetLoading ? "인증 준비 중..." : "Discord로 재설정"}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       </main>
