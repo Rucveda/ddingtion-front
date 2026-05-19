@@ -39,6 +39,7 @@ export default function AuctionDetail() {
   const [marketAnalysisLoading, setMarketAnalysisLoading] = useState(false);
   const [nowTs, setNowTs] = useState(() => Date.now());
   const [extensionNotice, setExtensionNotice] = useState<string | null>(null);
+  const [bidRulesOpen, setBidRulesOpen] = useState(false);
   const GAME_MAX_PRICE = 10000000000;
 
   const needsDiscordForTrade =
@@ -718,70 +719,6 @@ export default function AuctionDetail() {
                   </div>
                 )}
 
-                {canAuctionTrade && (
-                  <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
-                    <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-300">입찰 규칙 안내</p>
-                      <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-zinc-400">
-                        최소 인상은 <span className="text-zinc-200">가격 구간</span>과 <span className="text-zinc-200">마감까지 남은 시간</span>에 따라 달라집니다.
-                        마감이 가까울수록 한 번에 더 크게 올려야 합니다.
-                      </p>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">① 가격 구간 (기본 인상)</p>
-                      <ul className="space-y-1 text-[11px] text-zinc-400">
-                        {PRICE_INCREMENT_TIERS.map((tier) => (
-                          <li key={tier.label} className="flex justify-between gap-2">
-                            <span>{tier.label}</span>
-                            <span className="font-mono text-zinc-300">+{Number(tier.increment).toLocaleString()} G</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="space-y-1.5">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">② 마감 임박 시간 배수</p>
-                      <ul className="space-y-1.5">
-                        {BID_TIME_BANDS.map((band) => {
-                          const active = bidDetails.timeBand.id === band.id;
-                          return (
-                            <li
-                              key={band.id}
-                              className={`rounded-xl border px-3 py-2 text-[11px] leading-relaxed ${
-                                active
-                                  ? "border-blue-500/40 bg-blue-500/10 text-blue-100"
-                                  : "border-white/5 bg-black/20 text-zinc-500"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-2 font-semibold">
-                                <span>{band.label}</span>
-                                <span className="font-mono">×{band.multiplier}</span>
-                              </div>
-                              <p className={`mt-1 ${active ? "text-blue-200/80" : "text-zinc-600"}`}>{band.description}</p>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                    <div className="rounded-xl border border-white/5 bg-black/25 px-3 py-2.5 text-[11px] leading-relaxed text-zinc-400">
-                      <p>
-                        <span className="font-semibold text-zinc-200">지금 적용:</span>{" "}
-                        {bidIncrementTierLabel} 기본 {formatGold(bidDetails.baseIncrement)} G × {bidDetails.multiplier}배 ={" "}
-                        <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
-                      </p>
-                      {bidDetails.nextBand && bidDetails.msUntilNextBand !== null && (
-                        <p className="mt-1.5 text-amber-200/90">
-                          {formatDurationShort(bidDetails.msUntilNextBand)} 후 「{bidDetails.nextBand.label}」(×{bidDetails.nextBand.multiplier})로 변경됩니다.
-                        </p>
-                      )}
-                      {bidDetails.extendsOnBid && (
-                        <p className="mt-1.5 text-amber-200/90">
-                          현재 구간에서는 유효 입찰 시 마감이 {BID_EXTENSION_MINUTES}분 연장됩니다. (반복 연장 가능)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-1.5 rounded-2xl border border-white/5 bg-black/20 px-3 py-2.5">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="shrink-0 text-[10px] font-extrabold text-red-400 uppercase tracking-[0.12em]">남은 시간</span>
@@ -804,9 +741,6 @@ export default function AuctionDetail() {
                       <div className="min-w-0">
                         <p className="mb-1 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-600">최소 입찰가</p>
                         <p className="truncate text-right font-mono text-xs font-black text-blue-300">{formatGold(minimumBid)} G</p>
-                        <p className="mt-0.5 text-right text-[10px] font-medium text-zinc-600">
-                          {bidIncrementTierLabel} · {bidDetails.timeBand.label} ×{bidDetails.multiplier} · +{formatGold(minBidIncrement)} G
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -900,6 +834,96 @@ export default function AuctionDetail() {
                     </button>
                   )}
                 </div>
+
+                {canAuctionTrade && (
+                  <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setBidRulesOpen((open) => !open)}
+                      className="flex w-full items-start justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-blue-500/10"
+                      aria-expanded={bidRulesOpen}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-300">입찰 규칙 안내</p>
+                        {!bidRulesOpen && (
+                          <p className="mt-1 text-[11px] font-medium leading-relaxed text-zinc-400">
+                            지금 최소 인상{" "}
+                            <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
+                            {" "}({bidIncrementTierLabel} · {bidDetails.timeBand.label})
+                            {bidDetails.extendsOnBid && (
+                              <span className="text-amber-200/90"> · 입찰 시 {BID_EXTENSION_MINUTES}분 연장</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                      <span className="shrink-0 pt-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-400/80">
+                        {bidRulesOpen ? "접기 ▲" : "펼치기 ▼"}
+                      </span>
+                    </button>
+                    {bidRulesOpen && (
+                      <div className="space-y-3 border-t border-blue-500/15 px-4 pb-4 pt-3">
+                        <p className="text-[11px] font-medium leading-relaxed text-zinc-400">
+                          최소 인상은 <span className="text-zinc-200">가격 구간</span>과{" "}
+                          <span className="text-zinc-200">마감까지 남은 시간</span>에 따라 달라집니다.
+                          마감이 가까울수록 한 번에 더 크게 올려야 합니다.
+                        </p>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">① 가격 구간 (기본 인상)</p>
+                          <ul className="space-y-1 text-[11px] text-zinc-400">
+                            {PRICE_INCREMENT_TIERS.map((tier) => (
+                              <li key={tier.label} className="flex justify-between gap-2">
+                                <span>{tier.label}</span>
+                                <span className="font-mono text-zinc-300">+{Number(tier.increment).toLocaleString()} G</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">② 마감 임박 시간 배수</p>
+                          <ul className="space-y-1.5">
+                            {BID_TIME_BANDS.map((band) => {
+                              const active = bidDetails.timeBand.id === band.id;
+                              return (
+                                <li
+                                  key={band.id}
+                                  className={`rounded-xl border px-3 py-2 text-[11px] leading-relaxed ${
+                                    active
+                                      ? "border-blue-500/40 bg-blue-500/10 text-blue-100"
+                                      : "border-white/5 bg-black/20 text-zinc-500"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between gap-2 font-semibold">
+                                    <span>{band.label}</span>
+                                    <span className="font-mono">×{band.multiplier}</span>
+                                  </div>
+                                  <p className={`mt-1 ${active ? "text-blue-200/80" : "text-zinc-600"}`}>{band.description}</p>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                        <div className="rounded-xl border border-white/5 bg-black/25 px-3 py-2.5 text-[11px] leading-relaxed text-zinc-400">
+                          <p>
+                            <span className="font-semibold text-zinc-200">지금 적용:</span>{" "}
+                            {bidIncrementTierLabel} 기본 {formatGold(bidDetails.baseIncrement)} G × {bidDetails.multiplier}배 ={" "}
+                            <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
+                          </p>
+                          {bidDetails.nextBand && bidDetails.msUntilNextBand !== null && (
+                            <p className="mt-1.5 text-amber-200/90">
+                              {formatDurationShort(bidDetails.msUntilNextBand)} 후 「{bidDetails.nextBand.label}」(×
+                              {bidDetails.nextBand.multiplier})로 변경됩니다.
+                            </p>
+                          )}
+                          {bidDetails.extendsOnBid && (
+                            <p className="mt-1.5 text-amber-200/90">
+                              현재 구간에서는 유효 입찰 시 마감이 {BID_EXTENSION_MINUTES}분 연장됩니다. (반복 연장 가능)
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-4">
                   <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">거래 진행 안내</p>
