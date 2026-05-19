@@ -47,10 +47,8 @@ interface ReportData {
   isResolved: boolean;
   createdAt: string;
   previousAuctionStatus?: string | null;
-  disputeAction?: string | null;
-  adminNote?: string | null;
-  reporter: { ingameName: string };
-  target: { ingameName: string };
+  reporter: { ingameName: string; id?: number };
+  target: { ingameName: string; id?: number };
   room: { id: number; auctionId?: number | null };
   auction?: {
     id: number;
@@ -145,21 +143,15 @@ export default function AdminDashboard() {
     if (data) fetchUsers(1, false);
   };
 
-  const handleDisputeAction = async (reportId: number, action: string) => {
+  const banReportTarget = async (targetId: number, label: string) => {
     triggerHaptic();
-    const labels: Record<string, string> = {
-      restore_active: "경매 진행 중으로 복구",
-      restore_pending_trade: "거래 중으로 복구",
-      force_complete: "거래 완료 처리",
-      keep_expired: "유찰 유지 및 종결",
-    };
-    if (!confirm(`${labels[action] || action} 처리하시겠습니까?`)) return;
-    const res = await request(`/api/admin/reports/${reportId}/dispute`, {
+    if (!confirm(`${label} 계정을 차단하시겠습니까?`)) return;
+    const data = await request(`/api/admin/users/${targetId}/ban`, {
       method: "PATCH",
-      body: JSON.stringify({ action }),
+      body: JSON.stringify({ isBanned: true }),
     });
-    if (res?.message) alert(res.message);
-    if (res) fetchReports();
+    if (data?.message) alert(data.message);
+    if (data) fetchUsers(1, false);
   };
 
   const toggleUserBan = async (id: number, currentBanStatus: boolean) => {
@@ -455,6 +447,9 @@ export default function AdminDashboard() {
                       <h2 className="text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
                         신고 관리
                       </h2>
+                      <p className="mt-1 text-[11px] font-medium leading-relaxed text-zinc-500">
+                        거래 채팅 신고는 자동 유찰 처리됩니다. 내용 확인 후 유저 관리에서 제재하세요.
+                      </p>
                       <p className="mt-1 text-[10px] font-semibold text-zinc-600">
                         {reports.length.toLocaleString()} / {reportPagination.total.toLocaleString()}건 로드
                       </p>
@@ -465,13 +460,25 @@ export default function AdminDashboard() {
                       <div key={r.id} className={`flex flex-col gap-3 rounded-2xl border bg-white/[0.015] p-4 transition-all ${r.isResolved ? "opacity-40 border-white/5" : "border-red-500/20 hover:bg-white/[0.035]"}`}>
                         <div className="flex items-center justify-between gap-3">
                           <span className="rounded-full bg-red-500/15 px-3 py-1 text-[10px] font-semibold text-red-200">Case #{r.id}</span>
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap justify-end gap-2">
                             {!r.isResolved ? (
                               <>
-                                <button onClick={() => handleDisputeAction(r.id, "restore_active")} className="site-btn site-btn-secondary site-btn-compact">진행 복구</button>
-                                <button onClick={() => handleDisputeAction(r.id, "restore_pending_trade")} className="site-btn site-btn-secondary site-btn-compact">거래 복구</button>
-                                <button onClick={() => handleDisputeAction(r.id, "force_complete")} className="site-btn site-btn-primary site-btn-compact">완료 처리</button>
-                                <button onClick={() => handleDisputeAction(r.id, "keep_expired")} className="site-btn site-btn-secondary site-btn-compact">유찰 유지</button>
+                                {r.target?.id != null && (
+                                  <button
+                                    type="button"
+                                    onClick={() => banReportTarget(r.target.id!, r.target.ingameName)}
+                                    className="site-btn site-btn-danger site-btn-compact"
+                                  >
+                                    대상 차단
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => resolveReport(r.id)}
+                                  className="site-btn site-btn-primary site-btn-compact"
+                                >
+                                  확인 완료
+                                </button>
                               </>
                             ) : (
                               <button onClick={() => deleteResolvedReport(r.id)} className="site-btn site-btn-danger site-btn-compact">기록 삭제</button>
@@ -484,8 +491,7 @@ export default function AdminDashboard() {
                             <p className="rounded-xl bg-black/20 p-3 text-xs font-medium leading-relaxed text-zinc-300">{r.reason}</p>
                             {r.auction && (
                               <p className="mt-2 text-[11px] font-medium text-amber-200/90">
-                                연결 경매 #{r.auction.id} · {r.auction.item?.name} · 현재 {r.auction.status}
-                                {r.previousAuctionStatus ? ` (신고 전: ${r.previousAuctionStatus})` : ""}
+                                연결 경매 #{r.auction.id} · {r.auction.item?.name} · 유찰 처리됨
                               </p>
                             )}
                           </div>

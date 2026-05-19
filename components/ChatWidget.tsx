@@ -194,7 +194,10 @@ export default function ChatWidget() {
         setShowReport(false);
         setReportReason("");
       }
-    } catch (e) { alert("실패"); }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "신고 접수에 실패했습니다.";
+      alert(msg);
+    }
   };
 
   useEffect(() => {
