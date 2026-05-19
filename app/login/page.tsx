@@ -92,8 +92,9 @@ export default function LoginPage() {
 
   // 💡 엔터키 입력을 감지하는 핸들러 추가
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleLogin();
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void handleLogin();
     }
   };
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import type { MouseEvent, ReactNode } from "react";
 
 type BackgroundVariant = "default" | "home" | "admin";
 
@@ -39,13 +40,27 @@ export function SimpleTopBar({
   closeHref,
   closeLabel = "경매로 돌아가기",
   maxWidth = "max-w-7xl",
+  preferBrowserBack = true,
 }: {
   onNavigate?: () => void;
   children?: ReactNode;
   closeHref?: string;
   closeLabel?: string;
   maxWidth?: string;
+  preferBrowserBack?: boolean;
 }) {
+  const router = useRouter();
+
+  const handleClose = (event: MouseEvent<HTMLButtonElement>) => {
+    onNavigate?.();
+    if (preferBrowserBack && typeof window !== "undefined" && window.history.length > 1) {
+      event.preventDefault();
+      router.back();
+      return;
+    }
+    if (closeHref) router.push(closeHref);
+  };
+
   return (
     <nav className="site-topbar">
       <div className={`site-topbar-inner ${maxWidth}`}>
@@ -55,15 +70,27 @@ export function SimpleTopBar({
         <div className="flex items-center gap-3">
           {children}
           {closeHref && (
-            <Link
-              href={closeHref}
-              onClick={onNavigate}
-              aria-label={closeLabel}
-              title={closeLabel}
-              className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-zinc-500 transition-colors hover:text-white"
-            >
-              X
-            </Link>
+            preferBrowserBack ? (
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label={closeLabel}
+                title={closeLabel}
+                className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-zinc-500 transition-colors hover:text-white"
+              >
+                X
+              </button>
+            ) : (
+              <Link
+                href={closeHref}
+                onClick={onNavigate}
+                aria-label={closeLabel}
+                title={closeLabel}
+                className="flex h-10 w-10 items-center justify-center text-sm font-semibold text-zinc-500 transition-colors hover:text-white"
+              >
+                X
+              </Link>
+            )
           )}
         </div>
       </div>

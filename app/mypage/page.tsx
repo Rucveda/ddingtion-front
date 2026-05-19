@@ -77,6 +77,20 @@ export default function MyPage() {
     router.push(`/sell?relist=${auctionId}`);
   }, [router, triggerHaptic]);
 
+  const refreshTradeLists = useCallback(async () => {
+    if (isLocalDev() || !user?.id) return;
+    try {
+      const [auctionData, bidData] = await Promise.all([
+        request("/api/auctions/my-auctions"),
+        request("/api/auctions/my-bids"),
+      ]);
+      setMyAuctions(Array.isArray(auctionData) ? auctionData : []);
+      setMyBidAuctions(Array.isArray(bidData) ? bidData : []);
+    } catch (err) {
+      console.error("거래 목록 갱신 실패:", err);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     const fetchAllData = async () => {
       const storedUser = localStorage.getItem("user");
@@ -123,6 +137,14 @@ export default function MyPage() {
     };
     fetchAllData();
   }, [router]);
+
+  useEffect(() => {
+    const onTradeUpdated = () => {
+      void refreshTradeLists();
+    };
+    window.addEventListener("ddingtion_trade_updated", onTradeUpdated);
+    return () => window.removeEventListener("ddingtion_trade_updated", onTradeUpdated);
+  }, [refreshTradeLists]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

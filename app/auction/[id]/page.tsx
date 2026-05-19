@@ -635,9 +635,17 @@ export default function AuctionDetail() {
                     <textarea
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!isCommenting && commentInput.trim()) {
+                            void handleCommentSubmit(e as unknown as React.FormEvent);
+                          }
+                        }
+                      }}
                       disabled={isCommenting}
                       maxLength={500}
-                      placeholder={currentUser ? "댓글을 입력하세요..." : "로그인 후 댓글을 남길 수 있습니다."}
+                      placeholder={currentUser ? "댓글을 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)" : "로그인 후 댓글을 남길 수 있습니다."}
                       className="min-h-[72px] w-full resize-none bg-transparent text-xs font-medium leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 disabled:opacity-50"
                     />
                     <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/5 pt-2">

@@ -11,6 +11,7 @@ import { ensureLocalDummySession } from "@/utils/localDummyData";
 
 // 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
 const CHAT_OPEN_EVENT = "ddingtion_chat_open";
+const TRADE_UPDATED_EVENT = "ddingtion_trade_updated";
 
 export default function ChatWidget() {
   const [isMounted, setIsMounted] = useState(false);
@@ -69,8 +70,32 @@ export default function ChatWidget() {
     roomsRefreshTimerRef.current = setTimeout(() => {
       roomsRefreshTimerRef.current = null;
       void fetchRooms();
-    }, 1200);
+      window.dispatchEvent(new Event(TRADE_UPDATED_EVENT));
+    }, 400);
   }, [fetchRooms]);
+
+  const applyRoomUpdate = useCallback((room: any) => {
+    if (!room?.id) return;
+    setRooms((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      if (room.status !== "ACTIVE") {
+        return list.filter((entry) => entry.id !== room.id);
+      }
+      const index = list.findIndex((entry) => entry.id === room.id);
+      if (index === -1) return [...list, room];
+      const next = [...list];
+      next[index] = { ...list[index], ...room };
+      return next;
+    });
+    if (selectedRoomRef.current?.id === room.id) {
+      if (room.status !== "ACTIVE") {
+        setSelectedRoom(null);
+      } else {
+        setSelectedRoom((prev: any) => (prev ? { ...prev, ...room } : room));
+      }
+    }
+    window.dispatchEvent(new Event(TRADE_UPDATED_EVENT));
+  }, []);
 
   const fetchMessages = async (roomId: number) => {
     if (isLocalDev()) ensureLocalDummySession();
@@ -127,8 +152,8 @@ export default function ChatWidget() {
       
       if (res) {
         if (!res.completed) {
-          if (res.room) setSelectedRoom(res.room);
-          void fetchRooms();
+          if (res.room) applyRoomUpdate(res.room);
+          else void fetchRooms();
           alert(res.message || "거래 확정이 기록되었습니다. 상대방의 확정을 기다려주세요.");
           return;
         }
@@ -142,9 +167,12 @@ export default function ChatWidget() {
           revieweeName: isSeller ? selectedRoom.buyer?.ingameName : selectedRoom.seller?.ingameName
         });
 
-        setSelectedRoom(null);
+        if (res.room) applyRoomUpdate(res.room);
+        else {
+          setSelectedRoom(null);
+          void fetchRooms();
+        }
         setIsOpen(false);
-        void fetchRooms();
         setShowReviewModal(true);
       }
     } catch (e) { 
@@ -190,9 +218,17 @@ export default function ChatWidget() {
     // 💡 유지보수 패치: 하드코딩된 서버 주소 제거
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
+    const parsedUser = JSON.parse(userStr);
+    if (parsedUser?.id) {
+      newSocket.emit("setup_notifications", parsedUser.id);
+    }
     void fetchRooms();
 
     newSocket.on("refresh_chat_rooms", scheduleFetchRooms);
+    newSocket.on("room_updated", (payload: { room?: any }) => {
+      if (payload?.room) applyRoomUpdate(payload.room);
+      else scheduleFetchRooms();
+    });
     newSocket.on("new_message", (msg) => {
       // 💡 버그 패치: 도착한 메시지가 현재 내가 보고 있는 채팅방의 메시지일 때만 화면에 추가
       if (selectedRoomRef.current?.id === msg.roomId) {
@@ -218,7 +254,7 @@ export default function ChatWidget() {
       window.removeEventListener("storage", checkAutoOpen);
       window.removeEventListener(CHAT_OPEN_EVENT, checkAutoOpen);
     };
-  }, [isMounted, checkAutoOpen, fetchRooms, scheduleFetchRooms]);
+  }, [isMounted, checkAutoOpen, fetchRooms, scheduleFetchRooms, applyRoomUpdate]);
 
   useEffect(() => {
     if (isLocalDev() && selectedRoom?.id) {
