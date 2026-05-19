@@ -797,7 +797,7 @@ export default function AuctionDetail() {
                       onClick={() => setBidAmount(getMinimumBid(currentPrice, auction.endTime).toString())}
                       className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap"
                     >
-                      최소 (+{minBidIncrement.toLocaleString()})
+                      최소
                     </button>
                     {[10, 20, 50].map((pct) => (
                       <button
