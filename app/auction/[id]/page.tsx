@@ -135,6 +135,11 @@ export default function AuctionDetail() {
       className: "bg-red-500/10 text-red-300 border-red-500/20",
       description: "신고가 접수되어 운영 확인이 필요한 거래입니다.",
     },
+    CANCEL_PENDING: {
+      label: "취소 보류",
+      className: "bg-amber-500/10 text-amber-300 border-amber-500/20",
+      description: "판매자 취소 요청 후 5분이 지나면 유찰 처리됩니다. 입찰은 중단됩니다.",
+    },
   };
 
   const category = useMemo(() => {
@@ -306,6 +311,33 @@ export default function AuctionDetail() {
   };
 
   const CHAT_OPEN_EVENT = "ddingtion_chat_open";
+  const handleCancelRequest = async () => {
+    triggerHaptic();
+    if (!currentUser || !isSeller) return;
+    if (needsDiscordForTrade) {
+      alert("디스코드 인증이 필요합니다. 마이페이지에서 연동해 주세요.");
+      return router.push("/mypage");
+    }
+    if (!confirm("취소 요청 후 5분이 지나면 입찰 여부와 관계없이 유찰 처리됩니다. 계속하시겠습니까?")) return;
+
+    setIsProcessing(true);
+    try {
+      const data = await request(`/api/auctions/${id}/cancel-request`, { method: "POST" });
+      if (data) {
+        setAuction((prev: any) => ({
+          ...prev,
+          status: "CANCEL_PENDING",
+          cancelRequestedAt: data.cancelRequestedAt,
+        }));
+        alert(data.message || "취소 요청이 접수되었습니다.");
+      }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "취소 요청에 실패했습니다.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleBuyNow = async () => {
     // 1. 사전 검증 및 진동 피드백
     triggerHaptic();
@@ -825,6 +857,17 @@ export default function AuctionDetail() {
                   >
                     {!canAuctionTrade ? "입찰 불가 상태" : isSeller ? "내 물품 입찰 불가" : needsDiscordForTrade ? "디스코드 인증 필요" : verifyingSession ? "인증 확인 중…" : "상위 입찰하기"}
                   </button>
+
+                  {isSeller && auction.status === "ACTIVE" && (
+                    <button
+                      type="button"
+                      disabled={isProcessing || needsDiscordForTrade || verifyingSession}
+                      onClick={handleCancelRequest}
+                      className="site-btn site-btn-secondary w-full whitespace-nowrap"
+                    >
+                      {isProcessing ? "처리 중..." : "경매 취소 요청 (5분 후 유찰)"}
+                    </button>
+                  )}
 
                   {auction.buyNowPrice && auction.status === 'ACTIVE' && (
                     <button

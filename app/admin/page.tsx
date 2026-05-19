@@ -26,6 +26,8 @@ interface UserData {
   ingameName: string; 
   role: string; 
   isBanned: boolean; 
+  bannedIp?: string | null;
+  strictBanActive?: boolean;
   reputationScore: number;
   successfulTrades: number;
   discordLinked?: boolean;
@@ -44,9 +46,18 @@ interface ReportData {
   reason: string;
   isResolved: boolean;
   createdAt: string;
+  previousAuctionStatus?: string | null;
+  disputeAction?: string | null;
+  adminNote?: string | null;
   reporter: { ingameName: string };
   target: { ingameName: string };
-  room: { id: number };
+  room: { id: number; auctionId?: number | null };
+  auction?: {
+    id: number;
+    status: string;
+    currentPrice: string;
+    item?: { name: string };
+  } | null;
 }
 
 type PaginationState = {
@@ -120,6 +131,35 @@ export default function AdminDashboard() {
       body: JSON.stringify({ role: newRole }) 
     });
     if (data) fetchUsers(1, false);
+  };
+
+  const toggleStrictBan = async (id: number, enable: boolean, label: string) => {
+    triggerHaptic();
+    const action = enable ? "강력 밴(계정+IP)" : "강력 밴 해제";
+    if (!confirm(`${label} 님에게 ${action}을 적용하시겠습니까?`)) return;
+    const data = await request(`/api/admin/users/${id}/strict-ban`, {
+      method: "PATCH",
+      body: JSON.stringify({ enable }),
+    });
+    if (data?.message) alert(data.message);
+    if (data) fetchUsers(1, false);
+  };
+
+  const handleDisputeAction = async (reportId: number, action: string) => {
+    triggerHaptic();
+    const labels: Record<string, string> = {
+      restore_active: "경매 진행 중으로 복구",
+      restore_pending_trade: "거래 중으로 복구",
+      force_complete: "거래 완료 처리",
+      keep_expired: "유찰 유지 및 종결",
+    };
+    if (!confirm(`${labels[action] || action} 처리하시겠습니까?`)) return;
+    const res = await request(`/api/admin/reports/${reportId}/dispute`, {
+      method: "PATCH",
+      body: JSON.stringify({ action }),
+    });
+    if (res?.message) alert(res.message);
+    if (res) fetchReports();
   };
 
   const toggleUserBan = async (id: number, currentBanStatus: boolean) => {
@@ -339,6 +379,7 @@ export default function AdminDashboard() {
                             <td className="px-3 py-2.5 text-xs font-semibold text-blue-300/80">
                                 {u.loginId}
                                 {u.isBanned && <span className="ml-2 text-[9px] font-semibold text-red-400">차단됨</span>}
+                                {u.strictBanActive && <span className="ml-2 text-[9px] font-semibold text-orange-400">IP강력밴</span>}
                             </td>
                             <td className="px-3 py-2.5 text-xs font-semibold text-zinc-300">{u.ingameName}</td>
                             <td className="px-3 py-2.5">
@@ -374,6 +415,16 @@ export default function AdminDashboard() {
                                   }`}
                                 >
                                   {u.isBanned ? "차단 해제" : "차단"}
+                                </button>
+                                <button
+                                  onClick={() => toggleStrictBan(u.id, !u.strictBanActive, u.ingameName)}
+                                  className={`site-btn site-btn-compact ${
+                                    u.strictBanActive
+                                      ? "border-orange-500/20 bg-orange-500/10 text-orange-300"
+                                      : "site-btn-secondary"
+                                  }`}
+                                >
+                                  {u.strictBanActive ? "강력밴 해제" : "강력밴"}
                                 </button>
                               </div>
                             </td>
@@ -416,7 +467,12 @@ export default function AdminDashboard() {
                           <span className="rounded-full bg-red-500/15 px-3 py-1 text-[10px] font-semibold text-red-200">Case #{r.id}</span>
                           <div className="flex gap-2">
                             {!r.isResolved ? (
-                              <button onClick={() => resolveReport(r.id)} className="site-btn site-btn-secondary site-btn-compact">처리 완료</button>
+                              <>
+                                <button onClick={() => handleDisputeAction(r.id, "restore_active")} className="site-btn site-btn-secondary site-btn-compact">진행 복구</button>
+                                <button onClick={() => handleDisputeAction(r.id, "restore_pending_trade")} className="site-btn site-btn-secondary site-btn-compact">거래 복구</button>
+                                <button onClick={() => handleDisputeAction(r.id, "force_complete")} className="site-btn site-btn-primary site-btn-compact">완료 처리</button>
+                                <button onClick={() => handleDisputeAction(r.id, "keep_expired")} className="site-btn site-btn-secondary site-btn-compact">유찰 유지</button>
+                              </>
                             ) : (
                               <button onClick={() => deleteResolvedReport(r.id)} className="site-btn site-btn-danger site-btn-compact">기록 삭제</button>
                             )}
@@ -426,6 +482,12 @@ export default function AdminDashboard() {
                           <div>
                             <p className="mb-1.5 text-[10px] font-semibold text-zinc-600">신고 사유</p>
                             <p className="rounded-xl bg-black/20 p-3 text-xs font-medium leading-relaxed text-zinc-300">{r.reason}</p>
+                            {r.auction && (
+                              <p className="mt-2 text-[11px] font-medium text-amber-200/90">
+                                연결 경매 #{r.auction.id} · {r.auction.item?.name} · 현재 {r.auction.status}
+                                {r.previousAuctionStatus ? ` (신고 전: ${r.previousAuctionStatus})` : ""}
+                              </p>
+                            )}
                           </div>
                           <div>
                             <p className="mb-1.5 text-[10px] font-semibold text-zinc-600">신고자 / 대상</p>

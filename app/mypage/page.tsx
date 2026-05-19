@@ -31,6 +31,7 @@ const STATUS_UI: Record<string, { label: string; className: string }> = {
   PENDING_TRADE: { label: "거래 중", className: "bg-amber-500/10 text-amber-300 border-amber-500/20" },
   COMPLETED: { label: "거래 완료", className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" },
   DISPUTED: { label: "분쟁", className: "bg-red-500/10 text-red-300 border-red-500/20" },
+  CANCEL_PENDING: { label: "취소 보류", className: "bg-amber-500/10 text-amber-300 border-amber-500/20" },
   CANCELED: { label: "취소", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   EXPIRED: { label: "만료", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
 };
