@@ -10,6 +10,7 @@ import MarketTab from "@/app/market/page";
 import { ISLAND_IMPRINTS, RPG_SKILLS, WILD_BASE, WILD_SPECIAL } from "@/app/market/marketData";
 import { DdingtionLogo, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 import ListPagination from "@/components/ListPagination";
+import { clearAuthSession } from "@/utils/authPreferences";
 
 const AUCTIONS_PER_PAGE = 20;
 
@@ -345,8 +346,7 @@ function HomeComponent() {
 
   const handleLogout = () => {
     triggerHaptic();
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearAuthSession();
     window.location.reload();
   };
 

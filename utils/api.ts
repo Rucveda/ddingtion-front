@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "@/utils/runtimeConfig";
 import { isLocalDev } from "@/utils/devMode";
 import { getLocalDummyResponse } from "@/utils/localDummyData";
+import { clearAuthSession } from "@/utils/authPreferences";
 
 type RequestOptions = RequestInit & {
   redirectOnNetworkError?: boolean;
@@ -36,7 +37,7 @@ export const request = async (url: string, options: RequestOptions = {}) => {
       if (isLocalDev()) return getLocalDummyResponse(url, method);
       if (typeof window !== 'undefined') {
         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-        localStorage.clear();
+        clearAuthSession();
         window.location.href = '/login';
       }
       return null;
@@ -50,7 +51,7 @@ export const request = async (url: string, options: RequestOptions = {}) => {
       if (isLocalDev()) return getLocalDummyResponse(url, method);
       if (typeof window !== 'undefined') {
         alert(data?.error || "관리자에 의해 접근이 차단된 계정입니다.");
-        localStorage.clear();
+        clearAuthSession();
         window.location.href = '/login';
       }
       return null;

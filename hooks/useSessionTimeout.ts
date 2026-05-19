@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { isLocalDev } from "@/utils/devMode";
+import { clearAuthSession, getAutoLoginEnabled } from "@/utils/authPreferences";
 
 const TIMEOUT_MS = 10 * 60 * 1000; // 10분 (밀리초 단위)
 
@@ -12,13 +13,7 @@ export function useSessionTimeout() {
   const lastUpdateRef = useRef(0); // 💡 성능 버그 수정: 접속 직후 첫 활동이 무시되지 않도록 0으로 초기화
 
   const logout = useCallback(() => {
-    // 스토리지 초기화 및 로그아웃 처리
-    localStorage.removeItem("lastActivity");
-    sessionStorage.removeItem("token"); 
-    sessionStorage.removeItem("user");
-    localStorage.removeItem("token"); // 기존 유지용 로컬 데이터도 안전하게 함께 제거
-    localStorage.removeItem("user"); 
-    
+    clearAuthSession();
     alert("10분 이상 활동이 없어 로그아웃 되었습니다.");
     // 실제 프로젝트의 로그인 라우트 경로로 변경해주세요
     router.push("/login"); 
@@ -35,6 +30,7 @@ export function useSessionTimeout() {
 
   useEffect(() => {
     if (isLocalDev()) return;
+    if (getAutoLoginEnabled()) return;
     // 💡 로그인 및 회원가입 페이지에서는 세션 타이머를 작동시키지 않음
     if (pathname === "/login" || pathname === "/register") return;
 

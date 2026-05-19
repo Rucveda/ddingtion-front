@@ -1,15 +1,27 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { request } from "@/utils/api";
 import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
+import {
+  clearAuthSession,
+  getAutoLoginEnabled,
+  getRememberLoginIdEnabled,
+  getSavedLoginId,
+  setAutoLoginEnabled,
+  setRememberLoginId,
+} from "@/utils/authPreferences";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberLoginId, setRememberLoginIdState] = useState(false);
+  const [autoLogin, setAutoLoginState] = useState(false);
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [autoLoginChecking, setAutoLoginChecking] = useState(true);
   const [resetLoginId, setResetLoginId] = useState("");
   const [showReset, setShowReset] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -23,17 +35,63 @@ export default function LoginPage() {
     }
   }, []);
 
-  // 한글 입력을 실시간으로 제거하는 함수
+  useEffect(() => {
+    setRememberLoginIdState(getRememberLoginIdEnabled());
+    setAutoLoginState(getAutoLoginEnabled());
+    const saved = getSavedLoginId();
+    if (saved) setLoginId(saved);
+    setPrefsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!prefsLoaded) return;
+
+    const tryAutoLogin = async () => {
+      if (!getAutoLoginEnabled()) {
+        setAutoLoginChecking(false);
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setAutoLoginChecking(false);
+        return;
+      }
+
+      try {
+        const freshUser = await request("/api/auth/me");
+        if (freshUser) {
+          localStorage.setItem("user", JSON.stringify(freshUser));
+          localStorage.setItem("lastActivity", Date.now().toString());
+          router.replace("/");
+          return;
+        }
+        clearAuthSession({ keepAutoLogin: true });
+      } catch {
+        clearAuthSession({ keepAutoLogin: true });
+      } finally {
+        setAutoLoginChecking(false);
+      }
+    };
+
+    void tryAutoLogin();
+  }, [prefsLoaded, router]);
+
   const handleInputChange = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const filteredValue = value.replace(/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/g, "");
     setter(filteredValue);
   };
 
+  const persistLoginPreferences = useCallback(() => {
+    const shouldRememberId = rememberLoginId || autoLogin;
+    setRememberLoginId(shouldRememberId, loginId);
+    setAutoLoginEnabled(autoLogin);
+  }, [rememberLoginId, loginId, autoLogin]);
+
   const handleLogin = async (e?: React.FormEvent) => {
-    // 💡 form의 기본 제출 동작(새로고침) 방지
     if (e) e.preventDefault();
-    
+
     if (isLoading || !loginId || !password) return;
 
     triggerHaptic();
@@ -42,28 +100,35 @@ export default function LoginPage() {
 
     const timeoutId = setTimeout(() => {
       setIsLongWait(true);
-    }, 5000); // 💡 요청 후 5초가 지나면 지연 안내 메시지 표시
+    }, 5000);
 
     try {
       const data = await request("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ loginId, password }),
+        body: JSON.stringify({
+          loginId,
+          password,
+          rememberMe: autoLogin,
+        }),
       });
 
       if (data && data.token) {
-        localStorage.clear();
         sessionStorage.clear();
-        localStorage.setItem("token", data.token); // 💡 새 탭 유지 및 타 컴포넌트 연동을 위해 로컬로 저장
+        localStorage.setItem("token", data.token);
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user));
         }
+        localStorage.setItem("lastActivity", Date.now().toString());
+        persistLoginPreferences();
         router.push("/");
-        setTimeout(() => { window.location.reload(); }, 100); 
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
     } catch (error) {
       alert(error instanceof Error ? error.message : "로그인에 실패했습니다.");
     } finally {
-      clearTimeout(timeoutId); // 💡 완료되거나 실패하면 타이머 정리
+      clearTimeout(timeoutId);
       if (!isLongWait) setIsLongWait(false);
       setIsLoading(false);
     }
@@ -90,7 +155,6 @@ export default function LoginPage() {
     }
   };
 
-  // 💡 엔터키 입력을 감지하는 핸들러 추가
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -98,13 +162,22 @@ export default function LoginPage() {
     }
   };
 
+  if (!prefsLoaded || autoLoginChecking) {
+    return (
+      <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans flex flex-col items-center justify-center">
+        <SiteBackground />
+        <p className="relative z-10 text-sm font-semibold text-zinc-500 animate-pulse">접속 확인 중...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none overflow-x-hidden relative flex flex-col">
       <SiteBackground />
       <SimpleTopBar onNavigate={triggerHaptic} />
 
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:p-6 relative z-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-[400px]"
@@ -117,20 +190,19 @@ export default function LoginPage() {
           </div>
 
           <div className="relative">
-            {/* 💡 onSubmit 핸들러가 엔터키를 감지합니다. */}
-            <form 
-              onSubmit={handleLogin} 
+            <form
+              onSubmit={handleLogin}
               className="flex flex-col space-y-6 bg-white/[0.03] backdrop-blur-3xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] border border-white/10 shadow-2xl"
             >
               <div className="space-y-2">
                 <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">마인크래프트 닉네임</label>
-                <input 
+                <input
                   required
                   autoFocus
                   type="text"
-                  autoComplete="off"
+                  autoComplete="username"
                   placeholder="예: Steve"
-                  onKeyDown={handleKeyDown} // 💡 개별 입력창에서도 엔터 감지
+                  onKeyDown={handleKeyDown}
                   className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-semibold text-base sm:text-lg placeholder:text-zinc-700"
                   value={loginId}
                   onChange={handleInputChange(setLoginId)}
@@ -139,18 +211,48 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest ml-2">비밀번호</label>
-                <input 
+                <input
                   required
                   type="password"
-                  onKeyDown={handleKeyDown} // 💡 개별 입력창에서도 엔터 감지
+                  autoComplete="current-password"
+                  onKeyDown={handleKeyDown}
                   className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-bold text-lg"
                   value={password}
                   onChange={handleInputChange(setPassword)}
                 />
               </div>
 
-              <button 
-                type="submit" // 💡 submit 타입은 엔터키를 눌렀을 때 form을 제출시킵니다.
+              <div className="flex flex-col gap-2.5 -mt-2">
+                <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={rememberLoginId}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setRememberLoginIdState(checked);
+                      if (!checked) setRememberLoginId(false);
+                    }}
+                    className="h-4 w-4 rounded border-white/20 bg-black/40 accent-blue-500"
+                  />
+                  아이디 저장
+                </label>
+                <label className="flex cursor-pointer items-center gap-2.5 text-xs font-semibold text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={autoLogin}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAutoLoginState(checked);
+                      if (checked) setRememberLoginIdState(true);
+                    }}
+                    className="h-4 w-4 rounded border-white/20 bg-black/40 accent-blue-500"
+                  />
+                  자동 로그인 (30일 유지 · 10분 비활성 로그아웃 해제)
+                </label>
+              </div>
+
+              <button
+                type="submit"
                 disabled={isLoading}
                 className="site-btn site-btn-primary mt-2 w-full py-4 text-sm sm:mt-4 sm:py-5 sm:text-base"
               >

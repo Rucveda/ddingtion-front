@@ -10,9 +10,15 @@ import { SOCKET_URL } from "@/utils/runtimeConfig";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 import { isLocalDev } from "@/utils/devMode";
 import { ensureLocalDummySession } from "@/utils/localDummyData";
-
-const getMinimumBid = (currentPrice: number) =>
-  currentPrice + Math.max(1, Math.ceil(currentPrice * 0.1));
+import {
+  BID_EXTENSION_MINUTES,
+  BID_TIME_BANDS,
+  PRICE_INCREMENT_TIERS,
+  formatDurationShort,
+  getBidIncrementDetails,
+  getMinBidIncrement,
+  getMinimumBid,
+} from "@/utils/bidIncrement";
 
 export default function AuctionDetail() {
   const { id } = useParams();
@@ -31,6 +37,8 @@ export default function AuctionDetail() {
   const [tradePolicyLoaded, setTradePolicyLoaded] = useState(false);
   const [marketAnalysis, setMarketAnalysis] = useState<any>(null);
   const [marketAnalysisLoading, setMarketAnalysisLoading] = useState(false);
+  const [nowTs, setNowTs] = useState(() => Date.now());
+  const [extensionNotice, setExtensionNotice] = useState<string | null>(null);
   const GAME_MAX_PRICE = 10000000000;
 
   const needsDiscordForTrade =
@@ -141,7 +149,7 @@ export default function AuctionDetail() {
         const data = await request(`/api/auctions/${id}`);
         if (data) {
           setAuction(data);
-          setBidAmount(getMinimumBid(Number(data.currentPrice)).toString());
+          setBidAmount(getMinimumBid(Number(data.currentPrice), data.endTime).toString());
         }
       } catch (err) { console.error(err); }
     };
@@ -152,8 +160,17 @@ export default function AuctionDetail() {
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
     newSocket.emit("join_auction", id);
-    newSocket.on("bid_updated", (data) => {
-      setAuction((prev: any) => ({ ...prev, currentPrice: data.newPrice, lastBidder: data.bidderName }));
+    newSocket.on("bid_updated", (data: { newPrice: string; bidderName: string; endTime?: string; extended?: boolean }) => {
+      setAuction((prev: any) => ({
+        ...prev,
+        currentPrice: data.newPrice,
+        lastBidder: data.bidderName,
+        ...(data.endTime ? { endTime: data.endTime } : {}),
+      }));
+      if (data.extended) {
+        setExtensionNotice("유효 입찰로 마감이 3분 연장되었습니다.");
+        window.setTimeout(() => setExtensionNotice(null), 6000);
+      }
     });
     newSocket.on("chat_error", (data: { message?: string }) => {
       if (data?.message) alert(data.message);
@@ -243,7 +260,8 @@ export default function AuctionDetail() {
   useEffect(() => {
     if (!auction || auction.status !== 'ACTIVE') return;
     const timer = setInterval(() => {
-      const now = new Date().getTime();
+      setNowTs(Date.now());
+      const now = Date.now();
       const end = new Date(auction.endTime).getTime();
       const distance = end - now;
       if (distance < 0) { setTimeLeft("경매 종료"); clearInterval(timer); }
@@ -271,8 +289,10 @@ export default function AuctionDetail() {
     }
     if (!canAuctionTrade) return alert("현재 입찰할 수 없는 경매 상태입니다.");
     if (isSeller) return alert("본인이 등록한 물품에는 입찰할 수 없습니다.");
-    const minimumBid = getMinimumBid(Number(auction.currentPrice));
-    if (Number(bidAmount) < minimumBid) return alert(`최소 입찰가는 ${minimumBid.toLocaleString()}G 입니다.`);
+    const minimumBid = getMinimumBid(Number(auction.currentPrice), auction.endTime);
+    if (Number(bidAmount) < minimumBid) {
+      return alert(`최소 입찰가는 ${minimumBid.toLocaleString()}G 입니다. (마감이 가까울수록 최소 인상이 커집니다)`);
+    }
     if (isLocalDev()) {
       setAuction((prev: any) => ({ ...prev, currentPrice: bidAmount, lastBidder: currentUser.ingameName, lastBidderId: currentUser.id, bidCount: (prev.bidCount || 0) + 1 }));
       alert("로컬 더미 입찰이 반영되었습니다.");
@@ -379,6 +399,12 @@ export default function AuctionDetail() {
     }
   };
 
+  const currentPrice = Number(auction?.currentPrice || 0);
+  const bidDetails = useMemo(
+    () => getBidIncrementDetails(currentPrice, auction?.endTime, new Date(nowTs)),
+    [currentPrice, auction?.endTime, nowTs],
+  );
+
   if (!auction || !auction.item) return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative flex flex-col items-center justify-center">
       <SiteBackground />
@@ -386,10 +412,9 @@ export default function AuctionDetail() {
     </div>
   );
 
-  const currentPrice = Number(auction.currentPrice);
   const startPrice = Number(auction.startPrice);
   const buyNowPrice = auction.buyNowPrice ? Number(auction.buyNowPrice) : null;
-  const minimumBid = getMinimumBid(currentPrice);
+  const { minimumBid, effectiveIncrement: minBidIncrement, priceTierLabel: bidIncrementTierLabel } = bidDetails;
   const priceIncreaseRate = startPrice > 0 ? Math.round(((currentPrice - startPrice) / startPrice) * 100) : 0;
   const buyNowGap = buyNowPrice ? buyNowPrice - currentPrice : null;
   const auctionStatus = statusUI[auction.status] || {
@@ -687,6 +712,76 @@ export default function AuctionDetail() {
                       )}
                   </div>
                 )}
+                {extensionNotice && (
+                  <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs font-semibold leading-relaxed text-amber-100">
+                    {extensionNotice}
+                  </div>
+                )}
+
+                {canAuctionTrade && (
+                  <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-300">입찰 규칙 안내</p>
+                      <p className="mt-1.5 text-[11px] font-medium leading-relaxed text-zinc-400">
+                        최소 인상은 <span className="text-zinc-200">가격 구간</span>과 <span className="text-zinc-200">마감까지 남은 시간</span>에 따라 달라집니다.
+                        마감이 가까울수록 한 번에 더 크게 올려야 합니다.
+                      </p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">① 가격 구간 (기본 인상)</p>
+                      <ul className="space-y-1 text-[11px] text-zinc-400">
+                        {PRICE_INCREMENT_TIERS.map((tier) => (
+                          <li key={tier.label} className="flex justify-between gap-2">
+                            <span>{tier.label}</span>
+                            <span className="font-mono text-zinc-300">+{Number(tier.increment).toLocaleString()} G</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">② 마감 임박 시간 배수</p>
+                      <ul className="space-y-1.5">
+                        {BID_TIME_BANDS.map((band) => {
+                          const active = bidDetails.timeBand.id === band.id;
+                          return (
+                            <li
+                              key={band.id}
+                              className={`rounded-xl border px-3 py-2 text-[11px] leading-relaxed ${
+                                active
+                                  ? "border-blue-500/40 bg-blue-500/10 text-blue-100"
+                                  : "border-white/5 bg-black/20 text-zinc-500"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2 font-semibold">
+                                <span>{band.label}</span>
+                                <span className="font-mono">×{band.multiplier}</span>
+                              </div>
+                              <p className={`mt-1 ${active ? "text-blue-200/80" : "text-zinc-600"}`}>{band.description}</p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-black/25 px-3 py-2.5 text-[11px] leading-relaxed text-zinc-400">
+                      <p>
+                        <span className="font-semibold text-zinc-200">지금 적용:</span>{" "}
+                        {bidIncrementTierLabel} 기본 {formatGold(bidDetails.baseIncrement)} G × {bidDetails.multiplier}배 ={" "}
+                        <span className="font-mono text-blue-300">+{formatGold(minBidIncrement)} G</span>
+                      </p>
+                      {bidDetails.nextBand && bidDetails.msUntilNextBand !== null && (
+                        <p className="mt-1.5 text-amber-200/90">
+                          {formatDurationShort(bidDetails.msUntilNextBand)} 후 「{bidDetails.nextBand.label}」(×{bidDetails.nextBand.multiplier})로 변경됩니다.
+                        </p>
+                      )}
+                      {bidDetails.extendsOnBid && (
+                        <p className="mt-1.5 text-amber-200/90">
+                          현재 구간에서는 유효 입찰 시 마감이 {BID_EXTENSION_MINUTES}분 연장됩니다. (반복 연장 가능)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1.5 rounded-2xl border border-white/5 bg-black/20 px-3 py-2.5">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="shrink-0 text-[10px] font-extrabold text-red-400 uppercase tracking-[0.12em]">남은 시간</span>
@@ -709,6 +804,9 @@ export default function AuctionDetail() {
                       <div className="min-w-0">
                         <p className="mb-1 whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-600">최소 입찰가</p>
                         <p className="truncate text-right font-mono text-xs font-black text-blue-300">{formatGold(minimumBid)} G</p>
+                        <p className="mt-0.5 text-right text-[10px] font-medium text-zinc-600">
+                          {bidIncrementTierLabel} · {bidDetails.timeBand.label} ×{bidDetails.multiplier} · +{formatGold(minBidIncrement)} G
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -756,9 +854,29 @@ export default function AuctionDetail() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    {[10, 20, 50].map(pct => (
-                      <button key={pct} disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession} onClick={() => setBidAmount((currentPrice + Math.max(1, Math.ceil(currentPrice * (pct / 100)))).toString())} className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap">+{pct}%</button>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <button
+                      type="button"
+                      disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
+                      onClick={() => setBidAmount(getMinimumBid(currentPrice, auction.endTime).toString())}
+                      className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap"
+                    >
+                      최소 (+{formatGold(minBidIncrement)})
+                    </button>
+                    {[10, 20, 50].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        disabled={!canAuctionTrade || isSeller || isProcessing || needsDiscordForTrade || verifyingSession}
+                        onClick={() =>
+                          setBidAmount(
+                            (currentPrice + Math.max(getMinBidIncrement(currentPrice, auction.endTime), Math.ceil(currentPrice * (pct / 100)))).toString(),
+                          )
+                        }
+                        className="site-btn site-btn-secondary site-btn-compact min-h-[34px] whitespace-nowrap"
+                      >
+                        +{pct}%
+                      </button>
                     ))}
                   </div>
                 </div>
