@@ -20,6 +20,15 @@ const RPG_SKILL_MAP: Record<string, string[]> = {
   "대검": ["플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"]
 };
 const RUNE_GRADES = ["루키", "커먼", "노멀", "레어"];
+/** 상급 강화(일반 최대 초과) 허용 등급 — 시세/검색 탭과 동일 */
+const WILD_HIGH_ENCHANT_LIMITS: Record<string, number> = {
+  효율: 10,
+  날카로움: 7,
+  보호: 6,
+  미끼: 5,
+  약탈: 5,
+  행운: 5,
+};
 const RUNE_TYPES = ["파괴의룬", "타격의룬", "증폭의룬", "기습의룬", "사냥의룬", "지배의룬", "개시의룬", "처형의룬", "한기의룬", "화염의룬", "자연의룬", "뇌전의룬", "강철의룬", "흡혈의룬", "열상의룬", "출혈의룬", "정밀의룬", "치명의룬", "역습의룬", "반격의룬"];
 
 interface Item { id: number; name: string; iconUrl: string; category: string; }
@@ -356,13 +365,16 @@ export default function SellItem() {
                             일반 인챈트
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
-                            {WILD_BASE.map(([name, max]) => (
-                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, max as number, -1); }} 
-                                className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
-                                <span className="font-semibold text-[10px]">{name as string}</span>
-                                {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
-                              </button>
-                            ))}
+                            {WILD_BASE.map(([name, max]) => {
+                              const currentMax = WILD_HIGH_ENCHANT_LIMITS[name as string] ?? (max as number);
+                              return (
+                                <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, currentMax)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, currentMax, -1); }}
+                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                  <span className="font-semibold text-[10px]">{name as string}</span>
+                                  {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                         <div className="space-y-3">

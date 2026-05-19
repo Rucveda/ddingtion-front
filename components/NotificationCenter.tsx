@@ -59,6 +59,10 @@ export default function NotificationCenter() {
       fetchLogs();
     });
 
+    socket.on("notification_update", () => {
+      fetchLogs();
+    });
+
     return () => { socket.close(); };
   }, [fetchLogs]);
 
@@ -114,9 +118,9 @@ export default function NotificationCenter() {
             initial={{ opacity: 0, y: 15, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="mb-4 flex w-[calc(100vw-1.5rem)] max-w-80 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-black/95 shadow-2xl backdrop-blur-3xl sm:w-80"
+            className="mb-4 flex w-[calc(100vw-1.5rem)] max-w-80 flex-col rounded-[32px] border border-white/10 bg-black/95 shadow-2xl backdrop-blur-3xl sm:w-80"
           >
-            <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-white/[0.02] p-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-white/[0.02] p-5 pb-4 sm:p-6 sm:pb-4 rounded-t-[32px]">
               <div>
                 <h3 className="text-sm font-bold text-zinc-100 tracking-tight">알림 센터</h3>
               </div>
@@ -141,7 +145,7 @@ export default function NotificationCenter() {
                   >
                     <div className="mb-2 flex items-start justify-between gap-2">
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${n.isRead ? 'border-zinc-700 text-zinc-500' : 'border-red-500/40 text-red-500'} tracking-tight`}>
-                        {n.type === 'OUTBID' ? '상위 입찰' : n.type}
+                        {n.type === 'OUTBID' ? '상위 입찰' : n.type === 'COMMENT' ? '경매 댓글' : n.type === 'TRADE' ? '거래' : n.type}
                       </span>
                       <button 
                         onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
@@ -158,12 +162,15 @@ export default function NotificationCenter() {
             </div>
 
             {safeNotifications.length > 0 && (
-              <button 
-                onClick={clearAll}
-                className="site-btn site-btn-danger w-full rounded-none border-x-0 border-b-0 py-4 shadow-none"
-              >
-                모든 기록 파기
-              </button>
+              <div className="rounded-b-[32px] border-t border-white/5 p-4">
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="site-btn site-btn-danger w-full py-3"
+                >
+                  모든 기록 파기
+                </button>
+              </div>
             )}
           </motion.div>
         )}
@@ -171,7 +178,7 @@ export default function NotificationCenter() {
 
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="site-btn site-btn-secondary relative h-14 w-14 rounded-full p-0 shadow-xl group"
+        className="site-btn site-btn-secondary relative h-14 w-14 overflow-visible rounded-full p-0 shadow-xl group"
       >
         <div className={`relative flex items-center justify-center transition-all ${isOpen ? 'scale-90' : 'opacity-50 group-hover:opacity-100'} ${unreadCount > 0 && !isOpen ? 'animate-pulse' : ''}`}>
           {isOpen ? (
@@ -185,8 +192,8 @@ export default function NotificationCenter() {
         </div>
         
         {unreadCount > 0 && !isOpen && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 text-[9px] font-black text-white rounded-full border-2 border-zinc-900 flex items-center justify-center shadow-lg animate-bounce">
-            {unreadCount}
+          <span className="pointer-events-none absolute -top-0.5 -right-0.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[#010101] bg-red-600 px-1 text-[9px] font-black text-white shadow-lg">
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>

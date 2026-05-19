@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { request } from "@/utils/api"; 
 import { motion } from "framer-motion";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
+import ListPagination from "@/components/ListPagination";
+
+const SALES_PER_PAGE = 5;
 import { isLocalDev } from "@/utils/devMode";
 
 const LOCAL_DEV_USER = {
@@ -57,6 +60,7 @@ export default function MyPage() {
   const [isMinecraftNameEditorOpen, setIsMinecraftNameEditorOpen] = useState(false);
   const [minecraftNameInput, setMinecraftNameInput] = useState("");
   const [savingMinecraftName, setSavingMinecraftName] = useState(false);
+  const [salesPage, setSalesPage] = useState(1);
   const router = useRouter();
 
   const triggerHaptic = useCallback(() => {
@@ -76,6 +80,18 @@ export default function MyPage() {
     triggerHaptic();
     router.push(`/sell?relist=${auctionId}`);
   }, [router, triggerHaptic]);
+
+  const salesTotalPages = Math.max(1, Math.ceil(myAuctions.length / SALES_PER_PAGE));
+  const paginatedSales = useMemo(() => {
+    const start = (salesPage - 1) * SALES_PER_PAGE;
+    return myAuctions.slice(start, start + SALES_PER_PAGE);
+  }, [myAuctions, salesPage]);
+
+  useEffect(() => {
+    if (salesPage > salesTotalPages) {
+      setSalesPage(salesTotalPages);
+    }
+  }, [salesPage, salesTotalPages]);
 
   const refreshTradeLists = useCallback(async () => {
     if (isLocalDev() || !user?.id) return;
@@ -485,7 +501,7 @@ export default function MyPage() {
               
               <div className="space-y-3">
                 {myAuctions.length > 0 ? (
-                  myAuctions.map((auction: any) => {
+                  paginatedSales.map((auction: any) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
                     const canRelist = auction.status === "EXPIRED";
@@ -535,8 +551,13 @@ export default function MyPage() {
                             다시 등록
                           </button>
                         )}
-                        <Link href={`/auction/${auction.id}`} onClick={triggerHaptic} className="site-btn site-btn-secondary h-9 w-9 p-0">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 18l6-6-6-6"/></svg>
+                        <Link
+                          href={`/auction/${auction.id}`}
+                          onClick={triggerHaptic}
+                          aria-label="경매 상세 보기"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-lg font-black leading-none text-zinc-300 transition-all hover:border-blue-500/30 hover:bg-blue-500/10 hover:text-white"
+                        >
+                          &gt;
                         </Link>
                       </div>
                     </div>
@@ -546,6 +567,14 @@ export default function MyPage() {
                     <p className="text-xs font-semibold text-zinc-400">판매 내역이 없습니다</p>
                     <p className="mt-2 text-xs font-medium text-zinc-600">아이템을 등록하면 진행 및 거래 확정 상태를 이곳에서 관리할 수 있습니다.</p>
                   </div>
+                )}
+                {myAuctions.length > 0 && (
+                  <ListPagination
+                    page={salesPage}
+                    totalPages={salesTotalPages}
+                    onPageChange={setSalesPage}
+                    className="pt-2"
+                  />
                 )}
               </div>
             </section>

@@ -9,6 +9,9 @@ import PostEditor from "@/app/post/PostEditor";
 import MarketTab from "@/app/market/page";
 import { ISLAND_IMPRINTS, RPG_SKILLS, WILD_BASE, WILD_SPECIAL } from "@/app/market/marketData";
 import { DdingtionLogo, SiteBackground, SiteFooter } from "@/components/SiteChrome";
+import ListPagination from "@/components/ListPagination";
+
+const AUCTIONS_PER_PAGE = 20;
 
 interface Auction {
   id: number;
@@ -120,6 +123,7 @@ function HomeComponent() {
     imprints: false,
     skills: false,
   });
+  const [auctionPage, setAuctionPage] = useState(1);
 
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -230,6 +234,23 @@ function HomeComponent() {
       return matchesSearch && matchesCategory && matchesPrice && matchesTime && matchesEnhancement && matchesEnchantments && matchesImprints && matchesSkills;
     });
   }, [auctions, searchQuery, activeFilters, nowTimestamp]);
+
+  const auctionTotalPages = Math.max(1, Math.ceil(filteredAuctions.length / AUCTIONS_PER_PAGE));
+
+  const paginatedAuctions = useMemo(() => {
+    const start = (auctionPage - 1) * AUCTIONS_PER_PAGE;
+    return filteredAuctions.slice(start, start + AUCTIONS_PER_PAGE);
+  }, [filteredAuctions, auctionPage]);
+
+  useEffect(() => {
+    setAuctionPage(1);
+  }, [searchQuery, activeFilters]);
+
+  useEffect(() => {
+    if (auctionPage > auctionTotalPages) {
+      setAuctionPage(auctionTotalPages);
+    }
+  }, [auctionPage, auctionTotalPages]);
 
   const auctionSummary = useMemo(() => {
     const urgentCount = auctions.filter((a) => {
@@ -806,7 +827,7 @@ function HomeComponent() {
                       </div>
                     </div>
                   ) : (
-                    filteredAuctions.map((auction) => {
+                    paginatedAuctions.map((auction) => {
                       const hasOptions =
                         auction.enhancementLevel > 0 ||
                         Boolean(auction.enchantments && Object.keys(auction.enchantments).length > 0) ||
@@ -882,6 +903,14 @@ function HomeComponent() {
                     })
                   )}
                 </div>
+                {filteredAuctions.length > 0 && (
+                  <ListPagination
+                    page={auctionPage}
+                    totalPages={auctionTotalPages}
+                    onPageChange={setAuctionPage}
+                    className="mt-4"
+                  />
+                )}
               </div>
             </motion.div>
           )}
