@@ -247,7 +247,7 @@ export default function LoginPage() {
                     }}
                     className="h-4 w-4 rounded border-white/20 bg-black/40 accent-blue-500"
                   />
-                  자동 로그인 (30일 유지 · 10분 비활성 로그아웃 해제)
+                  자동 로그인
                 </label>
               </div>
 
