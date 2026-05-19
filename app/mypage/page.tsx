@@ -82,11 +82,17 @@ export default function MyPage() {
     router.push(`/sell?relist=${auctionId}`);
   }, [router, triggerHaptic]);
 
-  const salesTotalPages = Math.max(1, Math.ceil(myAuctions.length / SALES_PER_PAGE));
+  /** 시세 기록이 삭제·무효된 완료 건은 목록에서 제외 (어드민 거래 기록 관리와 동기화) */
+  const visibleSales = useMemo(
+    () => myAuctions.filter((auction: any) => auction.status !== "COMPLETED" || auction.marketReflected),
+    [myAuctions]
+  );
+
+  const salesTotalPages = Math.max(1, Math.ceil(visibleSales.length / SALES_PER_PAGE));
   const paginatedSales = useMemo(() => {
     const start = (salesPage - 1) * SALES_PER_PAGE;
-    return myAuctions.slice(start, start + SALES_PER_PAGE);
-  }, [myAuctions, salesPage]);
+    return visibleSales.slice(start, start + SALES_PER_PAGE);
+  }, [visibleSales, salesPage]);
 
   useEffect(() => {
     if (salesPage > salesTotalPages) {
@@ -282,16 +288,23 @@ export default function MyPage() {
   const minecraftName = user.loginId || user.ingameName;
   const minecraftHeadUrl = getMinecraftHeadUrl(minecraftName);
   const activeSales = myAuctions.filter((auction: any) => auction.status === "ACTIVE");
-  const completedSales = myAuctions.filter((auction: any) => auction.status === "COMPLETED");
+  const completedSales = myAuctions.filter(
+    (auction: any) => auction.status === "COMPLETED" && auction.marketReflected
+  );
   const pendingSales = myAuctions.filter((auction: any) => auction.status === "PENDING_TRADE");
   const salesNeedConfirm = pendingSales.filter((auction: any) => !auction.chatRoom?.sellerConfirmed);
   const activeBidAuctions = myBidAuctions.filter((auction: any) => auction.status === "ACTIVE");
   const pendingWonAuctions = myBidAuctions.filter((auction: any) => auction.status === "PENDING_TRADE" && auction.isHighestBidder);
   const bidsNeedConfirm = pendingWonAuctions.filter((auction: any) => !auction.chatRoom?.buyerConfirmed);
   const disputedCount = [...myAuctions, ...myBidAuctions].filter((auction: any) => auction.status === "DISPUTED").length;
-  const visibleBidAuctions = myBidAuctions.filter((auction: any) =>
-    auction.status === "ACTIVE" || auction.status === "DISPUTED" || (auction.status === "PENDING_TRADE" && auction.isHighestBidder)
-  );
+  const visibleBidAuctions = myBidAuctions.filter((auction: any) => {
+    if (auction.status === "COMPLETED") return Boolean(auction.marketReflected);
+    return (
+      auction.status === "ACTIVE" ||
+      auction.status === "DISPUTED" ||
+      (auction.status === "PENDING_TRADE" && auction.isHighestBidder)
+    );
+  });
   const actionNeededCount = salesNeedConfirm.length + bidsNeedConfirm.length + disputedCount;
 
   return (
@@ -501,7 +514,7 @@ export default function MyPage() {
               </h2>
               
               <div className="space-y-3">
-                {myAuctions.length > 0 ? (
+                {visibleSales.length > 0 ? (
                   paginatedSales.map((auction: any) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
@@ -569,7 +582,7 @@ export default function MyPage() {
                     <p className="mt-2 text-xs font-medium text-zinc-600">아이템을 등록하면 진행 및 거래 확정 상태를 이곳에서 관리할 수 있습니다.</p>
                   </div>
                 )}
-                {myAuctions.length > 0 && (
+                {visibleSales.length > 0 && (
                   <ListPagination
                     page={salesPage}
                     totalPages={salesTotalPages}
