@@ -6,10 +6,17 @@ import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 
-// --- 데이터 정의 (기존 데이터 유지) ---
-const WILD_BASE = [["효율", 5], ["행운", 3], ["섬세한손길", 1], ["바다의행운", 3], ["미끼", 3], ["밀치기", 2], ["휩쓸기", 3], ["약탈", 3], ["날카로움", 5], ["발화", 2], ["살충", 5], ["강타", 5], ["화염", 1], ["밀어내기", 2], ["힘", 5], ["무한", 1], ["다중발사", 1], ["관통", 4], ["빠른장전", 3], ["집전", 1], ["찌르기", 5], ["충성", 3], ["급류", 3], ["육중", 5], ["격파", 4], ["돌풍", 3], ["폭발보호", 4], ["화염보호", 4], ["발사체보호", 4], ["가시", 3], ["보호", 4], ["친수성", 1], ["호흡", 3], ["신속한잠행", 3], ["물갈퀴", 3], ["가벼운착지", 4], ["영혼가속", 3], ["차가운걸음", 2], ["내구성", 3], ["수선", 1]];
-const WILD_SPECIAL = [["경험", 5], ["조급함", 3], ["서두름", 3], ["심호흡", 2], ["석탄", 3], ["구리", 3], ["금", 3], ["철", 3], ["청금석", 3], ["석영", 3], ["다이아몬드", 3], ["에메랄드", 3], ["고대잔해", 3], ["노련한손길", 3], ["자동감기", 4], ["뾰족함", 5], ["바다의경험", 3], ["참격", 4], ["위력", 4], ["벌목", 3], ["출혈", 6], ["냉혈함", 4], ["골절", 3], ["백신", 5], ["천적", 4], ["속격", 3], ["반격", 3], ["광휘", 3], ["속박", 3], ["흡혈", 5], ["잠행", 3], ["혈전", 5], ["흡혈귀", 3], ["이중타격", 3], ["일격", 3], ["여명", 3], ["심판", 3], ["밤기사", 3], ["학구열", 4], ["좀비", 3], ["스켈레톤", 3], ["거미", 3], ["크리퍼", 3], ["마무리", 3], ["활력", 3], ["서막", 5], ["천벌", 5], ["견고함", 10], ["창공", 3], ["추진력", 3], ["경감", 4], ["견갑", 4], ["복원", 3], ["반사", 5], ["수호", 2], ["흡수", 4], ["내폭성", 3], ["회피", 5], ["엔더보호", 3], ["네더보호", 3], ["내화성", 1], ["과충전", 3], ["아가미", 1], ["투시", 1], ["불멸", 3], ["격퇴", 5], ["강인함", 6], ["소화", 3], ["추격", 3], ["심연", 4], ["탈출", 2], ["가벼운걸음", 1], ["낙하", 3], ["뜨거운걸음", 1], ["가속화", 3], ["완벽한착지", 3], ["용수철", 3]];
-const ISLAND_IMPRINTS = ["채집강화", "채집가속", "씨앗행운", "과일행운", "과일가속", "빠른농부", "작물상자", "과일바구니", "유성낙하", "농부룰렛", "채광강화", "채광가속", "광물행운", "유물탐색", "코비탐색", "빠른광부", "보석코비", "광산수레", "광부룰렛", "물고기행운", "어획강화", "조개탐색", "어패행운", "수중호흡", "빠른어부", "정령고래", "가오리인도", "어부룰렛", "공격강화", "공격가속", "전리품행운", "조각탐색", "빠른사냥꾼", "흔적추적", "조각공명", "흡인사냥", "사냥꾼룰렛"];
+import {
+  buildLampLines,
+  getIslandImprintOptions,
+  getWildEnchantOptions,
+  normalizeEnchantmentsMap,
+  normalizeImprintsMap,
+  parseLampLines,
+  resolveArchetype,
+  sanitizeSelections,
+} from "@/lib/enhancementAllowlist";
+
 const RPG_SKILLS = ["리프시커", "바인크리프", "우드서지", "버던트메테오", "그로브클랩", "스틸임팩트", "헤비사이클론", "그랜드크러시", "오리진이지스", "팔라딘저지먼트", "에너지버스트", "브로드샷", "락온트리거", "펄스레이닝", "오버클럭프로토콜", "차지블로우", "스위프트샷", "컨비전스스플릿", "리니어레인", "세라핌디센트", "피어스폴", "스러스트러시", "플리커랜서", "프로스트드롭", "앱솔루트도미니온", "플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"];
 const RPG_SKILL_MAP: Record<string, string[]> = {
   "스태프": ["리프시커", "바인크리프", "우드서지", "버던트메테오", "그로브클랩"],
@@ -17,18 +24,9 @@ const RPG_SKILL_MAP: Record<string, string[]> = {
   "총": ["에너지버스트", "브로드샷", "락온트리거", "펄스레이닝", "오버클럭프로토콜"],
   "활": ["차지블로우", "스위프트샷", "컨비전스스플릿", "리니어레인", "세라핌디센트"],
   "창": ["피어스폴", "스러스트러시", "플리커랜서", "프로스트드롭", "앱솔루트도미니온"],
-  "대검": ["플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"]
+  "대검": ["플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"],
 };
 const RUNE_GRADES = ["루키", "커먼", "노멀", "레어"];
-/** 상급 강화(일반 최대 초과) 허용 등급 — 시세/검색 탭과 동일 */
-const WILD_HIGH_ENCHANT_LIMITS: Record<string, number> = {
-  효율: 10,
-  날카로움: 7,
-  보호: 6,
-  미끼: 5,
-  약탈: 5,
-  행운: 5,
-};
 const RUNE_TYPES = ["파괴의룬", "타격의룬", "증폭의룬", "기습의룬", "사냥의룬", "지배의룬", "개시의룬", "처형의룬", "한기의룬", "화염의룬", "자연의룬", "뇌전의룬", "강철의룬", "흡혈의룬", "열상의룬", "출혈의룬", "정밀의룬", "치명의룬", "역습의룬", "반격의룬"];
 
 interface Item { id: number; name: string; iconUrl: string; category: string; }
@@ -45,9 +43,13 @@ export default function SellItem() {
 
   const [form, setForm] = useState({ 
     startPrice: "", buyNowPrice: "", durationDays: "1", description: "",
-    enhancementLevel: 0, enhancementRank: "입문", enchantments: {} as Record<string, number>, 
+    enhancementLevel: 0, enhancementRank: "입문",
+    quality: "",
+    lampLine1: "",
+    lampLine2: "",
+    enchantments: {} as Record<string, number>, 
     imprints: {} as Record<string, number>, skills: {} as Record<string, number>,
-    runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "", type: "" }]
+    runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "", type: "" }],
   });
 
   /**
@@ -85,6 +87,18 @@ export default function SellItem() {
     return "OTHER";
   }, [selectedItem]);
 
+  const equipmentArchetype = useMemo(() => resolveArchetype(selectedItem), [selectedItem]);
+
+  const wildEnchantOptions = useMemo(
+    () => (category === "WILD" ? getWildEnchantOptions(equipmentArchetype) : { base: [], special: [] }),
+    [category, equipmentArchetype]
+  );
+
+  const islandImprintOptions = useMemo(
+    () => (category === "ISLAND" ? getIslandImprintOptions(equipmentArchetype) : []),
+    [category, equipmentArchetype]
+  );
+
   const currentWeaponSkills = useMemo(() => {
     if (!selectedItem) return RPG_SKILLS;
     const name = selectedItem.name;
@@ -96,6 +110,21 @@ export default function SellItem() {
     if (name.includes("대검")) return RPG_SKILL_MAP["대검"];
     return RPG_SKILLS;
   }, [selectedItem]);
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    setForm((prev) => {
+      const sanitized = sanitizeSelections(selectedItem, {
+        enchantments: prev.enchantments,
+        imprints: prev.imprints,
+      });
+      return {
+        ...prev,
+        enchantments: sanitized.enchantments,
+        imprints: sanitized.imprints,
+      };
+    });
+  }, [selectedItem?.id, equipmentArchetype]);
 
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(10);
@@ -128,6 +157,11 @@ export default function SellItem() {
         setSelectedItem(item);
         setSearchTerm(item.name);
         setShowDropdown(false);
+        const lamp = parseLampLines(auction.lampLines);
+        const sanitized = sanitizeSelections(item, {
+          enchantments: normalizeEnchantmentsMap(auction.enchantments),
+          imprints: normalizeImprintsMap(auction.imprint),
+        });
         setForm({
           startPrice: String(auction.startPrice || ""),
           buyNowPrice: auction.buyNowPrice ? String(auction.buyNowPrice) : "",
@@ -135,8 +169,11 @@ export default function SellItem() {
           description: auction.description || "",
           enhancementLevel: Number(auction.enhancementLevel || 0),
           enhancementRank: auction.enhancementRank || "입문",
-          enchantments: auction.enchantments || {},
-          imprints: auction.imprint || {},
+          quality: auction.quality != null ? String(auction.quality) : "",
+          lampLine1: lamp[0] || "",
+          lampLine2: lamp[1] || "",
+          enchantments: sanitized.enchantments,
+          imprints: sanitized.imprints,
           skills: auction.skills || {},
           runes: Array.isArray(auction.runes) && auction.runes.length === 3
             ? auction.runes
@@ -158,8 +195,15 @@ export default function SellItem() {
     setSearchTerm(item.name);
     setShowDropdown(false);
     setForm(prev => ({ 
-      ...prev, enchantments: {}, imprints: {}, skills: {}, enhancementLevel: 0, 
-      runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "" , type: "" }] 
+      ...prev,
+      enchantments: {},
+      imprints: {},
+      skills: {},
+      enhancementLevel: 0,
+      quality: "",
+      lampLine1: "",
+      lampLine2: "",
+      runes: [{ grade: "", type: "" }, { grade: "", type: "" }, { grade: "", type: "" }],
     }));
   };
 
@@ -192,13 +236,22 @@ export default function SellItem() {
     if (!selectedItem) return;
     setIsLoading(true);
     try {
+      const sanitized = sanitizeSelections(selectedItem, {
+        enchantments: form.enchantments,
+        imprints: form.imprints,
+      });
+      const isWild = category === "WILD";
       await request(relistSourceId ? `/api/auctions/${relistSourceId}/relist` : "/api/auctions", {
         method: "POST",
         body: JSON.stringify({ 
           itemId: selectedItem.id, 
-          ...form, 
+          ...form,
+          enchantments: sanitized.enchantments,
+          imprints: sanitized.imprints,
+          quality: isWild && form.quality.trim() !== "" ? Number(form.quality) : null,
+          lampLines: isWild ? buildLampLines(form.lampLine1, form.lampLine2) : null,
           startPrice: Number(form.startPrice), 
-          buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null 
+          buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null,
         }),
       });
       router.push(relistSourceId ? "/mypage" : "/?tab=AUCTION");
@@ -360,37 +413,77 @@ export default function SellItem() {
                   <div className="custom-scrollbar overflow-y-auto max-h-[470px] pr-2 space-y-6">
                     {category === "WILD" && (
                       <div className="space-y-6">
-                        <div className="space-y-3">
-                          <div className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em] border-l-2 border-blue-500 pl-3">
-                            일반 인챈트
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.14em] border-l-2 border-emerald-500 pl-3">
+                              품질
+                            </div>
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="현재 품질 수치"
+                              value={form.quality}
+                              onChange={(e) => setForm({ ...form, quality: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-zinc-100 outline-none focus:border-emerald-500/40"
+                            />
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
-                            {WILD_BASE.map(([name, max]) => {
-                              const currentMax = WILD_HIGH_ENCHANT_LIMITS[name as string] ?? (max as number);
-                              return (
-                                <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, currentMax)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, currentMax, -1); }}
-                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
-                                  <span className="font-semibold text-[10px]">{name as string}</span>
-                                  {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
+                          <div className="space-y-2 sm:col-span-1">
+                            <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-[0.14em] border-l-2 border-amber-500 pl-3">
+                              램프 옵션 (2줄)
+                            </div>
+                            <input
+                              type="text"
+                              placeholder="램프 1번째 줄"
+                              value={form.lampLine1}
+                              onChange={(e) => setForm({ ...form, lampLine1: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 outline-none focus:border-amber-500/40"
+                            />
+                            <input
+                              type="text"
+                              placeholder="램프 2번째 줄"
+                              value={form.lampLine2}
+                              onChange={(e) => setForm({ ...form, lampLine2: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 outline-none focus:border-amber-500/40"
+                            />
+                          </div>
+                        </div>
+                        {equipmentArchetype === "wild_common" && (
+                          <p className="text-[10px] text-zinc-500 font-semibold px-1">
+                            장비 분류를 특정하지 못해 공통 인챈트만 표시됩니다.
+                          </p>
+                        )}
+                        {wildEnchantOptions.base.length > 0 && (
+                          <div className="space-y-3">
+                            <div className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em] border-l-2 border-blue-500 pl-3">
+                              일반 인챈트
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
+                              {wildEnchantOptions.base.map(([name, max]) => (
+                                <button key={name} type="button" onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }}
+                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                  <span className="font-semibold text-[10px]">{name}</span>
+                                  {form.enchantments[name] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name]}</span>}
                                 </button>
-                              );
-                            })}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                        <div className="space-y-3">
-                          <div className="text-[10px] font-extrabold text-red-400 uppercase tracking-[0.14em] border-l-2 border-red-500 pl-3">
-                            특수 인챈트
+                        )}
+                        {wildEnchantOptions.special.length > 0 && (
+                          <div className="space-y-3">
+                            <div className="text-[10px] font-extrabold text-red-400 uppercase tracking-[0.14em] border-l-2 border-red-500 pl-3">
+                              특수 인챈트
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
+                              {wildEnchantOptions.special.map(([name, max]) => (
+                                <button key={name} type="button" onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }}
+                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                  <span className="font-semibold text-[10px]">{name}</span>
+                                  {form.enchantments[name] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name]}</span>}
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
-                            {WILD_SPECIAL.map(([name, max]) => (
-                              <button key={name as string} type="button" onClick={() => toggleOption('enchantments', name as string, max as number)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, max as number, -1); }}
-                                className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name as string] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
-                                <span className="font-semibold text-[10px]">{name as string}</span>
-                                {form.enchantments[name as string] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name as string]}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        )}
                       </div>
                     )}
 
@@ -410,7 +503,12 @@ export default function SellItem() {
                             각인 옵션
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
-                            {ISLAND_IMPRINTS.map(name => (
+                            {islandImprintOptions.length === 0 && (
+                              <p className="text-[10px] text-zinc-500 font-semibold col-span-full px-1">
+                                세이지 도구(괭이·곡괭이·낚싯대·대검)만 각인을 등록할 수 있습니다.
+                              </p>
+                            )}
+                            {islandImprintOptions.map(name => (
                               <button key={name} type="button" onClick={() => toggleOption('imprints', name, 5)} onContextMenu={(e) => { e.preventDefault(); toggleOption('imprints', name, 5, -1); }} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.imprints[name] ? "bg-yellow-500 border-yellow-400 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                 <span className="font-semibold text-[10px]">{name}</span>
                                 {form.imprints[name] && <span className="font-extrabold text-[9px] bg-black/10 px-1.5 py-0.5 rounded-md">LV.{form.imprints[name]}</span>}

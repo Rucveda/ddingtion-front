@@ -595,6 +595,28 @@ export default function AuctionDetail() {
                   </div>
                 )}
 
+                {category === "WILD" && (auction.quality != null || (Array.isArray(auction.lampLines) && auction.lampLines.length > 0)) && (
+                  <div className="space-y-3">
+                    <h2 className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.14em] flex items-center gap-2">
+                      <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 품질 · 램프
+                    </h2>
+                    <div className="space-y-2 rounded-2xl border border-white/5 bg-black/30 p-4">
+                      {auction.quality != null && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-zinc-500 font-semibold text-[10px] uppercase">품질</span>
+                          <span className="font-mono font-extrabold text-emerald-300">{auction.quality}</span>
+                        </div>
+                      )}
+                      {Array.isArray(auction.lampLines) && auction.lampLines.map((line: string, idx: number) => (
+                        <div key={idx} className="text-xs text-zinc-300 leading-relaxed border-t border-white/5 pt-2 first:border-t-0 first:pt-0">
+                          <span className="text-amber-500/80 font-extrabold text-[9px] uppercase mr-2">램프 {idx + 1}</span>
+                          {line}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {category === "WILD" && auction.enchantments && (
                   <div className="space-y-3">
                     <h2 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-[0.14em] flex items-center gap-2">

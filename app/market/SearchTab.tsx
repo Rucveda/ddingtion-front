@@ -4,14 +4,17 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { request } from "@/utils/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  WILD_BASE, 
-  WILD_SPECIAL, 
-  ISLAND_IMPRINTS, 
   RPG_WEAPON_INFO,
   RUNE_GRADES, 
   RUNE_TYPES,
   RPG_SKILL_SYSTEM
 } from "./marketData";
+import {
+  getIslandImprintOptions,
+  getWildEnchantOptions,
+  resolveArchetype,
+  sanitizeSelections,
+} from "@/lib/enhancementAllowlist";
 import { useMarket } from "./MarketContext";
 
 export default function SearchTab({ selectedItem }: { selectedItem: any }) {
@@ -62,6 +65,27 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
   }, [selectedItem, category]);
 
   const skillConfig = weaponType ? RPG_SKILL_SYSTEM[weaponType] : null;
+
+  const equipmentArchetype = useMemo(() => resolveArchetype(selectedItem), [selectedItem]);
+  const wildEnchantOptions = useMemo(
+    () => (category === "WILD" ? getWildEnchantOptions(equipmentArchetype) : { base: [], special: [] }),
+    [category, equipmentArchetype]
+  );
+  const islandImprintOptions = useMemo(
+    () => (category === "ISLAND" ? getIslandImprintOptions(equipmentArchetype) : []),
+    [category, equipmentArchetype]
+  );
+
+  useEffect(() => {
+    if (!selectedItem) return;
+    setFilters((prev) => {
+      const sanitized = sanitizeSelections(selectedItem, {
+        enchantments: prev.enchantments,
+        imprints: prev.imprints,
+      });
+      return { ...prev, enchantments: sanitized.enchantments, imprints: sanitized.imprints };
+    });
+  }, [selectedItem?.id, equipmentArchetype]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -252,33 +276,32 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
         <div className="custom-scrollbar max-h-[420px] overflow-y-auto pr-1">
           {category === "WILD" && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="border-l-2 border-blue-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-400">인챈트 구성</div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
-                  {WILD_BASE.map(([name, max]: any) => {
-                    const HIGH_LIMITS: Record<string, number> = { "효율": 10, "날카로움": 7, "보호": 6, "미끼": 5, "약탈": 5, "행운": 5 };
-                    const currentMax = HIGH_LIMITS[name as string] || (max as number);
-
-                    return (
-                      <button key={name as string} onClick={() => toggleOption('enchantments', name as string, currentMax)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, currentMax, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name as string] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
-                        <span className="font-semibold text-[10px]">{name as string}</span>
-                        {filters.enchantments[name as string] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name as string]}</span>}
+              {wildEnchantOptions.base.length > 0 && (
+                <div className="space-y-2">
+                  <div className="border-l-2 border-blue-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-400">인챈트 구성</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
+                    {wildEnchantOptions.base.map(([name, max]) => (
+                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                        <span className="font-semibold text-[10px]">{name}</span>
+                        {filters.enchantments[name] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name]}</span>}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <div className="border-l-2 border-red-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-400">특수 인챈트</div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
-                  {WILD_SPECIAL.map(([name, max]) => (
-                    <button key={name as string} onClick={() => toggleOption('enchantments', name as string, max as number)} onContextMenu={(e) => { e.preventDefault(); toggleOption('enchantments', name as string, max as number, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name as string] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
-                      <span className="font-semibold text-[10px]">{name as string}</span>
-                      {filters.enchantments[name as string] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name as string]}</span>}
-                    </button>
-                  ))}
+              )}
+              {wildEnchantOptions.special.length > 0 && (
+                <div className="space-y-2">
+                  <div className="border-l-2 border-red-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-red-400">특수 인챈트</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
+                    {wildEnchantOptions.special.map(([name, max]) => (
+                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name] ? "bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                        <span className="font-semibold text-[10px]">{name}</span>
+                        {filters.enchantments[name] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name]}</span>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
           
@@ -297,7 +320,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                 <div className="space-y-2">
                   <div className="border-l-2 border-white/10 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-500">각인 활성화</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
-                    {ISLAND_IMPRINTS.map(name => (
+                    {islandImprintOptions.map(name => (
                       <button key={name} onClick={() => toggleOption('imprints', name, 5)} onContextMenu={(e) => { e.preventDefault(); toggleOption('imprints', name, 5, -1); }} className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${filters.imprints[name] ? "bg-yellow-500 border-yellow-300 text-black shadow-lg shadow-yellow-500/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                         <span className="font-semibold text-[10px]">{name}</span>
                         {filters.imprints[name] && <span className="font-black text-[9px] bg-black/10 px-1.5 py-0.5 rounded">Lv.{filters.imprints[name]}</span>}

@@ -268,8 +268,8 @@ export default function LoginPage() {
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 text-center text-xs font-bold text-blue-400 space-y-1"
                 >
-                  <p>서버 연결을 준비하는 중입니다.</p>
-                  <p>최대 1분 정도 소요될 수 있습니다.</p>
+                  <p>서버가 휴면에서 깨어나는 중입니다.</p>
+                  <p>1~3분 정도 소요될 수 있습니다.</p>
                 </motion.div>
               )}
             </form>
