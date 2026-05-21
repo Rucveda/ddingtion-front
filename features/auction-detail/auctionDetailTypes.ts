@@ -25,11 +25,6 @@ export const AUCTION_STATUS_UI: Record<string, AuctionStatusMeta> = {
     className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
     description: "양측 확정이 끝나 시세 기록에 반영된 거래입니다.",
   },
-  DISPUTED: {
-    label: "분쟁",
-    className: "bg-red-500/10 text-red-300 border-red-500/20",
-    description: "신고가 접수되어 운영 확인이 필요한 거래입니다.",
-  },
   CANCEL_PENDING: {
     label: "취소 보류",
     className: "bg-amber-500/10 text-amber-300 border-amber-500/20",

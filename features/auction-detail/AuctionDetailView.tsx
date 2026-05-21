@@ -646,7 +646,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                   <div className="space-y-1.5 text-[11px] font-medium leading-relaxed text-zinc-400">
                     <p>낙찰 또는 즉시 구매 후에는 거래 채팅이 열립니다.</p>
                     <p>구매자와 판매자가 모두 거래 확정을 눌러야 완료 처리되고 시세에 반영됩니다.</p>
-                    <p>문제가 있으면 채팅 신고를 통해 분쟁 상태로 전환할 수 있습니다.</p>
+                    <p>문제가 있으면 관리자 1:1 상담 채팅을 이용해 주세요.</p>
                   </div>
                 </div>
               </div>

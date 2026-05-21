@@ -473,18 +473,8 @@ export function AuctionListTab({ isActive }: AuctionListTabProps) {
                 <>
                   <span>현재 진행 중인 경매가 없습니다.</span>
                   <span className="text-xs font-medium text-zinc-500">
-                    방금 등록했다면 잠시 후 새로고침하거나, 마이페이지 판매 목록에서 확인해 주세요
+                    방금 등록했다면 잠시 후 목록이 갱신되거나, 마이페이지 판매 목록에서 확인해 주세요
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic();
-                      void list.fetchAuctions();
-                    }}
-                    className="site-btn site-btn-secondary mt-1"
-                  >
-                    목록 새로고침
-                  </button>
                 </>
               )}
             </div>

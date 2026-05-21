@@ -22,9 +22,6 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-
   // 💡 버그 패치: 소켓 이벤트 수신 시 현재 열려있는 방을 정확히 판별하기 위한 Ref
   const selectedRoomRef = useRef<any>(null);
   
@@ -46,7 +43,6 @@ export default function ChatWidget() {
       setSelectedRoom(null);
       setMessages([]);
       setIsOpen(false);
-      setShowReport(false);
     });
   }, []);
 
@@ -195,26 +191,6 @@ export default function ChatWidget() {
     }
   };
 
-  const handleReport = async () => {
-    if (!reportReason.trim()) return alert("사유 입력 필수");
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const targetId = selectedRoom.sellerId === user.id ? selectedRoom.buyerId : selectedRoom.sellerId;
-    try {
-      const result = await request(`/api/chat/rooms/${selectedRoom.id}/report`, {
-        method: "POST",
-        body: JSON.stringify({ targetId, reason: reportReason })
-      });
-      if (result) {
-        alert("접수 완료");
-        setShowReport(false);
-        setReportReason("");
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "신고 접수에 실패했습니다.";
-      alert(msg);
-    }
-  };
-
   useEffect(() => {
     if (!isMounted) return;
     if (isLocalDev()) ensureLocalDummySession();
@@ -356,16 +332,13 @@ export default function ChatWidget() {
                 </div>
               )}
               {selectedRoom && !selectedRoom.isAdminChat && (
-                <div className="flex gap-4 items-center">
-                  <button onClick={() => setShowReport(true)} className="site-btn site-btn-danger site-btn-compact">신고</button>
-                  <button
-                    onClick={closeTrade}
-                    disabled={Boolean(currentUserConfirmed)}
-                    className="site-btn site-btn-secondary site-btn-compact"
-                  >
-                    {currentUserConfirmed ? "확정 완료" : "거래 확정"}
-                  </button>
-                </div>
+                <button
+                  onClick={closeTrade}
+                  disabled={Boolean(currentUserConfirmed)}
+                  className="site-btn site-btn-secondary site-btn-compact"
+                >
+                  {currentUserConfirmed ? "확정 완료" : "거래 확정"}
+                </button>
               )}
               {!selectedRoom && <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-8 w-8 rounded-full p-0">✕</button>}
             </header>
@@ -452,27 +425,6 @@ export default function ChatWidget() {
               </form>
             )}
 
-            <AnimatePresence>
-              {showReport && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/98 backdrop-blur-xl z-[100] flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-16 h-16 bg-red-600/10 rounded-2xl flex items-center justify-center border border-red-600/20 mb-6 shadow-[0_0_30px_rgba(220,38,38,0.1)]">
-                    <span className="text-2xl">⚠️</span>
-                  </div>
-                  <h3 className="text-xl font-black uppercase tracking-tighter mb-1 text-red-500">보안 신고</h3>
-                  <p className="text-[9px] text-zinc-600 mb-8 font-black uppercase tracking-[0.3em]">운영 정책 위반 사항 접수</p>
-                  <textarea 
-                    className="w-full bg-zinc-900/50 border border-white/10 rounded-2xl p-4 text-[13px] text-white outline-none focus:border-red-500/50 mb-6 resize-none h-32 font-bold" 
-                    placeholder="사유를 입력하세요..." 
-                    value={reportReason} 
-                    onChange={e => setReportReason(e.target.value)} 
-                  />
-                  <div className="flex gap-3 w-full">
-                    <button onClick={() => setShowReport(false)} className="site-btn site-btn-secondary flex-1 py-4">취소</button>
-                    <button onClick={handleReport} className="site-btn site-btn-danger flex-1 py-4">전송</button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

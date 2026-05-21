@@ -10,8 +10,6 @@ import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrom
 import { isLocalDev } from "@/dev/devMode";
 import { ensureLocalDummySession } from "@/dev/localDummyData";
 import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
-import { HealthCheckPanel } from "@/features/admin/HealthCheckPanel";
-
 // --- Interfaces ---
 interface Auction { 
   id: number; 
@@ -43,23 +41,6 @@ interface ChatRoom {
   status?: string;
 }
 
-interface ReportData {
-  id: number;
-  reason: string;
-  isResolved: boolean;
-  createdAt: string;
-  previousAuctionStatus?: string | null;
-  reporter: { ingameName: string; id?: number };
-  target: { ingameName: string; id?: number };
-  room: { id: number; auctionId?: number | null };
-  auction?: {
-    id: number;
-    status: string;
-    currentPrice: string;
-    item?: { name: string };
-  } | null;
-}
-
 type PaginationState = {
   page: number;
   total: number;
@@ -73,18 +54,13 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminId, setAdminId] = useState<number | null>(null);
   
-  const [activeTab, setActiveTab] = useState<
-    "USERS" | "REPORTS" | "SUPPORT" | "AUCTIONS" | "HEALTH"
-  >("USERS");
+  const [activeTab, setActiveTab] = useState<"USERS" | "SUPPORT" | "AUCTIONS">("USERS");
   
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
   const [supportRooms, setSupportRooms] = useState<ChatRoom[]>([]);
-  const [reports, setReports] = useState<ReportData[]>([]);
   const [userPagination, setUserPagination] = useState<PaginationState>(DEFAULT_PAGINATION);
-  const [reportPagination, setReportPagination] = useState<PaginationState>(DEFAULT_PAGINATION);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [isLoadingReports, setIsLoadingReports] = useState(false);
 
   const [userSearch, setUserSearch] = useState("");
   const [selectedSupportRoom, setSelectedSupportRoom] = useState<ChatRoom | null>(null);
@@ -147,17 +123,6 @@ export default function AdminDashboard() {
     if (data) fetchUsers(1, false);
   };
 
-  const banReportTarget = async (targetId: number, label: string) => {
-    triggerHaptic();
-    if (!confirm(`${label} 계정을 차단하시겠습니까?`)) return;
-    const data = await request(`/api/admin/users/${targetId}/ban`, {
-      method: "PATCH",
-      body: JSON.stringify({ isBanned: true }),
-    });
-    if (data?.message) alert(data.message);
-    if (data) fetchUsers(1, false);
-  };
-
   const toggleUserBan = async (id: number, currentBanStatus: boolean) => {
     triggerHaptic();
     const action = currentBanStatus ? "해제" : "차단";
@@ -187,30 +152,12 @@ export default function AdminDashboard() {
     setAuctions(Array.isArray(data) ? data : []);
   }, []);
 
-  const fetchReports = useCallback(async (page = 1, append = false) => {
-    setIsLoadingReports(true);
-    try {
-      const data = await request(`/api/admin/reports?page=${page}&limit=20`);
-      if (Array.isArray(data)) {
-        setReports(data);
-        setReportPagination({ page: 1, total: data.length, hasMore: false });
-        return;
-      }
-      const items = Array.isArray(data?.items) ? data.items : [];
-      setReports((prev) => append ? [...prev, ...items] : items);
-      setReportPagination(data?.pagination || { page, total: items.length, hasMore: false });
-    } finally {
-      setIsLoadingReports(false);
-    }
-  }, []);
-
   const handleTabChange = (tab: any) => {
     triggerHaptic();
     setActiveTab(tab);
     if (tab === "USERS") fetchUsers();
     if (tab === "SUPPORT") fetchSupportRooms();
     if (tab === "AUCTIONS") fetchAuctions();
-    if (tab === "REPORTS") fetchReports();
   };
 
   useEffect(() => {
@@ -264,19 +211,6 @@ export default function AdminDashboard() {
     return () => clearTimeout(timer);
   }, [activeTab, fetchUsers, isAdmin]);
 
-  const resolveReport = async (reportId: number) => {
-    triggerHaptic();
-    const res = await request(`/api/admin/reports/${reportId}/resolve`, { method: "PATCH", body: JSON.stringify({ isResolved: true }) });
-    if (res) fetchReports();
-  };
-
-  const deleteResolvedReport = async (reportId: number) => {
-    triggerHaptic();
-    if (!confirm("기록을 영구 삭제하시겠습니까?")) return;
-    const res = await request(`/api/admin/reports/${reportId}`, { method: "DELETE" });
-    if (res) fetchReports();
-  };
-
   const sendSupportMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!supportInput.trim() || !selectedSupportRoom) return;
@@ -327,16 +261,14 @@ export default function AdminDashboard() {
           <div className="mb-5">
             <p className="site-label text-red-400">Admin</p>
             <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-white md:text-3xl">관리자 도구</h1>
-            <p className="mt-2 text-xs font-medium text-zinc-500">유저, 신고, 상담, 경매 상태를 한 화면에서 관리합니다.</p>
+            <p className="mt-2 text-xs font-medium text-zinc-500">유저, 상담, 경매 상태를 한 화면에서 관리합니다.</p>
           </div>
 
           <div className="mb-4 flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
             {[
               { id: "USERS", label: "유저 관리" },
-              { id: "REPORTS", label: "신고 관리" },
               { id: "SUPPORT", label: "상담 지원" },
               { id: "AUCTIONS", label: "경매 감시" },
-              { id: "HEALTH", label: "헬스체크" },
             ].map((tab) => (
               <button 
                 key={tab.id} 
@@ -454,86 +386,6 @@ export default function AdminDashboard() {
                 </motion.div>
               )}
 
-              {activeTab === "REPORTS" && (
-                <motion.div key="reports" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-5">
-                  <div className="mb-4 flex items-end justify-between gap-3">
-                    <div>
-                      <h2 className="text-sm font-extrabold tracking-[-0.02em] text-zinc-100">
-                        신고 관리
-                      </h2>
-                      <p className="mt-1 text-[11px] font-medium leading-relaxed text-zinc-500">
-                        거래 채팅 신고는 자동 유찰 처리됩니다. 내용 확인 후 유저 관리에서 제재하세요.
-                      </p>
-                      <p className="mt-1 text-[10px] font-semibold text-zinc-600">
-                        {reports.length.toLocaleString()} / {reportPagination.total.toLocaleString()}건 로드
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {reports.map((r) => (
-                      <div key={r.id} className={`flex flex-col gap-3 rounded-2xl border bg-white/[0.015] p-4 transition-all ${r.isResolved ? "opacity-40 border-white/5" : "border-red-500/20 hover:bg-white/[0.035]"}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="rounded-full bg-red-500/15 px-3 py-1 text-[10px] font-semibold text-red-200">Case #{r.id}</span>
-                          <div className="flex flex-wrap justify-end gap-2">
-                            {!r.isResolved ? (
-                              <>
-                                {r.target?.id != null && (
-                                  <button
-                                    type="button"
-                                    onClick={() => banReportTarget(r.target.id!, r.target.ingameName)}
-                                    className="site-btn site-btn-danger site-btn-compact"
-                                  >
-                                    대상 차단
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => resolveReport(r.id)}
-                                  className="site-btn site-btn-primary site-btn-compact"
-                                >
-                                  확인 완료
-                                </button>
-                              </>
-                            ) : (
-                              <button onClick={() => deleteResolvedReport(r.id)} className="site-btn site-btn-danger site-btn-compact">기록 삭제</button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-[1fr_280px]">
-                          <div>
-                            <p className="mb-1.5 text-[10px] font-semibold text-zinc-600">신고 사유</p>
-                            <p className="rounded-xl bg-black/20 p-3 text-xs font-medium leading-relaxed text-zinc-300">{r.reason}</p>
-                            {r.auction && (
-                              <p className="mt-2 text-[11px] font-medium text-amber-200/90">
-                                연결 경매 #{r.auction.id} · {r.auction.item?.name} · 유찰 처리됨
-                              </p>
-                            )}
-                          </div>
-                          <div>
-                            <p className="mb-1.5 text-[10px] font-semibold text-zinc-600">신고자 / 대상</p>
-                            <p className="rounded-xl border border-red-500/10 bg-red-500/[0.03] p-3 text-xs font-medium text-zinc-400">
-                              {r.reporter?.ingameName} → {r.target?.ingameName}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {reportPagination.hasMore && (
-                    <div className="mt-4 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => fetchReports(reportPagination.page + 1, true)}
-                        disabled={isLoadingReports}
-                        className="site-btn site-btn-secondary"
-                      >
-                        {isLoadingReports ? "불러오는 중..." : "신고 더 보기"}
-                      </button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
               {activeTab === "SUPPORT" && (
                 <motion.div key="support" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-[560px]">
                   <div className="w-[300px] overflow-y-auto border-r border-white/5 bg-black/20 custom-scrollbar">
@@ -605,11 +457,6 @@ export default function AdminDashboard() {
                 </motion.div>
               )}
 
-              {activeTab === "HEALTH" && (
-                <motion.div key="health" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <HealthCheckPanel triggerHaptic={triggerHaptic} />
-                </motion.div>
-              )}
             </AnimatePresence>
           </div>
         </motion.div>

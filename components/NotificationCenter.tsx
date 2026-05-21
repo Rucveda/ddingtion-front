@@ -9,6 +9,7 @@ import { SOCKET_URL } from "@/lib/client/runtimeConfig";
 import { isLocalDev } from "@/dev/devMode";
 import { ensureLocalDummySession } from "@/dev/localDummyData";
 import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
+import { dispatchOutbidToast } from "@/lib/client/notificationEvents";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -68,8 +69,9 @@ export default function NotificationCenter() {
     socketRef.current = socket;
     socket.emit("setup_notifications", user.id);
     
-    socket.on("outbid_notification", () => {
-      fetchLogs();
+    socket.on("outbid_notification", (data) => {
+      void fetchLogs();
+      dispatchOutbidToast(data);
     });
 
     socket.on("notification_update", () => {

@@ -1,6 +1,30 @@
 /** 무활동 로그아웃·수동 로그아웃 시 소켓 등 실시간 연결 해제용 */
 export const SESSION_IDLE_EVENT = "ddingtion_session_idle";
 
+/** 10분 무활동 로그아웃 직후 — 자동 로그인 재진입 방지 */
+export const SESSION_IDLE_LOGOUT_KEY = "ddingtion_idle_logout";
+
+export const SESSION_TIMEOUT_MS = 10 * 60 * 1000;
+
+export const markIdleLogout = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(SESSION_IDLE_LOGOUT_KEY, "1");
+};
+
+export const consumeIdleLogout = () => {
+  if (typeof window === "undefined") return false;
+  const flagged = sessionStorage.getItem(SESSION_IDLE_LOGOUT_KEY) === "1";
+  if (flagged) sessionStorage.removeItem(SESSION_IDLE_LOGOUT_KEY);
+  return flagged;
+};
+
+export const isSessionIdleExpired = () => {
+  if (typeof window === "undefined") return false;
+  const lastActivity = localStorage.getItem("lastActivity");
+  if (!lastActivity) return false;
+  return Date.now() - parseInt(lastActivity, 10) > SESSION_TIMEOUT_MS;
+};
+
 /** 로그인 화면 설정·세션 저장 키 (localStorage.clear 시 보존) */
 export const AUTH_PREF_KEYS = {
   rememberLoginId: "ddingtion_remember_login_id",

@@ -108,7 +108,6 @@ const STATUS_UI: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: "진행 중", className: "bg-blue-500/10 text-blue-300 border-blue-500/20" },
   PENDING_TRADE: { label: "거래 중", className: "bg-amber-500/10 text-amber-300 border-amber-500/20" },
   COMPLETED: { label: "거래 완료", className: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" },
-  DISPUTED: { label: "분쟁", className: "bg-red-500/10 text-red-300 border-red-500/20" },
   CANCEL_PENDING: { label: "취소 보류", className: "bg-amber-500/10 text-amber-300 border-amber-500/20" },
   CANCELED: { label: "취소", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
   EXPIRED: { label: "만료", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
@@ -194,7 +193,6 @@ export default function MyPage() {
       if (auction.status === "COMPLETED") return Boolean(auction.marketReflected);
       return (
         auction.status === "ACTIVE" ||
-        auction.status === "DISPUTED" ||
         (auction.status === "PENDING_TRADE" && auction.isHighestBidder)
       );
     }),
@@ -464,8 +462,7 @@ export default function MyPage() {
   const activeBidAuctions = myBidAuctions.filter((auction) => auction.status === "ACTIVE");
   const pendingWonAuctions = myBidAuctions.filter((auction) => auction.status === "PENDING_TRADE" && auction.isHighestBidder);
   const bidsNeedConfirm = pendingWonAuctions.filter((auction) => !auction.chatRoom?.buyerConfirmed);
-  const disputedCount = [...myAuctions, ...myBidAuctions].filter((auction) => auction.status === "DISPUTED").length;
-  const actionNeededCount = salesNeedConfirm.length + bidsNeedConfirm.length + disputedCount;
+  const actionNeededCount = salesNeedConfirm.length + bidsNeedConfirm.length;
 
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative overflow-x-hidden">
@@ -565,7 +562,7 @@ export default function MyPage() {
                   {actionNeededCount > 0 && (
                     <div className="rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.06] px-4 py-3">
                       <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-yellow-300">확인 필요</p>
-                      <p className="mt-1 text-xs font-semibold text-yellow-100/80">거래 확정 또는 분쟁 확인이 필요한 항목이 {actionNeededCount}건 있습니다.</p>
+                      <p className="mt-1 text-xs font-semibold text-yellow-100/80">거래 확정이 필요한 항목이 {actionNeededCount}건 있습니다.</p>
                     </div>
                   )}
                   {completedSales.length > 0 && (

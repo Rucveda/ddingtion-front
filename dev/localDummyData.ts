@@ -616,11 +616,6 @@ const LOCAL_DUMMY_USERS = [
   { id: 404, loginId: "BadTrader", ingameName: "BadTrader", role: "USER", isBanned: true, reputationScore: 1.3, successfulTrades: 2, discordLinked: true },
 ];
 
-const LOCAL_DUMMY_REPORTS = [
-  { id: 3001, reason: "거래 확정 후 응답이 없습니다.", isResolved: false, createdAt: new Date(now - 1000 * 60 * 60).toISOString(), reporter: { ingameName: "Steve" }, target: { ingameName: "BadTrader" }, room: { id: 9201 } },
-  { id: 3002, reason: "시세 조작 의심 입찰 패턴입니다.", isResolved: true, createdAt: new Date(now - 1000 * 60 * 180).toISOString(), reporter: { ingameName: "Alex" }, target: { ingameName: "MinerKim" }, room: { id: 9203 } },
-];
-
 const marketHistory = LOCAL_DUMMY_AUCTIONS.map((auction, index) => ({
   id: 4000 + index,
   itemId: auction.itemId,
@@ -655,7 +650,6 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
     if (path === "/api/auth/password-reset/confirm") return { message: "로컬 더미 비밀번호 재설정 완료" };
     if (path === "/api/chat/rooms/admin") return LOCAL_DUMMY_CHAT_ROOMS[1];
     if (path.includes("/close")) return { completed: false, message: "로컬 더미 거래 확정이 기록되었습니다.", room: LOCAL_DUMMY_CHAT_ROOMS[0] };
-    if (path.includes("/report")) return { message: "로컬 더미 신고가 접수되었습니다.", reportId: 3999 };
     if (path.startsWith("/api/auctions/") && path.endsWith("/buy")) return { message: "로컬 더미 즉시 구매 완료", roomId: 9201 };
     if (path === "/api/auctions" && method === "POST") {
       const item = LOCAL_DUMMY_ITEMS[0];
@@ -734,7 +728,6 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
   }
   if (path === "/api/admin/users") return LOCAL_DUMMY_USERS;
   if (path === "/api/admin/support/rooms") return LOCAL_DUMMY_CHAT_ROOMS.filter((room) => room.isAdminChat);
-  if (path === "/api/admin/reports") return LOCAL_DUMMY_REPORTS;
   if (path === "/api/admin/market/history") return marketHistory;
   if (path === "/api/admin/market/variables") return [
     { key: "MAT_RPG_BASE_스태프", value: 7200000, category: "RPG", label: "스태프 종류 순정 시세" },

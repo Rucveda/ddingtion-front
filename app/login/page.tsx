@@ -8,12 +8,15 @@ import { request } from "@/lib/client/api";
 import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
 import {
   clearAuthSession,
+  consumeIdleLogout,
   getAutoLoginEnabled,
   getRememberLoginIdEnabled,
   getSavedLoginId,
+  isSessionIdleExpired,
   setAutoLoginEnabled,
   setRememberLoginId,
 } from "@/lib/auth/authPreferences";
+import { isConnectionError, pingServer, waitForServerReady } from "@/lib/client/serverHealth";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");
@@ -22,6 +25,8 @@ export default function LoginPage() {
   const [autoLogin, setAutoLoginState] = useState(false);
   const [prefsLoaded, setPrefsLoaded] = useState(false);
   const [autoLoginChecking, setAutoLoginChecking] = useState(true);
+  const [serverWaking, setServerWaking] = useState(false);
+  const [idleLogoutNotice, setIdleLogoutNotice] = useState(false);
   const [resetLoginId, setResetLoginId] = useState("");
   const [showReset, setShowReset] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
@@ -47,6 +52,19 @@ export default function LoginPage() {
     if (!prefsLoaded) return;
 
     const tryAutoLogin = async () => {
+      if (consumeIdleLogout()) {
+        setIdleLogoutNotice(true);
+        setAutoLoginChecking(false);
+        return;
+      }
+
+      if (isSessionIdleExpired()) {
+        clearAuthSession({ keepAutoLogin: true });
+        setIdleLogoutNotice(true);
+        setAutoLoginChecking(false);
+        return;
+      }
+
       if (!getAutoLoginEnabled()) {
         setAutoLoginChecking(false);
         return;
@@ -59,6 +77,16 @@ export default function LoginPage() {
       }
 
       try {
+        if (!(await pingServer())) {
+          setServerWaking(true);
+          const ready = await waitForServerReady();
+          setServerWaking(false);
+          if (!ready) {
+            setAutoLoginChecking(false);
+            return;
+          }
+        }
+
         const freshUser = await request("/api/auth/me");
         if (freshUser) {
           localStorage.setItem("user", JSON.stringify(freshUser));
@@ -67,8 +95,27 @@ export default function LoginPage() {
           return;
         }
         clearAuthSession({ keepAutoLogin: true });
-      } catch {
-        clearAuthSession({ keepAutoLogin: true });
+      } catch (error) {
+        if (isConnectionError(error)) {
+          setServerWaking(true);
+          const ready = await waitForServerReady();
+          setServerWaking(false);
+          if (ready) {
+            try {
+              const freshUser = await request("/api/auth/me");
+              if (freshUser) {
+                localStorage.setItem("user", JSON.stringify(freshUser));
+                localStorage.setItem("lastActivity", Date.now().toString());
+                router.replace("/");
+                return;
+              }
+            } catch {
+              /* fall through */
+            }
+          }
+        } else {
+          clearAuthSession({ keepAutoLogin: true });
+        }
       } finally {
         setAutoLoginChecking(false);
       }
@@ -103,6 +150,16 @@ export default function LoginPage() {
     }, 5000);
 
     try {
+      if (!(await pingServer())) {
+        setServerWaking(true);
+        const ready = await waitForServerReady({ maxAttempts: 36 });
+        setServerWaking(false);
+        if (!ready) {
+          alert("서버가 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+          return;
+        }
+      }
+
       const data = await request("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({
@@ -126,7 +183,18 @@ export default function LoginPage() {
         }, 100);
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : "로그인에 실패했습니다.");
+      if (isConnectionError(error)) {
+        setServerWaking(true);
+        const ready = await waitForServerReady({ maxAttempts: 36 });
+        setServerWaking(false);
+        if (ready) {
+          alert("서버가 준비되었습니다. 다시 로그인해 주세요.");
+        } else {
+          alert("서버 연결에 실패했습니다. 슬립 해제 후 잠시 기다렸다가 다시 시도해 주세요.");
+        }
+      } else {
+        alert(error instanceof Error ? error.message : "로그인에 실패했습니다.");
+      }
     } finally {
       clearTimeout(timeoutId);
       if (!isLongWait) setIsLongWait(false);
@@ -162,11 +230,18 @@ export default function LoginPage() {
     }
   };
 
-  if (!prefsLoaded || autoLoginChecking) {
+  if (!prefsLoaded || autoLoginChecking || serverWaking) {
     return (
-      <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans flex flex-col items-center justify-center px-6 text-center">
         <SiteBackground />
-        <p className="relative z-10 text-sm font-semibold text-zinc-500 animate-pulse">접속 확인 중...</p>
+        <p className="relative z-10 text-sm font-semibold text-zinc-300 animate-pulse">
+          {serverWaking ? "서버가 휴면에서 깨어나는 중입니다…" : "접속 확인 중..."}
+        </p>
+        {serverWaking && (
+          <p className="relative z-10 mt-3 max-w-sm text-xs font-medium leading-relaxed text-zinc-500 break-keep">
+            Render 무료 플랜은 잠시 후 자동으로 다시 연결됩니다. 보통 1~3분 정도 걸릴 수 있습니다.
+          </p>
+        )}
       </div>
     );
   }
@@ -187,6 +262,11 @@ export default function LoginPage() {
             <p className="mt-3 text-sm font-medium leading-relaxed text-zinc-500 break-keep">
               경매 입찰, 물품 등록, 거래 채팅을 이용하려면 계정 접속이 필요합니다.
             </p>
+            {idleLogoutNotice && (
+              <p className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs font-semibold leading-relaxed text-amber-100/90 break-keep">
+                10분 이상 활동이 없어 로그아웃되었습니다. 자동 로그인 설정은 유지되며, 다시 로그인해 주세요.
+              </p>
+            )}
           </div>
 
           <div className="relative">

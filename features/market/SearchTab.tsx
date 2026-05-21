@@ -20,7 +20,7 @@ import { useMarket } from "./MarketContext";
 
 export default function SearchTab({ selectedItem }: { selectedItem: any }) {
   // 🛠️ [패치] Context에서 유저의 커스텀 계산 결과(calcResult)를 직접 가져옵니다.
-  const { calcResult } = useMarket();
+  const { calcResult, setCalcResult } = useMarket();
   
   const [analysis, setAnalysis] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +87,11 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
       return { ...prev, enchantments: sanitized.enchantments, imprints: sanitized.imprints };
     });
   }, [selectedItem?.id, equipmentArchetype]);
+
+  useEffect(() => {
+    if (!selectedItem?.id) return;
+    setCalcResult(0);
+  }, [selectedItem?.id, setCalcResult]);
 
   useEffect(() => {
     if (selectedItem) {
