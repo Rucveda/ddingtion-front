@@ -71,6 +71,16 @@ export function HomeGlobalStyles() {
           text-shadow: 0 0 46px rgba(59, 130, 246, 0.34);
         }
       }
+      .auction-hero-title {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2em;
+      }
+      .auction-hero-line {
+        display: block;
+        width: 100%;
+      }
       .hero-title-wrap {
         position: relative;
         display: inline-block;

@@ -106,8 +106,8 @@ export function AuctionListTab({ isActive }: AuctionListTabProps) {
       <header className="relative pt-20 pb-12 md:pt-32 md:pb-20 overflow-visible">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black mb-6 tracking-[-0.055em] leading-[1.05] break-keep">
-              <span className="whitespace-normal">
+            <h1 className="auction-hero-title text-5xl sm:text-6xl lg:text-7xl font-black mb-6 tracking-[-0.055em] leading-[1.08] break-keep">
+              <span className="auction-hero-line block">
                 <motion.span
                   ref={heroBurstRef}
                   onHoverStart={triggerGoldExplosion}
@@ -176,7 +176,10 @@ export function AuctionListTab({ isActive }: AuctionListTabProps) {
                 </motion.span>
                 을 거래하는
               </span>
-              <motion.span className="prism-text-overlay mt-1.5 block italic md:mt-2" data-text="가장 현명한 방법.">
+              <motion.span
+                className="auction-hero-line prism-text-overlay block italic"
+                data-text="가장 현명한 방법."
+              >
                 가장 현명한 방법.
               </motion.span>
             </h1>
