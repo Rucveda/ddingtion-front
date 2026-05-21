@@ -12,6 +12,7 @@ import {
 
 export default function PostEditor({ userRole, userDiscordLinked = false }: { userRole: string; userDiscordLinked?: boolean }) {
   const [posts, setPosts] = useState<any[]>([]);
+  const [postsLoaded, setPostsLoaded] = useState(false);
   const [isWriting, setIsWriting] = useState(false);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [form, setForm] = useState({ title: "", content: "", type: "GENERAL", category: "WILD" });
@@ -58,11 +59,19 @@ export default function PostEditor({ userRole, userDiscordLinked = false }: { us
     try {
       const data = await request("/api/posts");
       if (Array.isArray(data)) setPosts(data);
+      else setPosts([]);
     } catch (err) {
       console.error("게시글 로드 실패:", err);
       setPosts([]);
+    } finally {
+      setPostsLoaded(true);
     }
   }, []);
+
+  const emptyCommunityMessage =
+    categoryFilter === "ALL"
+      ? "아직 게시글이 없습니다."
+      : `「${getPostCategoryLabel(categoryFilter)}」 게시글이 없습니다.`;
 
   useEffect(() => {
     fetchPosts();
@@ -341,16 +350,13 @@ export default function PostEditor({ userRole, userDiscordLinked = false }: { us
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
               <div className="order-2 grid grid-cols-1 gap-3 lg:order-1">
-                {posts.length === 0 ? (
+                {!postsLoaded ? (
                   <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
-                    <p className="text-sm font-semibold text-zinc-400">아직 등록된 게시글이 없습니다.</p>
-                    <p className="mt-2 text-xs font-medium text-zinc-600">글이 작성되면 이곳에 표시됩니다.</p>
+                    <p className="text-sm font-semibold text-zinc-500 animate-pulse">게시글을 불러오는 중...</p>
                   </div>
                 ) : communityPosts.length === 0 ? (
                   <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] p-8 text-center">
-                    <p className="text-sm font-semibold text-zinc-400">
-                      {categoryFilter === "ALL" ? "아직 게시글이 없습니다." : `「${getPostCategoryLabel(categoryFilter)}」 게시글이 없습니다.`}
-                    </p>
+                    <p className="text-sm font-semibold text-zinc-400">{emptyCommunityMessage}</p>
                     <p className="mt-2 text-xs font-medium text-zinc-600">글이 작성되면 이곳에 표시됩니다.</p>
                   </div>
                 ) : (

@@ -92,7 +92,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
 
           {/* --- 좌측: 상세 정보 패널 --- */}
           <div className="lg:col-span-8 space-y-4">
-            <div className="site-card p-4 md:p-5 rounded-[30px] min-h-[520px]">
+            <div className="site-card flex flex-col p-4 md:p-5 rounded-[30px]">
 
               <div className="flex items-center gap-4 mb-4 bg-white/[0.03] p-4 rounded-[24px] border border-white/5 relative overflow-hidden">
                 <div className="w-14 h-14 bg-black/40 rounded-2xl flex items-center justify-center border border-white/5 shrink-0 shadow-inner">
@@ -158,7 +158,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                 </div>
               </div>
 
-              <div className="custom-scrollbar overflow-y-auto max-h-[470px] pr-2 space-y-6">
+              <div className="space-y-6">
                 {category !== "WILD" && (
                   <div className="space-y-3">
                     <h2 className="text-[10px] font-extrabold text-blue-300 uppercase tracking-[0.14em] flex items-center gap-2">
@@ -299,8 +299,9 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                     {auction.description || "등록된 상세 정보가 없습니다."}
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-5 border-t border-white/5 relative">
+                <div className="mt-5 pt-5 border-t border-white/5 relative shrink-0 flex flex-col min-h-[280px] lg:min-h-[320px]">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h2 className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] flex items-center gap-2">
                       <div className="w-1 h-3 bg-blue-600 rounded-full" /> 댓글
@@ -310,7 +311,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                     </span>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="custom-scrollbar space-y-2 overflow-y-auto max-h-[min(28vh,340px)] lg:max-h-[380px] pr-1 flex-1 min-h-0">
                     {comments.length > 0 ? (
                       comments.map((comment) => {
                         const isAuthorSeller = Number(comment.author?.id) === Number(auction.sellerId);
@@ -351,7 +352,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                     )}
                   </div>
 
-                  <form onSubmit={handleCommentSubmit} className="mt-3 rounded-2xl border border-white/5 bg-black/30 p-3">
+                  <form onSubmit={handleCommentSubmit} className="mt-3 shrink-0 rounded-2xl border border-white/5 bg-black/30 p-3">
                     <textarea
                       value={commentInput}
                       onChange={(e) => setCommentInput(e.target.value)}
@@ -366,7 +367,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                       disabled={isCommenting}
                       maxLength={500}
                       placeholder={currentUser ? "댓글을 입력하세요... (Enter 전송, Shift+Enter 줄바꿈)" : "로그인 후 댓글을 남길 수 있습니다."}
-                      className="min-h-[72px] w-full resize-none bg-transparent text-xs font-medium leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 disabled:opacity-50"
+                      className="min-h-[88px] w-full resize-y bg-transparent text-xs font-medium leading-relaxed text-zinc-200 outline-none placeholder:text-zinc-600 disabled:opacity-50"
                     />
                     <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/5 pt-2">
                       <span className="text-[10px] font-semibold text-zinc-600">{commentInput.length}/500</span>
@@ -380,13 +381,12 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
                     </div>
                   </form>
                 </div>
-              </div>
             </div>
           </div>
 
           {/* --- 우측: 조작 터미널 --- */}
-          <div className="lg:col-span-4 space-y-4">
-            <section className="site-card p-4 md:p-5 rounded-[28px]">
+          <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <section className="site-card custom-scrollbar max-h-[min(88vh,920px)] overflow-y-auto p-4 md:p-5 rounded-[28px] lg:max-h-[calc(100vh-6.5rem)]">
               <h2 className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 정보
               </h2>

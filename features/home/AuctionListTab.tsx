@@ -452,8 +452,41 @@ export function AuctionListTab({ isActive }: AuctionListTabProps) {
         {list.filteredAuctions.length === 0 ? (
           <div className="rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center text-sm font-semibold text-zinc-300">
             <div className="flex flex-col items-center gap-3">
-              <span>현재 검색 조건에 맞는 경매가 없습니다.</span>
-              <span className="text-xs font-medium text-zinc-500">데이터 연결 또는 필터 조건을 확인해 주세요</span>
+              {list.auctions.length > 0 && list.activeFilterCount > 0 ? (
+                <>
+                  <span>저장된 필터 조건 때문에 경매가 숨겨져 있습니다.</span>
+                  <span className="text-xs font-medium text-zinc-500">
+                    전체 {list.auctions.length}건 중 표시 0건 · 필터를 초기화해 보세요
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      list.resetAuctionFilters();
+                    }}
+                    className="site-btn site-btn-secondary mt-1"
+                  >
+                    필터 초기화
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>현재 진행 중인 경매가 없습니다.</span>
+                  <span className="text-xs font-medium text-zinc-500">
+                    방금 등록했다면 잠시 후 새로고침하거나, 마이페이지 판매 목록에서 확인해 주세요
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic();
+                      void list.fetchAuctions();
+                    }}
+                    className="site-btn site-btn-secondary mt-1"
+                  >
+                    목록 새로고침
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (

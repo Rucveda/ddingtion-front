@@ -499,6 +499,11 @@ export const LOCAL_DUMMY_AUCTIONS: LocalDummyAuction[] = [
   ...buildPaginationTestAuctions(),
 ];
 
+/** 로컬 POST /api/auctions 로 등록한 경매 (목록 GET 에 합쳐서 반환) */
+const localDevCreatedAuctions: LocalDummyAuction[] = [];
+
+const getLocalDummyAuctionList = () => [...localDevCreatedAuctions, ...LOCAL_DUMMY_AUCTIONS];
+
 export const LOCAL_DUMMY_NOTIFICATIONS = [
   { id: 1, type: "OUTBID", message: "[세이지 괭이] 입찰 주도권을 상실했습니다.", link: "/auction/9103", isRead: false, createdAt: new Date(now - 1000 * 60 * 4).toISOString() },
   { id: 2, type: "TRADE", message: "상대방이 거래를 확정했습니다. 채팅에서 거래 내용을 확인해주세요.", link: "/mypage", isRead: false, createdAt: new Date(now - 1000 * 60 * 23).toISOString() },
@@ -652,6 +657,38 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
     if (path.includes("/close")) return { completed: false, message: "로컬 더미 거래 확정이 기록되었습니다.", room: LOCAL_DUMMY_CHAT_ROOMS[0] };
     if (path.includes("/report")) return { message: "로컬 더미 신고가 접수되었습니다.", reportId: 3999 };
     if (path.startsWith("/api/auctions/") && path.endsWith("/buy")) return { message: "로컬 더미 즉시 구매 완료", roomId: 9201 };
+    if (path === "/api/auctions" && method === "POST") {
+      const item = LOCAL_DUMMY_ITEMS[0];
+      const id = 96000 + localDevCreatedAuctions.length;
+      const endTime = new Date(now + 1000 * 60 * 60 * 24).toISOString();
+      const row: LocalDummyAuction = {
+        id,
+        sellerId: 0,
+        itemId: item.id,
+        item,
+        startPrice: "1000",
+        currentPrice: "1000",
+        buyNowPrice: null,
+        endTime,
+        status: "ACTIVE",
+        description: "로컬 개발에서 방금 등록한 더미 경매",
+        enhancementLevel: 0,
+        enhancementRank: null,
+        quality: null,
+        lampLines: null,
+        enchantments: null,
+        imprint: null,
+        skills: null,
+        runes: null,
+        seller: { id: 0, ingameName: LOCAL_DUMMY_USER.ingameName, reputationScore: 4.5 },
+        lastBidder: null,
+        lastBidderId: null,
+        bidCount: 0,
+        marketSummary: { count: 0, averagePrice: "1000", minPrice: "1000", maxPrice: "1000", latestPrice: "1000" },
+      };
+      localDevCreatedAuctions.unshift(row);
+      return row;
+    }
     if (path.includes("/read") || path.includes("/clear") || method === "DELETE" || method === "PATCH" || method === "POST") return { ok: true, id: 9999 };
   }
 
@@ -661,9 +698,9 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
     const itemId = Number(path.split("/").pop());
     return marketAnalysisFor(itemId);
   }
-  if (path === "/api/auctions") return LOCAL_DUMMY_AUCTIONS;
-  if (path === "/api/auctions/my-auctions") return LOCAL_DUMMY_AUCTIONS.filter((auction) => auction.sellerId === 0);
-  if (path === "/api/auctions/my-bids") return LOCAL_DUMMY_AUCTIONS.filter((auction) => auction.lastBidderId === 0).map((auction) => ({ ...auction, myBidAmount: auction.currentPrice, isHighestBidder: true, chatRoom: LOCAL_DUMMY_CHAT_ROOMS[0] }));
+  if (path === "/api/auctions") return getLocalDummyAuctionList();
+  if (path === "/api/auctions/my-auctions") return getLocalDummyAuctionList().filter((auction) => auction.sellerId === 0);
+  if (path === "/api/auctions/my-bids") return getLocalDummyAuctionList().filter((auction) => auction.lastBidderId === 0).map((auction) => ({ ...auction, myBidAmount: auction.currentPrice, isHighestBidder: true, chatRoom: LOCAL_DUMMY_CHAT_ROOMS[0] }));
   if (path.endsWith("/comments")) {
     const parts = path.split("/");
     const auctionId = Number(parts[parts.length - 2]);
@@ -671,7 +708,7 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
   }
   if (path.startsWith("/api/auctions/")) {
     const auctionId = Number(path.split("/").pop());
-    return LOCAL_DUMMY_AUCTIONS.find((auction) => auction.id === auctionId) || LOCAL_DUMMY_AUCTIONS[0];
+    return getLocalDummyAuctionList().find((auction) => auction.id === auctionId) || LOCAL_DUMMY_AUCTIONS[0];
   }
   if (path === "/api/notifications") return LOCAL_DUMMY_NOTIFICATIONS;
   if (path === "/api/posts") {

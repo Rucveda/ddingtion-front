@@ -76,21 +76,41 @@ export function useAuctionList(isActive: boolean) {
     }
   }, []);
 
+  const fetchAuctions = useCallback(async () => {
+    try {
+      const data = await request("/api/auctions");
+      if (Array.isArray(data)) {
+        const now = new Date();
+        setAuctions(
+          data.filter((a: Auction) => a.status === "ACTIVE" && new Date(a.endTime) > now),
+        );
+      }
+    } catch (err) {
+      console.error("경매 목록 로드 실패:", err);
+      setAuctions([]);
+    }
+  }, []);
+
+  /** 탭 진입·등록 후 복귀 시 목록을 다시 불러옵니다 (최초 마운트만 fetch 하면 새 경매가 안 보임). */
   useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        const data = await request("/api/auctions");
-        if (Array.isArray(data)) {
-          const now = new Date();
-          setAuctions(data.filter((a: Auction) => a.status === "ACTIVE" && new Date(a.endTime) > now));
-        }
-      } catch (err) {
-        console.error("경매 목록 로드 실패:", err);
-        setAuctions([]);
+    if (!isActive) return;
+    void fetchAuctions();
+  }, [isActive, fetchAuctions]);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void fetchAuctions();
       }
     };
-    fetchAuctions();
-  }, []);
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isActive, fetchAuctions]);
 
   const filteredAuctions = useMemo(() => {
     return auctions.filter((a) => {
@@ -305,7 +325,9 @@ export function useAuctionList(isActive: boolean) {
   };
 
   return {
+    auctions,
     searchQuery,
+    fetchAuctions,
     setSearchQuery,
     activeFilters,
     setActiveFilters,
