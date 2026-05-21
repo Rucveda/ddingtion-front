@@ -43,6 +43,7 @@ type MyPageAuction = SaleTimestampFields & {
   id: number;
   sellerId: number;
   status: string;
+  relistedAt?: string | null;
   item: MyPageAuctionItem;
   currentPrice: string | number;
   marketReflected?: boolean;
@@ -310,6 +311,21 @@ export default function MyPage() {
     };
     fetchAllData();
   }, [router]);
+
+  useEffect(() => {
+    if (!user) return;
+    const refetchOnReturn = () => {
+      if (document.visibilityState === "visible") {
+        void refreshTradeLists();
+      }
+    };
+    window.addEventListener("focus", refetchOnReturn);
+    document.addEventListener("visibilitychange", refetchOnReturn);
+    return () => {
+      window.removeEventListener("focus", refetchOnReturn);
+      document.removeEventListener("visibilitychange", refetchOnReturn);
+    };
+  }, [user, refreshTradeLists]);
 
   useEffect(() => {
     const onTradeUpdated = () => {
@@ -671,7 +687,7 @@ export default function MyPage() {
                   paginatedSales.map((auction) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
-                    const canRelist = auction.status === "EXPIRED";
+                    const canRelist = auction.status === "EXPIRED" && !auction.relistedAt;
                     const canRevokeCancel = auction.status === "CANCEL_PENDING";
                     return (
                     <div key={auction.id} className="group relative bg-white/[0.02] border border-white/5 p-4 rounded-[22px] flex items-center justify-between hover:bg-white/[0.04] transition-all">
@@ -694,6 +710,9 @@ export default function MyPage() {
                           )}
                           {canRevokeCancel && (
                             <p className="mt-1 text-[11px] font-semibold text-amber-300/80">5분 내 철회하면 경매를 재개할 수 있습니다.</p>
+                          )}
+                          {auction.status === "EXPIRED" && auction.relistedAt && (
+                            <p className="mt-1 text-[11px] font-semibold text-zinc-500">이미 새 경매로 다시 등록되었습니다.</p>
                           )}
                         </div>
                       </div>

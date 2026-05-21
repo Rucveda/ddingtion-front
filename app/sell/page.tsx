@@ -169,6 +169,11 @@ export default function SellItem() {
           alert("만료되었거나 유찰된 경매만 다시 등록할 수 있습니다.");
           return;
         }
+        if (auction.relistedAt) {
+          alert("이미 다시 등록된 경매입니다.");
+          router.replace("/mypage");
+          return;
+        }
         const item = dbItems.find((candidate) => candidate.id === Number(auction.itemId)) || auction.item;
         if (!item) return;
         setRelistSourceId(sourceId);
@@ -272,6 +277,9 @@ export default function SellItem() {
           buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null,
         }),
       });
+      if (relistSourceId && typeof window !== "undefined") {
+        window.dispatchEvent(new Event("ddingtion_trade_updated"));
+      }
       router.replace(relistSourceId ? "/mypage" : "/?tab=AUCTION");
     } catch (error) { 
       console.error(error); 
