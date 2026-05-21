@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 
 const NOTICE_CACHE_KEY = "ddingtion_latest_notice_cache";
 const NOTICE_CACHE_TTL_MS = 5 * 60 * 1000;

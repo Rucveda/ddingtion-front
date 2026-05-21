@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { API_BASE_URL } from "@/utils/runtimeConfig";
+import { API_BASE_URL } from "@/lib/client/runtimeConfig";
 import {
   WILD_BASE,
   WILD_SPECIAL,
@@ -13,7 +13,7 @@ import {
   RPG_MAT_LIST,
   RPG_WEAPON_INFO,
   RPG_SKILL_SYSTEM
-} from "./marketData";
+} from "@/lib/domain/marketData";
 
 type PaginationState = {
   page: number;

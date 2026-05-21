@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { RPG_MAT_LIST } from "./marketData";
+import { RPG_MAT_LIST } from "@/lib/domain/marketData";
 
 export const DEFAULT_PRICES: Record<string, string> = {
   "LOW_LIFE": "11000", "MID_LIFE": "33500", "HIGH_LIFE": "66500",

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 
 export default function EtcTab({ selectedItem }: { selectedItem: any }) {
   const [analysis, setAnalysis] = useState<any>(null);

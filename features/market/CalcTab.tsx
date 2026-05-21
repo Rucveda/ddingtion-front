@@ -5,24 +5,23 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ISLAND_ENHANCE_TABLE,
   RPG_ENHANCE_DATA,
-  RPG_MAT_LIST,
   RUNE_GRADES,
   RUNE_TYPES,
   RPG_SKILL_SYSTEM,
   RPG_SKILL_COMMON_RATES,
   SKILL_SLOT_SEAL_COSTS,
   RPG_WEAPON_INFO
-} from "./marketData";
+} from "@/lib/domain/marketData";
 import { DEFAULT_PRICES, useMarket } from "./MarketContext";
 import {
-  getEnchantMaxLevel,
   getHighEnchantThreshold,
   getIslandImprintOptions,
   getVanillaEnchantMaxLevel,
+  getWildEnchantActiveBadgeClass,
   getWildEnchantOptions,
   resolveArchetype,
   sanitizeSelections,
-} from "@/lib/enhancementAllowlist";
+} from "@/lib/domain/enhancementAllowlist";
 
 export default function CalcTab({ selectedItem }: { selectedItem: any }) {
   const { prices, enchantPrices, imprintPrices, updateEnchantPrice, saveAllPrices, importPricePreset, resetAllPrices, updatePrice, setCalcResult } = useMarket();
@@ -277,7 +276,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
 
   const receiptData = useMemo(() => {
     if (!selectedItem) return { items: [], total: 0 };
-    let items: any[] = [];
+    const items: { name: string; subText: string; cost: number }[] = [];
     let cumulative = 0;
 
     if (category === "WILD") {
@@ -624,7 +623,7 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
                   <div className="border-l-2 border-blue-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-400">일반 인챈트</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                     {wildEnchantOptions.base.map(([name, max]) => (
-                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${filters.enchantments[name] ? getWildEnchantActiveBadgeClass(name, filters.enchantments[name]) : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                         {name} {filters.enchantments[name] && <span className="bg-white/20 px-1.5 py-0.5 rounded ml-1 text-[9px]">Lv.{filters.enchantments[name]}</span>}
                       </button>
                     ))}

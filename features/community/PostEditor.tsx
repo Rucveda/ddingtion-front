@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DEFAULT_CATEGORY_GUIDES,
   getPostCategoryLabel,
   POST_FILTER_OPTIONS,
   WRITABLE_POST_CATEGORIES,
-} from "@/utils/postCategories";
+} from "@/lib/domain/postCategories";
 
 export default function PostEditor({ userRole, userDiscordLinked = false }: { userRole: string; userDiscordLinked?: boolean }) {
   const [posts, setPosts] = useState<any[]>([]);

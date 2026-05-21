@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 import { SimpleTopBar, SiteBackground } from "@/components/SiteChrome";
 import {
   clearAuthSession,
@@ -13,7 +13,7 @@ import {
   getSavedLoginId,
   setAutoLoginEnabled,
   setRememberLoginId,
-} from "@/utils/authPreferences";
+} from "@/lib/auth/authPreferences";
 
 export default function LoginPage() {
   const [loginId, setLoginId] = useState("");

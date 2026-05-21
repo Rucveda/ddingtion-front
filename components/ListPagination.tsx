@@ -13,25 +13,26 @@ export default function ListPagination({
   onPageChange,
   className = "",
 }: ListPaginationProps) {
-  if (totalPages <= 1) return null;
+  const safeTotal = Math.max(1, totalPages);
+  const safePage = Math.min(Math.max(1, page), safeTotal);
 
   return (
-    <div className={`flex items-center justify-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`}>
       <button
         type="button"
-        disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
+        disabled={safePage <= 1}
+        onClick={() => onPageChange(safePage - 1)}
         className="site-btn site-btn-secondary site-btn-compact disabled:opacity-40"
       >
         이전
       </button>
-      <span className="text-xs font-semibold text-zinc-400 tabular-nums">
-        {page} / {totalPages}
+      <span className="min-w-[3.5rem] text-center text-xs font-semibold text-zinc-400 tabular-nums">
+        {safePage} / {safeTotal}
       </span>
       <button
         type="button"
-        disabled={page >= totalPages}
-        onClick={() => onPageChange(page + 1)}
+        disabled={safePage >= safeTotal}
+        onClick={() => onPageChange(safePage + 1)}
         className="site-btn site-btn-secondary site-btn-compact disabled:opacity-40"
       >
         다음

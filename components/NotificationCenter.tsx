@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { request } from "@/utils/api"; 
+import { request } from "@/lib/client/api"; 
 import { io } from "socket.io-client";
-import { SOCKET_URL } from "@/utils/runtimeConfig";
-import { isLocalDev } from "@/utils/devMode";
-import { ensureLocalDummySession } from "@/utils/localDummyData";
-import { subscribeSessionIdle } from "@/utils/authPreferences";
+import { SOCKET_URL } from "@/lib/client/runtimeConfig";
+import { isLocalDev } from "@/dev/devMode";
+import { ensureLocalDummySession } from "@/dev/localDummyData";
+import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState<any[]>([]);

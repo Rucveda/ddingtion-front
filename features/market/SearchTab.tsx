@@ -1,20 +1,21 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   RPG_WEAPON_INFO,
   RUNE_GRADES, 
   RUNE_TYPES,
   RPG_SKILL_SYSTEM
-} from "./marketData";
+} from "@/lib/domain/marketData";
 import {
   getIslandImprintOptions,
+  getWildEnchantActiveBadgeClass,
   getWildEnchantOptions,
   resolveArchetype,
   sanitizeSelections,
-} from "@/lib/enhancementAllowlist";
+} from "@/lib/domain/enhancementAllowlist";
 import { useMarket } from "./MarketContext";
 
 export default function SearchTab({ selectedItem }: { selectedItem: any }) {
@@ -281,7 +282,7 @@ export default function SearchTab({ selectedItem }: { selectedItem: any }) {
                   <div className="border-l-2 border-blue-500 pl-3 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-400">인챈트 구성</div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                     {wildEnchantOptions.base.map(([name, max]) => (
-                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                      <button key={name} onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }} className={`min-h-[34px] px-2.5 py-1.5 rounded-lg border transition-all flex justify-between items-center ${filters.enchantments[name] ? getWildEnchantActiveBadgeClass(name, filters.enchantments[name]) : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                         <span className="font-semibold text-[10px]">{name}</span>
                         {filters.enchantments[name] && <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px] font-black">{filters.enchantments[name]}</span>}
                       </button>

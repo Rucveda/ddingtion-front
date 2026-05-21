@@ -2,20 +2,23 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { request } from "@/utils/api"; 
+import { request } from "@/lib/client/api"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
+import { isLocalDev } from "@/dev/devMode";
+import { ensureLocalDummySession } from "@/dev/localDummyData";
 
 import {
   buildLampLines,
   getIslandImprintOptions,
+  getWildEnchantActiveBadgeClass,
   getWildEnchantOptions,
   normalizeEnchantmentsMap,
   normalizeImprintsMap,
   parseLampLines,
   resolveArchetype,
   sanitizeSelections,
-} from "@/lib/enhancementAllowlist";
+} from "@/lib/domain/enhancementAllowlist";
 
 const RPG_SKILLS = ["리프시커", "바인크리프", "우드서지", "버던트메테오", "그로브클랩", "스틸임팩트", "헤비사이클론", "그랜드크러시", "오리진이지스", "팔라딘저지먼트", "에너지버스트", "브로드샷", "락온트리거", "펄스레이닝", "오버클럭프로토콜", "차지블로우", "스위프트샷", "컨비전스스플릿", "리니어레인", "세라핌디센트", "피어스폴", "스러스트러시", "플리커랜서", "프로스트드롭", "앱솔루트도미니온", "플래임슬래시", "리버스커터", "업리프트임팩트", "드래곤이그니션", "와이번어웨이크"];
 const RPG_SKILL_MAP: Record<string, string[]> = {
@@ -128,6 +131,10 @@ export default function SellItem() {
 
   const triggerHaptic = useCallback(() => {
     if (typeof window !== "undefined" && window.navigator?.vibrate) window.navigator.vibrate(10);
+  }, []);
+
+  useEffect(() => {
+    if (isLocalDev()) ensureLocalDummySession();
   }, []);
 
   useEffect(() => {
@@ -413,7 +420,7 @@ export default function SellItem() {
                   <div className="custom-scrollbar overflow-y-auto max-h-[470px] pr-2 space-y-6">
                     {category === "WILD" && (
                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-[5.5rem_1fr] gap-3 items-start">
                           <div className="space-y-2">
                             <div className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-[0.14em] border-l-2 border-emerald-500 pl-3">
                               품질
@@ -421,30 +428,33 @@ export default function SellItem() {
                             <input
                               type="number"
                               min={0}
-                              placeholder="현재 품질 수치"
+                              max={999}
+                              placeholder="0"
                               value={form.quality}
-                              onChange={(e) => setForm({ ...form, quality: e.target.value })}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-zinc-100 outline-none focus:border-emerald-500/40"
+                              onChange={(e) => setForm({ ...form, quality: e.target.value.replace(/[^0-9]/g, "").slice(0, 3) })}
+                              className="w-full max-w-[5.5rem] bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] font-mono font-semibold text-zinc-100 outline-none focus:border-emerald-500/40"
                             />
                           </div>
-                          <div className="space-y-2 sm:col-span-1">
+                          <div className="space-y-2 min-w-0">
                             <div className="text-[10px] font-extrabold text-amber-400 uppercase tracking-[0.14em] border-l-2 border-amber-500 pl-3">
-                              램프 옵션 (2줄)
+                              램프 옵션
                             </div>
-                            <input
-                              type="text"
-                              placeholder="램프 1번째 줄"
-                              value={form.lampLine1}
-                              onChange={(e) => setForm({ ...form, lampLine1: e.target.value })}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 outline-none focus:border-amber-500/40"
-                            />
-                            <input
-                              type="text"
-                              placeholder="램프 2번째 줄"
-                              value={form.lampLine2}
-                              onChange={(e) => setForm({ ...form, lampLine2: e.target.value })}
-                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-zinc-100 outline-none focus:border-amber-500/40"
-                            />
+                            <div className="space-y-1.5">
+                              <input
+                                type="text"
+                                placeholder="램프 1번째 줄"
+                                value={form.lampLine1}
+                                onChange={(e) => setForm({ ...form, lampLine1: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-zinc-100 outline-none focus:border-amber-500/40"
+                              />
+                              <input
+                                type="text"
+                                placeholder="램프 2번째 줄"
+                                value={form.lampLine2}
+                                onChange={(e) => setForm({ ...form, lampLine2: e.target.value })}
+                                className="w-full bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-zinc-100 outline-none focus:border-amber-500/40"
+                              />
+                            </div>
                           </div>
                         </div>
                         {equipmentArchetype === "wild_common" && (
@@ -460,7 +470,7 @@ export default function SellItem() {
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6 gap-1.5">
                               {wildEnchantOptions.base.map(([name, max]) => (
                                 <button key={name} type="button" onClick={() => toggleOption("enchantments", name, max)} onContextMenu={(e) => { e.preventDefault(); toggleOption("enchantments", name, max, -1); }}
-                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name] ? "bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-600/10" : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
+                                  className={`min-h-[34px] flex items-center justify-between px-2.5 py-1.5 rounded-lg border transition-all ${form.enchantments[name] ? getWildEnchantActiveBadgeClass(name, form.enchantments[name]) : "bg-white/[0.035] border-white/5 text-zinc-500 hover:bg-white/10 hover:text-zinc-200"}`}>
                                   <span className="font-semibold text-[10px]">{name}</span>
                                   {form.enchantments[name] && <span className="font-extrabold text-[9px] bg-white/20 px-1.5 py-0.5 rounded-md">{form.enchantments[name]}</span>}
                                 </button>

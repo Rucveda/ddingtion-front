@@ -2,14 +2,14 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { request } from "@/utils/api"; 
+import { request } from "@/lib/client/api"; 
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { SOCKET_URL } from "@/utils/runtimeConfig";
+import { SOCKET_URL } from "@/lib/client/runtimeConfig";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
-import { isLocalDev } from "@/utils/devMode";
-import { ensureLocalDummySession } from "@/utils/localDummyData";
-import { subscribeSessionIdle } from "@/utils/authPreferences";
+import { isLocalDev } from "@/dev/devMode";
+import { ensureLocalDummySession } from "@/dev/localDummyData";
+import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
 
 // --- Interfaces ---
 interface Auction { 

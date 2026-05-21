@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { request } from "@/utils/api";
+import { request } from "@/lib/client/api";
 import ReviewModal from "./ReviewModal";
-import { SOCKET_URL } from "@/utils/runtimeConfig";
-import { isLocalDev } from "@/utils/devMode";
-import { ensureLocalDummySession } from "@/utils/localDummyData";
-import { subscribeSessionIdle } from "@/utils/authPreferences";
+import { SOCKET_URL } from "@/lib/client/runtimeConfig";
+import { isLocalDev } from "@/dev/devMode";
+import { ensureLocalDummySession } from "@/dev/localDummyData";
+import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
 
 // 동일 탭 이벤트 수신을 위한 키 (AuctionDetail과 동일해야 함)
 const CHAT_OPEN_EVENT = "ddingtion_chat_open";
@@ -120,8 +120,8 @@ export default function ChatWidget() {
     try {
       const data = await request(`/api/chat/rooms/${roomId}/messages`);
       setMessages(Array.isArray(data) ? data : []);
-    } catch (error) { 
-      setMessages([]); 
+    } catch {
+      setMessages([]);
     }
   };
 
@@ -156,7 +156,7 @@ export default function ChatWidget() {
         setSelectedRoom(result);
         fetchRooms();
       }
-    } catch (err) { alert("관리자 연결 실패"); }
+    } catch { alert("관리자 연결 실패"); }
   };
 
   // 거래 확정: 양측이 모두 확인하면 거래가 완료되고 리뷰 단계로 넘어갑니다.
@@ -190,8 +190,8 @@ export default function ChatWidget() {
         setIsOpen(false);
         setShowReviewModal(true);
       }
-    } catch (e) { 
-      alert("거래 확정 처리 중 오류가 발생했습니다."); 
+    } catch {
+      alert("거래 확정 처리 중 오류가 발생했습니다.");
     }
   };
 

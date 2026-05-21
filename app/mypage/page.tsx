@@ -3,15 +3,92 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { request } from "@/utils/api"; 
+import Image from "next/image";
+import { request } from "@/lib/client/api"; 
 import { motion } from "framer-motion";
 import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrome";
 import ListPagination from "@/components/ListPagination";
+import { isLocalDev } from "@/dev/devMode";
+import { ensureLocalDummySession } from "@/dev/localDummyData";
 
 const SALES_PER_PAGE = 5;
-import { isLocalDev } from "@/utils/devMode";
+const BIDS_PER_PAGE = 5;
+const COMPLETED_SALES_PER_PAGE = 5;
 
-const LOCAL_DEV_USER = {
+type SaleTimestampFields = { completedAt?: string; updatedAt?: string; endTime?: string };
+
+type MyPageUser = {
+  id: number;
+  loginId?: string;
+  ingameName?: string;
+  role?: string;
+  reputationScore?: number;
+  discordLinked?: boolean;
+  discordVerificationRequired?: boolean;
+};
+
+type MyPageChatRoom = {
+  id?: number;
+  sellerConfirmed?: boolean;
+  buyerConfirmed?: boolean;
+};
+
+type MyPageAuctionItem = {
+  name: string;
+  category: string;
+  iconUrl?: string;
+};
+
+type MyPageAuction = SaleTimestampFields & {
+  id: number;
+  sellerId: number;
+  status: string;
+  item: MyPageAuctionItem;
+  currentPrice: string | number;
+  marketReflected?: boolean;
+  isHighestBidder?: boolean;
+  chatRoom?: MyPageChatRoom | null;
+};
+
+const toHttpsUrl = (url: string) => url.replace("http://", "https://");
+
+function AuctionItemIcon({ iconUrl, className }: { iconUrl?: string; className?: string }) {
+  if (!iconUrl) {
+    return <span className="text-2xl">📦</span>;
+  }
+  return (
+    <Image
+      src={toHttpsUrl(iconUrl)}
+      alt=""
+      width={48}
+      height={48}
+      unoptimized
+      className={className ?? "h-full w-full object-contain pixel-art"}
+    />
+  );
+}
+
+const getSaleCompletedAt = (auction: SaleTimestampFields) =>
+  auction.completedAt ?? auction.updatedAt ?? auction.endTime;
+
+const getSaleCompletedAtMs = (auction: SaleTimestampFields) => {
+  const raw = getSaleCompletedAt(auction);
+  return raw ? new Date(raw).getTime() : 0;
+};
+
+const formatSaleCompletedAt = (auction: SaleTimestampFields) => {
+  const raw = getSaleCompletedAt(auction);
+  if (!raw) return "일시 정보 없음";
+  return new Date(raw).toLocaleString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const LOCAL_DEV_USER: MyPageUser = {
   id: 0,
   loginId: "Steve",
   ingameName: "Steve",
@@ -36,7 +113,7 @@ const STATUS_UI: Record<string, { label: string; className: string }> = {
   EXPIRED: { label: "만료", className: "bg-zinc-500/10 text-zinc-400 border-zinc-500/20" },
 };
 
-const getStatusUI = (auction: any, userId: number) => {
+const getStatusUI = (auction: MyPageAuction, userId: number) => {
   if (auction.status === "PENDING_TRADE") {
     const room = auction.chatRoom;
     const isSeller = auction.sellerId === userId;
@@ -53,15 +130,17 @@ const getStatusUI = (auction: any, userId: number) => {
 };
 
 export default function MyPage() {
-  const [user, setUser] = useState<any>(() => (isLocalDev() ? LOCAL_DEV_USER : null));
-  const [myAuctions, setMyAuctions] = useState<any[]>([]);
-  const [myBidAuctions, setMyBidAuctions] = useState<any[]>([]);
+  const [user, setUser] = useState<MyPageUser | null>(() => (isLocalDev() ? LOCAL_DEV_USER : null));
+  const [myAuctions, setMyAuctions] = useState<MyPageAuction[]>([]);
+  const [myBidAuctions, setMyBidAuctions] = useState<MyPageAuction[]>([]);
   const [loading, setLoading] = useState(() => !isLocalDev());
   const [linkingDiscord, setLinkingDiscord] = useState(false);
   const [isMinecraftNameEditorOpen, setIsMinecraftNameEditorOpen] = useState(false);
   const [minecraftNameInput, setMinecraftNameInput] = useState("");
   const [savingMinecraftName, setSavingMinecraftName] = useState(false);
   const [salesPage, setSalesPage] = useState(1);
+  const [completedSalesPage, setCompletedSalesPage] = useState(1);
+  const [bidsPage, setBidsPage] = useState(1);
   const router = useRouter();
 
   const triggerHaptic = useCallback(() => {
@@ -82,17 +161,50 @@ export default function MyPage() {
     router.push(`/sell?relist=${auctionId}`);
   }, [router, triggerHaptic]);
 
-  /** 시세 기록이 삭제·무효된 완료 건은 목록에서 제외 (어드민 거래 기록 관리와 동기화) */
-  const visibleSales = useMemo(
-    () => myAuctions.filter((auction: any) => auction.status !== "COMPLETED" || auction.marketReflected),
+  /** 진행 중·거래 중 등 (완료 건은 판매완료 목록으로 분리) */
+  const ongoingSales = useMemo(
+    () => myAuctions.filter((auction) => auction.status !== "COMPLETED"),
     [myAuctions]
   );
 
-  const salesTotalPages = Math.max(1, Math.ceil(visibleSales.length / SALES_PER_PAGE));
+  /** 시세에 반영된 완료 건만 표시 (무효 처리된 거래는 제외) */
+  const completedSalesList = useMemo(
+    () =>
+      myAuctions
+        .filter((auction) => auction.status === "COMPLETED" && auction.marketReflected)
+        .sort((a, b) => getSaleCompletedAtMs(b) - getSaleCompletedAtMs(a)),
+    [myAuctions]
+  );
+
+  const salesTotalPages = Math.max(1, Math.ceil(ongoingSales.length / SALES_PER_PAGE));
   const paginatedSales = useMemo(() => {
     const start = (salesPage - 1) * SALES_PER_PAGE;
-    return visibleSales.slice(start, start + SALES_PER_PAGE);
-  }, [visibleSales, salesPage]);
+    return ongoingSales.slice(start, start + SALES_PER_PAGE);
+  }, [ongoingSales, salesPage]);
+
+  const completedSalesTotalPages = Math.max(1, Math.ceil(completedSalesList.length / COMPLETED_SALES_PER_PAGE));
+  const paginatedCompletedSales = useMemo(() => {
+    const start = (completedSalesPage - 1) * COMPLETED_SALES_PER_PAGE;
+    return completedSalesList.slice(start, start + COMPLETED_SALES_PER_PAGE);
+  }, [completedSalesList, completedSalesPage]);
+
+  const visibleBidAuctions = useMemo(
+    () => myBidAuctions.filter((auction) => {
+      if (auction.status === "COMPLETED") return Boolean(auction.marketReflected);
+      return (
+        auction.status === "ACTIVE" ||
+        auction.status === "DISPUTED" ||
+        (auction.status === "PENDING_TRADE" && auction.isHighestBidder)
+      );
+    }),
+    [myBidAuctions]
+  );
+
+  const bidsTotalPages = Math.max(1, Math.ceil(visibleBidAuctions.length / BIDS_PER_PAGE));
+  const paginatedBids = useMemo(() => {
+    const start = (bidsPage - 1) * BIDS_PER_PAGE;
+    return visibleBidAuctions.slice(start, start + BIDS_PER_PAGE);
+  }, [visibleBidAuctions, bidsPage]);
 
   useEffect(() => {
     if (salesPage > salesTotalPages) {
@@ -100,9 +212,22 @@ export default function MyPage() {
     }
   }, [salesPage, salesTotalPages]);
 
+  useEffect(() => {
+    if (bidsPage > bidsTotalPages) {
+      setBidsPage(bidsTotalPages);
+    }
+  }, [bidsPage, bidsTotalPages]);
+
+  useEffect(() => {
+    if (completedSalesPage > completedSalesTotalPages) {
+      setCompletedSalesPage(completedSalesTotalPages);
+    }
+  }, [completedSalesPage, completedSalesTotalPages]);
+
   const refreshTradeLists = useCallback(async () => {
-    if (isLocalDev() || !user?.id) return;
+    if (!user) return;
     try {
+      if (isLocalDev()) ensureLocalDummySession();
       const [auctionData, bidData] = await Promise.all([
         request("/api/auctions/my-auctions"),
         request("/api/auctions/my-bids"),
@@ -112,7 +237,7 @@ export default function MyPage() {
     } catch (err) {
       console.error("거래 목록 갱신 실패:", err);
     }
-  }, [user?.id]);
+  }, [user]);
 
   const handleCancelRevoke = useCallback(async (auctionId: number) => {
     triggerHaptic();
@@ -132,20 +257,31 @@ export default function MyPage() {
     const fetchAllData = async () => {
       const storedUser = localStorage.getItem("user");
       if (isLocalDev()) {
+        ensureLocalDummySession();
         let localUser = LOCAL_DEV_USER;
         if (storedUser) {
           try {
-            localUser = JSON.parse(storedUser);
+            localUser = JSON.parse(storedUser) as MyPageUser;
           } catch {
             localStorage.removeItem("user");
           }
         }
-        queueMicrotask(() => {
+        try {
+          const [auctionData, bidData] = await Promise.all([
+            request("/api/auctions/my-auctions"),
+            request("/api/auctions/my-bids"),
+          ]);
+          setUser(localUser);
+          setMyAuctions(Array.isArray(auctionData) ? auctionData : []);
+          setMyBidAuctions(Array.isArray(bidData) ? bidData : []);
+        } catch (err) {
+          console.error("로컬 더미 거래 목록 로드 실패:", err);
           setUser(localUser);
           setMyAuctions([]);
           setMyBidAuctions([]);
+        } finally {
           setLoading(false);
-        });
+        }
         return;
       }
 
@@ -232,7 +368,7 @@ export default function MyPage() {
 
   useEffect(() => {
     if (user) setMinecraftNameInput(user.loginId || user.ingameName || "");
-  }, [user?.loginId, user?.ingameName]);
+  }, [user]);
 
   const handleDiscordLink = useCallback(async () => {
     setLinkingDiscord(true);
@@ -243,14 +379,15 @@ export default function MyPage() {
         return;
       }
       alert("인증 주소를 받지 못했습니다.");
-    } catch (e: any) {
-      alert(e?.message || "디스코드 연동을 시작할 수 없습니다.");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "디스코드 연동을 시작할 수 없습니다.");
     } finally {
       setLinkingDiscord(false);
     }
   }, []);
 
   const handleMinecraftNameUpdate = useCallback(async () => {
+    if (!user) return;
     const minecraftName = minecraftNameInput.trim();
     if (!minecraftName || minecraftName === (user.loginId || user.ingameName)) return;
     if (!/^[A-Za-z0-9_]{3,16}$/.test(minecraftName)) {
@@ -301,24 +438,16 @@ export default function MyPage() {
     : { label: "인증 필요", color: "text-indigo-300", bg: "bg-indigo-500/10", border: "border-indigo-500/20" };
   const minecraftName = user.loginId || user.ingameName;
   const minecraftHeadUrl = getMinecraftHeadUrl(minecraftName);
-  const activeSales = myAuctions.filter((auction: any) => auction.status === "ACTIVE");
+  const activeSales = myAuctions.filter((auction) => auction.status === "ACTIVE");
   const completedSales = myAuctions.filter(
-    (auction: any) => auction.status === "COMPLETED" && auction.marketReflected
+    (auction) => auction.status === "COMPLETED" && auction.marketReflected
   );
-  const pendingSales = myAuctions.filter((auction: any) => auction.status === "PENDING_TRADE");
-  const salesNeedConfirm = pendingSales.filter((auction: any) => !auction.chatRoom?.sellerConfirmed);
-  const activeBidAuctions = myBidAuctions.filter((auction: any) => auction.status === "ACTIVE");
-  const pendingWonAuctions = myBidAuctions.filter((auction: any) => auction.status === "PENDING_TRADE" && auction.isHighestBidder);
-  const bidsNeedConfirm = pendingWonAuctions.filter((auction: any) => !auction.chatRoom?.buyerConfirmed);
-  const disputedCount = [...myAuctions, ...myBidAuctions].filter((auction: any) => auction.status === "DISPUTED").length;
-  const visibleBidAuctions = myBidAuctions.filter((auction: any) => {
-    if (auction.status === "COMPLETED") return Boolean(auction.marketReflected);
-    return (
-      auction.status === "ACTIVE" ||
-      auction.status === "DISPUTED" ||
-      (auction.status === "PENDING_TRADE" && auction.isHighestBidder)
-    );
-  });
+  const pendingSales = myAuctions.filter((auction) => auction.status === "PENDING_TRADE");
+  const salesNeedConfirm = pendingSales.filter((auction) => !auction.chatRoom?.sellerConfirmed);
+  const activeBidAuctions = myBidAuctions.filter((auction) => auction.status === "ACTIVE");
+  const pendingWonAuctions = myBidAuctions.filter((auction) => auction.status === "PENDING_TRADE" && auction.isHighestBidder);
+  const bidsNeedConfirm = pendingWonAuctions.filter((auction) => !auction.chatRoom?.buyerConfirmed);
+  const disputedCount = [...myAuctions, ...myBidAuctions].filter((auction) => auction.status === "DISPUTED").length;
   const actionNeededCount = salesNeedConfirm.length + bidsNeedConfirm.length + disputedCount;
 
   return (
@@ -334,9 +463,12 @@ export default function MyPage() {
               <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-6 min-w-0">
                 <div className="w-20 h-20 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center relative shrink-0 overflow-hidden">
                    {minecraftHeadUrl ? (
-                    <img
+                    <Image
                       src={minecraftHeadUrl}
                       alt={`${minecraftName} Minecraft head`}
+                      width={80}
+                      height={80}
+                      unoptimized
                       className="h-full w-full object-cover pixel-art"
                     />
                    ) : (
@@ -486,7 +618,7 @@ export default function MyPage() {
                     onClick={() => {
                       triggerHaptic();
                       setIsMinecraftNameEditorOpen((prev) => !prev);
-                      setMinecraftNameInput(minecraftName);
+                      setMinecraftNameInput(minecraftName ?? "");
                     }}
                     className="site-btn site-btn-secondary site-btn-compact shrink-0"
                   >
@@ -522,14 +654,15 @@ export default function MyPage() {
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            <div className="space-y-8">
             <section className="space-y-3">
               <h2 className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] ml-1 flex items-center gap-3 py-3">
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 판매 목록
               </h2>
               
               <div className="space-y-3">
-                {visibleSales.length > 0 ? (
-                  paginatedSales.map((auction: any) => {
+                {ongoingSales.length > 0 ? (
+                  paginatedSales.map((auction) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && !auction.chatRoom?.sellerConfirmed;
                     const canRelist = auction.status === "EXPIRED";
@@ -538,11 +671,10 @@ export default function MyPage() {
                     <div key={auction.id} className="group relative bg-white/[0.02] border border-white/5 p-4 rounded-[22px] flex items-center justify-between hover:bg-white/[0.04] transition-all">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-12 h-12 bg-zinc-900/50 rounded-xl flex items-center justify-center p-2.5 border border-white/5 shrink-0 overflow-hidden relative">
-                          {auction.item.iconUrl ? (
-                            <img src={auction.item.iconUrl.replace("http://", "https://")} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
-                          ) : (
-                            <span className="text-2xl">📦</span>
-                          )}
+                          <AuctionItemIcon
+                            iconUrl={auction.item.iconUrl}
+                            className="h-full w-full object-contain pixel-art transition-transform group-hover:scale-110"
+                          />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -568,7 +700,7 @@ export default function MyPage() {
                         {auction.chatRoom?.id && auction.status === "PENDING_TRADE" && (
                           <button
                             type="button"
-                            onClick={() => openTradeChat(auction.chatRoom.id)}
+                            onClick={() => openTradeChat(auction.chatRoom?.id)}
                             className="h-9 px-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-[10px] font-extrabold text-yellow-200 hover:bg-yellow-500/15 transition-all"
                           >
                             채팅
@@ -609,7 +741,7 @@ export default function MyPage() {
                     <p className="mt-2 text-xs font-medium text-zinc-600">아이템을 등록하면 진행 및 거래 확정 상태를 이곳에서 관리할 수 있습니다.</p>
                   </div>
                 )}
-                {visibleSales.length > 0 && (
+                {ongoingSales.length > 0 && (
                   <ListPagination
                     page={salesPage}
                     totalPages={salesTotalPages}
@@ -622,23 +754,103 @@ export default function MyPage() {
 
             <section className="space-y-3">
               <h2 className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] ml-1 flex items-center gap-3 py-3">
+                <div className="w-1 h-3 bg-emerald-500 rounded-full" /> 판매완료
+              </h2>
+
+              <div className="space-y-3">
+                {completedSalesList.length > 0 ? (
+                  paginatedCompletedSales.map((auction) => (
+                    <div
+                      key={auction.id}
+                      className="group relative flex items-center justify-between rounded-[22px] border border-white/5 bg-white/[0.02] p-4 transition-all hover:bg-white/[0.04]"
+                    >
+                      <div className="flex min-w-0 items-center gap-4">
+                        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/5 bg-zinc-900/50 p-2.5">
+                          <AuctionItemIcon
+                            iconUrl={auction.item.iconUrl}
+                            className="h-full w-full object-contain pixel-art transition-transform group-hover:scale-110"
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-emerald-400/90">
+                              {auction.item.category}
+                            </span>
+                            <div className="h-1 w-1 rounded-full bg-zinc-800" />
+                            <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-extrabold tracking-[0.08em] text-emerald-300">
+                              거래 완료
+                            </span>
+                          </div>
+                          <h3 className="truncate text-sm font-semibold text-zinc-200 transition-colors group-hover:text-white">
+                            {auction.item.name}
+                          </h3>
+                          <p className="mt-1 text-[11px] font-medium text-zinc-500">
+                            완료 {formatSaleCompletedAt(auction)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-4">
+                        <div className="text-right">
+                          <p className="mb-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-zinc-600">
+                            낙찰가
+                          </p>
+                          <p className="font-mono text-sm font-bold tracking-tight text-yellow-400">
+                            {Number(auction.currentPrice).toLocaleString()} G
+                          </p>
+                        </div>
+                        <Link
+                          href={`/auction/${auction.id}`}
+                          onClick={triggerHaptic}
+                          aria-label="경매 상세 보기"
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-lg font-black leading-none text-zinc-300 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-white"
+                        >
+                          &gt;
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[28px] border border-dashed border-white/5 py-14 text-center">
+                    <p className="text-xs font-semibold text-zinc-400">완료된 판매 내역이 없습니다</p>
+                    <p className="mt-2 text-xs font-medium text-zinc-600">
+                      거래가 확정되고 시세에 반영된 판매만 이곳에 표시됩니다.
+                    </p>
+                  </div>
+                )}
+                {completedSalesList.length > 0 && (
+                  <ListPagination
+                    page={completedSalesPage}
+                    totalPages={completedSalesTotalPages}
+                    onPageChange={(next) => {
+                      triggerHaptic();
+                      setCompletedSalesPage(next);
+                    }}
+                    className="pt-2"
+                  />
+                )}
+              </div>
+            </section>
+            </div>
+
+            <section className="space-y-3">
+              <h2 className="text-[11px] font-extrabold text-zinc-500 uppercase tracking-[0.14em] ml-1 flex items-center gap-3 py-3">
                 <div className="w-1 h-3 bg-yellow-500 rounded-full" /> 입찰 목록
               </h2>
 
               <div className="space-y-3">
                 {visibleBidAuctions.length > 0 ? (
-                  visibleBidAuctions.map((auction: any) => {
+                  paginatedBids.map((auction) => {
                     const statusUI = getStatusUI(auction, user.id);
                     const needsConfirm = auction.status === "PENDING_TRADE" && auction.isHighestBidder && !auction.chatRoom?.buyerConfirmed;
                     return (
                     <div key={auction.id} className="group relative bg-white/[0.02] border border-white/5 p-4 rounded-[22px] flex items-center justify-between hover:bg-white/[0.04] transition-all">
                       <div className="flex items-center gap-4 min-w-0">
                         <div className="w-12 h-12 bg-zinc-900/50 rounded-xl flex items-center justify-center p-2.5 border border-white/5 shrink-0 overflow-hidden relative">
-                          {auction.item.iconUrl ? (
-                            <img src={auction.item.iconUrl.replace("http://", "https://")} className="w-full h-full object-contain pixel-art group-hover:scale-110 transition-transform" alt="" />
-                          ) : (
-                            <span className="text-2xl">📦</span>
-                          )}
+                          <AuctionItemIcon
+                            iconUrl={auction.item.iconUrl}
+                            className="h-full w-full object-contain pixel-art transition-transform group-hover:scale-110"
+                          />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -661,7 +873,7 @@ export default function MyPage() {
                         {auction.chatRoom?.id && auction.status === "PENDING_TRADE" && (
                           <button
                             type="button"
-                            onClick={() => openTradeChat(auction.chatRoom.id)}
+                            onClick={() => openTradeChat(auction.chatRoom?.id)}
                             className="h-9 px-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 text-[10px] font-extrabold text-yellow-200 hover:bg-yellow-500/15 transition-all"
                           >
                             채팅
@@ -678,6 +890,17 @@ export default function MyPage() {
                     <p className="text-xs font-semibold text-zinc-400">입찰 중인 경매가 없습니다</p>
                     <p className="mt-2 text-xs font-medium text-zinc-600">입찰한 물품은 이곳에서 현재가를 추적할 수 있습니다.</p>
                   </div>
+                )}
+                {visibleBidAuctions.length > 0 && (
+                  <ListPagination
+                    page={bidsPage}
+                    totalPages={bidsTotalPages}
+                    onPageChange={(next) => {
+                      triggerHaptic();
+                      setBidsPage(next);
+                    }}
+                    className="pt-2"
+                  />
                 )}
               </div>
             </section>
