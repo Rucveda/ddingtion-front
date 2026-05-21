@@ -367,7 +367,7 @@ export default function MyPage() {
   }, []);
 
   useEffect(() => {
-    if (user) setMinecraftNameInput(user.loginId || user.ingameName || "");
+    if (user) setMinecraftNameInput(user.ingameName || "");
   }, [user]);
 
   const handleDiscordLink = useCallback(async () => {
@@ -389,7 +389,7 @@ export default function MyPage() {
   const handleMinecraftNameUpdate = useCallback(async () => {
     if (!user) return;
     const minecraftName = minecraftNameInput.trim();
-    if (!minecraftName || minecraftName === (user.loginId || user.ingameName)) return;
+    if (!minecraftName || minecraftName === user.ingameName) return;
     if (!/^[A-Za-z0-9_]{3,16}$/.test(minecraftName)) {
       alert("마인크래프트 닉네임은 영문, 숫자, _ 조합의 3~16자여야 합니다.");
       return;
@@ -398,7 +398,7 @@ export default function MyPage() {
     setSavingMinecraftName(true);
     try {
       if (isLocalDev()) {
-        const nextUser = { ...user, loginId: minecraftName, ingameName: minecraftName };
+        const nextUser = { ...user, ingameName: minecraftName };
         setUser(nextUser);
         localStorage.setItem("user", JSON.stringify(nextUser));
         return;
@@ -411,7 +411,7 @@ export default function MyPage() {
         setUser(updated);
         localStorage.setItem("user", JSON.stringify(updated));
         setIsMinecraftNameEditorOpen(false);
-        alert("마인크래프트 닉네임이 변경되었습니다. 다음 로그인부터 새 닉네임을 사용하세요.");
+        alert("표시 닉네임이 변경되었습니다. 로그인은 가입 아이디로 계속할 수 있습니다.");
       }
     } catch (error) {
       alert(error instanceof Error ? error.message : "마인크래프트 닉네임 변경에 실패했습니다.");
@@ -436,7 +436,8 @@ export default function MyPage() {
   const tradeStatus = user.discordLinked
     ? { label: "거래 가능", color: "text-emerald-300", bg: "bg-emerald-500/10", border: "border-emerald-500/20" }
     : { label: "인증 필요", color: "text-indigo-300", bg: "bg-indigo-500/10", border: "border-indigo-500/20" };
-  const minecraftName = user.loginId || user.ingameName;
+  const minecraftName = user.ingameName || user.loginId;
+  const loginIdLabel = user.loginId;
   const minecraftHeadUrl = getMinecraftHeadUrl(minecraftName);
   const activeSales = myAuctions.filter((auction) => auction.status === "ACTIVE");
   const completedSales = myAuctions.filter(
@@ -610,15 +611,16 @@ export default function MyPage() {
               <div className="rounded-2xl border border-white/5 bg-black/15 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">Minecraft ID</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">표시 닉네임</p>
                     <p className="mt-1 truncate text-xs font-semibold text-zinc-300">{minecraftName}</p>
+                    <p className="mt-1 truncate text-[10px] font-medium text-zinc-600">로그인 아이디: {loginIdLabel}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       triggerHaptic();
                       setIsMinecraftNameEditorOpen((prev) => !prev);
-                      setMinecraftNameInput(minecraftName ?? "");
+                      setMinecraftNameInput(user.ingameName || user.loginId || "");
                     }}
                     className="site-btn site-btn-secondary site-btn-compact shrink-0"
                   >
@@ -638,14 +640,18 @@ export default function MyPage() {
                       <button
                         type="button"
                         onClick={handleMinecraftNameUpdate}
-                        disabled={savingMinecraftName || !minecraftNameInput.trim() || minecraftNameInput.trim() === minecraftName}
+                        disabled={
+                          savingMinecraftName ||
+                          !minecraftNameInput.trim() ||
+                          minecraftNameInput.trim() === (user.ingameName || "")
+                        }
                         className="site-btn site-btn-primary site-btn-compact w-full"
                       >
                         {savingMinecraftName ? "저장 중..." : "변경 저장"}
                       </button>
                     </div>
                     <p className="mt-2 text-[10px] font-medium leading-relaxed text-zinc-600">
-                      로그인 ID와 표시 닉네임이 함께 변경됩니다.
+                      표시 닉네임만 변경됩니다. 로그인 아이디({loginIdLabel})는 그대로 유지됩니다.
                     </p>
                   </div>
                 )}
