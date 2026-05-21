@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import PostEditor from "@/features/community/PostEditor";
 import MarketTab from "@/features/market/MarketPage";
@@ -11,7 +11,12 @@ import { DdingtionLogo, SiteBackground, SiteFooter } from "@/components/SiteChro
 import { clearAuthSession } from "@/lib/auth/authPreferences";
 import { isLocalDev } from "@/dev/devMode";
 import { ensureLocalDummySession } from "@/dev/localDummyData";
-import { resolveHomeTab, type HomeTabType, type HomeUser } from "@/features/home/auctionListTypes";
+import {
+  homeTabHref,
+  resolveHomeTab,
+  type HomeTabType,
+  type HomeUser,
+} from "@/features/home/auctionListTypes";
 import { triggerHaptic } from "@/features/home/auctionListUtils";
 import { HomeGlobalStyles } from "@/features/home/HomeGlobalStyles";
 
@@ -28,8 +33,10 @@ const AuctionListTab = dynamic(
 );
 
 function HomeComponent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = resolveHomeTab(searchParams.get("tab"));
+  const showHomeSubnav = activeTab === "CALCULATOR" || activeTab === "AUCTION";
   const [hasMounted, setHasMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -55,8 +62,7 @@ function HomeComponent() {
 
   const setHomeTab = (tab: HomeTabType) => {
     triggerHaptic();
-    const href = tab === "HOME" ? "/" : `/?tab=${tab}`;
-    window.location.href = href;
+    router.push(homeTabHref(tab), { scroll: false });
   };
 
   const handleLogout = () => {
@@ -71,7 +77,7 @@ function HomeComponent() {
       <SiteBackground variant="home" />
 
       <nav className="site-topbar z-[100]">
-        <div className={`max-w-7xl mx-auto px-4 sm:px-6 relative transition-[padding] duration-300 ${activeTab === "CALCULATOR" || activeTab === "AUCTION" ? "sm:pb-9 md:pb-10" : ""}`}>
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 sm:pb-9 md:pb-10">
           <div className="h-16 md:h-[4.5rem] flex justify-between items-center gap-3">
 <Link href="/" onClick={triggerHaptic} className="flex items-center group shrink-0">
               <DdingtionLogo />
@@ -82,7 +88,7 @@ function HomeComponent() {
                 <div className="relative">
                   <button
                     onClick={() => setHomeTab("COMMUNITY")}
-                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-all duration-300 ${activeTab === "COMMUNITY" ? "text-blue-500 md:scale-110" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-colors duration-200 ${activeTab === "COMMUNITY" ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     COMMUNITY
                   </button>
@@ -91,7 +97,7 @@ function HomeComponent() {
                 <div className="relative">
                   <button
                     onClick={() => setHomeTab("CALCULATOR")}
-                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-all duration-300 ${activeTab === "CALCULATOR" ? "text-blue-500 md:scale-110" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-colors duration-200 ${activeTab === "CALCULATOR" ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     CALCULATOR
                   </button>
@@ -99,10 +105,10 @@ function HomeComponent() {
                     {activeTab === "CALCULATOR" && (
                       <motion.div
                         key="calculator-subnav"
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.24, ease: "easeOut" }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                         className="absolute left-1/2 top-full mt-6 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-white/10 bg-black/35 p-1.5 shadow-xl backdrop-blur-xl whitespace-nowrap"
                       >
                         {([
@@ -134,7 +140,7 @@ function HomeComponent() {
                 <div className="relative">
                   <button
                     onClick={() => setHomeTab("AUCTION")}
-                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-all duration-300 ${activeTab === "AUCTION" ? "text-blue-500 md:scale-110" : "text-zinc-500 hover:text-zinc-300"}`}
+                    className={`shrink-0 text-[11px] font-extrabold uppercase tracking-[0.16em] transition-colors duration-200 ${activeTab === "AUCTION" ? "text-blue-500" : "text-zinc-500 hover:text-zinc-300"}`}
                   >
                     AUCTION
                   </button>
@@ -142,10 +148,10 @@ function HomeComponent() {
                     {activeTab === "AUCTION" && (
                       <motion.div
                         key="auction-subnav"
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{ duration: 0.24, ease: "easeOut" }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
                         className="absolute left-1/2 top-full mt-7 flex -translate-x-1/2 items-center gap-4 whitespace-nowrap"
                       >
                         <Link href="/sell" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500 hover:text-cyan-400 transition-all duration-200">LISTING</Link>
@@ -178,49 +184,41 @@ function HomeComponent() {
               <button
                 key={`mobile-${tab}`}
                 onClick={() => setHomeTab(tab)}
-                className={`text-[11px] font-extrabold uppercase tracking-[0.14em] transition-all duration-300 ${activeTab === tab ? "text-blue-500" : "text-zinc-400 hover:text-zinc-200"}`}
+                className={`text-[11px] font-extrabold uppercase tracking-[0.14em] transition-colors duration-200 ${activeTab === tab ? "text-blue-500" : "text-zinc-400 hover:text-zinc-200"}`}
               >
                 {tab}
               </button>
             ))}
           </div>
 
-          <AnimatePresence mode="wait">
-            {(activeTab === "AUCTION" || activeTab === "CALCULATOR") && (
-              <motion.div
-                key={`mobile-${activeTab}-subnav`}
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.24, ease: "easeOut" }}
-                className="flex sm:hidden justify-end gap-1.5 overflow-x-auto border-t border-white/5 py-2 custom-scrollbar"
-              >
-                {activeTab === "AUCTION" && (
-                  <>
-                    <Link href="/sell" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500 hover:text-cyan-400 transition-all duration-200">LISTING</Link>
-                    <Link href="/mypage" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500 hover:text-white transition-all duration-200">MY PAGE</Link>
-                  </>
-                )}
-                {activeTab === "CALCULATOR" && (
-                  <>
-                    {([
-                      { id: "SEARCH", label: "ANALYSIS" },
-                      { id: "CALC", label: "SIMULATOR" },
-                      { id: "ETC", label: "MARKET" },
-                    ] as const).map((st) => (
-                      <button
-                        key={`mobile-sub-${st.id}`}
-                        onClick={() => { triggerHaptic(); setMarketSubTab(st.id); }}
-                        className={`rounded-xl px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] transition-all duration-200 ${marketSubTab === st.id ? "bg-blue-600 text-white shadow-lg shadow-blue-600/15" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.07] hover:text-zinc-200"}`}
-                      >
-                        {st.label}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </motion.div>
+          <div
+            className={`flex min-h-[2.75rem] sm:hidden items-center justify-end gap-1.5 overflow-x-auto border-t border-white/5 py-2 custom-scrollbar ${showHomeSubnav ? "" : "invisible pointer-events-none"}`}
+            aria-hidden={!showHomeSubnav}
+          >
+            {activeTab === "AUCTION" && (
+              <>
+                <Link href="/sell" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500 hover:text-cyan-400 transition-colors duration-200">LISTING</Link>
+                <Link href="/mypage" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-zinc-500 hover:text-white transition-colors duration-200">MY PAGE</Link>
+              </>
             )}
-          </AnimatePresence>
+            {activeTab === "CALCULATOR" && (
+              <>
+                {([
+                  { id: "SEARCH", label: "ANALYSIS" },
+                  { id: "CALC", label: "SIMULATOR" },
+                  { id: "ETC", label: "MARKET" },
+                ] as const).map((st) => (
+                  <button
+                    key={`mobile-sub-${st.id}`}
+                    onClick={() => { triggerHaptic(); setMarketSubTab(st.id); }}
+                    className={`rounded-xl px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] transition-colors duration-200 ${marketSubTab === st.id ? "bg-blue-600 text-white shadow-lg shadow-blue-600/15" : "bg-white/[0.03] text-zinc-500 hover:bg-white/[0.07] hover:text-zinc-200"}`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </>
+            )}
+          </div>
         </div>
       </nav>
 
