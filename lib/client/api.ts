@@ -3,11 +3,24 @@ import { isLocalDev } from "@/dev/devMode";
 import { getLocalDummyResponse } from "@/dev/localDummyData";
 import { clearAuthSession } from "@/lib/auth/authPreferences";
 
+/** 로컬에서도 실제 API를 쓸 경매·입찰·등록 경로 (더미 목록이 DB 경매를 가리지 않도록) */
+const REAL_API_PATH_PREFIXES = [
+  "/api/auctions",
+  "/api/chat",
+  "/api/auth",
+  "/api/notifications",
+];
+
+const shouldBypassLocalDummy = (url: string) => {
+  const path = url.split("?")[0];
+  return REAL_API_PATH_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+};
+
 export const request = async (url: string, options: RequestInit = {}) => {
   const fetchOptions = options;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null; // 💡 앱 전체 호환성을 위해 localStorage로 복구
   const method = (fetchOptions.method || "GET").toString().toUpperCase();
-  if (isLocalDev()) {
+  if (isLocalDev() && !shouldBypassLocalDummy(url)) {
     const localResponse = getLocalDummyResponse(url, method);
     if (localResponse !== null) return localResponse;
   }

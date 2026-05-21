@@ -80,10 +80,10 @@ export function useAuctionList(isActive: boolean) {
     try {
       const data = await request("/api/auctions");
       if (Array.isArray(data)) {
-        const now = new Date();
-        setAuctions(
-          data.filter((a: Auction) => a.status === "ACTIVE" && new Date(a.endTime) > now),
-        );
+        setAuctions(data);
+      } else {
+        console.warn("경매 목록 응답 형식이 올바르지 않습니다:", data);
+        setAuctions([]);
       }
     } catch (err) {
       console.error("경매 목록 로드 실패:", err);
