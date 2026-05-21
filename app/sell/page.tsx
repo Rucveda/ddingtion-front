@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { request } from "@/lib/client/api"; 
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,6 +43,7 @@ export default function SellItem() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeRuneSlot, setActiveRuneSlot] = useState<number | null>(null);
   const [relistSourceId, setRelistSourceId] = useState<string | null>(null);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({ 
     startPrice: "", buyNowPrice: "", durationDays: "1", description: "",
@@ -145,6 +146,16 @@ export default function SellItem() {
         setDbItems([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    const closeDropdown = (e: MouseEvent) => {
+      if (searchBoxRef.current?.contains(e.target as Node)) return;
+      setShowDropdown(false);
+    };
+    document.addEventListener("mousedown", closeDropdown);
+    return () => document.removeEventListener("mousedown", closeDropdown);
+  }, [showDropdown]);
 
   useEffect(() => {
     const sourceId = new URLSearchParams(window.location.search).get("relist");
@@ -261,7 +272,7 @@ export default function SellItem() {
           buyNowPrice: form.buyNowPrice ? Number(form.buyNowPrice) : null,
         }),
       });
-      router.push(relistSourceId ? "/mypage" : "/?tab=AUCTION");
+      router.replace(relistSourceId ? "/mypage" : "/?tab=AUCTION");
     } catch (error) { 
       console.error(error); 
       alert(error instanceof Error ? error.message : "아이템 등록 중 오류가 발생했습니다.");
@@ -293,7 +304,7 @@ export default function SellItem() {
               )}
               
               <div className="space-y-4">
-                <div className="relative">
+                <div className="relative" ref={searchBoxRef}>
                   <div className="text-[10px] font-extrabold text-zinc-600 mb-2 ml-1 uppercase tracking-[0.12em]">아이템 검색</div>
                   <input 
                     type="text" placeholder="아이템 이름을 입력하세요..." 
@@ -393,13 +404,13 @@ export default function SellItem() {
           </aside>
 
           <div className="lg:col-span-8">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {selectedItem ? (
                 <motion.section 
                   key={selectedItem.id} 
                   initial={{ opacity: 0, x: 10 }} 
                   animate={{ opacity: 1, x: 0 }} 
-                  exit={{ opacity: 0, x: -10 }} 
+                  exit={{ opacity: 0, x: -10, pointerEvents: "none" }} 
                   className="site-card p-4 md:p-5 rounded-[28px] min-h-[520px]"
                 >
                   <div className="flex items-center gap-4 mb-5 bg-white/[0.03] p-4 rounded-[24px] border border-white/5">

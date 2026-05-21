@@ -386,7 +386,7 @@ export function AuctionDetailView(props: AuctionDetailViewProps) {
 
           {/* --- 우측: 조작 터미널 --- */}
           <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <section className="site-card custom-scrollbar max-h-[min(88vh,920px)] overflow-y-auto p-4 md:p-5 rounded-[28px] lg:max-h-[calc(100vh-6.5rem)]">
+            <section className="site-card p-4 md:p-5 rounded-[28px]">
               <h2 className="mb-3 flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-400">
                 <div className="w-1 h-3 bg-blue-600 rounded-full" /> 경매 정보
               </h2>

@@ -107,7 +107,7 @@ function HomeComponent() {
                         key="calculator-subnav"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, pointerEvents: "none" }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
                         className="absolute left-1/2 top-full mt-6 flex -translate-x-1/2 items-center gap-1.5 rounded-2xl border border-white/10 bg-black/35 p-1.5 shadow-xl backdrop-blur-xl whitespace-nowrap"
                       >
@@ -150,7 +150,7 @@ function HomeComponent() {
                         key="auction-subnav"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, pointerEvents: "none" }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
                         className="absolute left-1/2 top-full mt-7 flex -translate-x-1/2 items-center gap-4 whitespace-nowrap"
                       >
@@ -223,9 +223,9 @@ function HomeComponent() {
       </nav>
 
       <main className="flex-1 relative z-10">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {activeTab === "HOME" && (
-            <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-7xl mx-auto px-4 sm:px-6 py-24 md:py-40">
+            <motion.div key="home-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: "none" }} className="max-w-7xl mx-auto px-4 sm:px-6 py-24 md:py-40">
               <div className="max-w-5xl">
                 <h1 className="text-4xl sm:text-5xl md:text-7xl font-black mb-5 md:mb-7 tracking-[-0.05em] leading-[1.08] break-keep">
                   <span className="hero-title-wrap">
@@ -258,13 +258,13 @@ function HomeComponent() {
           {activeTab === "AUCTION" && hasMounted && <AuctionListTab isActive />}
 
           {activeTab === "CALCULATOR" && (
-            <motion.div key="calc-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-6 relative z-10">
+            <motion.div key="calc-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: "none" }} className="pt-6 relative z-10">
               <MarketTab initialTab={marketSubTab} />
             </motion.div>
           )}
 
           {activeTab === "COMMUNITY" && (
-            <motion.div key="community-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-20 pb-40 relative z-10">
+            <motion.div key="community-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, pointerEvents: "none" }} className="pt-20 pb-40 relative z-10">
               <PostEditor userRole={userRole || "USER"} userDiscordLinked={userDiscordLinked} />
             </motion.div>
           )}

@@ -22,6 +22,7 @@ import {
   resolveArchetype,
   sanitizeSelections,
 } from "@/lib/domain/enhancementAllowlist";
+import { copyTextToClipboard } from "@/lib/client/clipboard";
 
 export default function CalcTab({ selectedItem }: { selectedItem: any }) {
   const { prices, enchantPrices, imprintPrices, updateEnchantPrice, saveAllPrices, importPricePreset, resetAllPrices, updatePrice, setCalcResult } = useMarket();
@@ -159,11 +160,8 @@ export default function CalcTab({ selectedItem }: { selectedItem: any }) {
     };
     const code = encodePreset(payload);
     setImportCode(code);
-    setShareFeedback("공유 코드 생성됨");
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(code).catch(() => null);
-      setShareFeedback("공유 코드 복사됨");
-    }
+    const copied = await copyTextToClipboard(code);
+    setShareFeedback(copied ? "공유 코드 복사됨" : "코드 생성됨 — 입력란에서 복사해 주세요");
     setTimeout(() => setShareFeedback(""), 1800);
   };
 
