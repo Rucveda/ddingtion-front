@@ -10,6 +10,7 @@ import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrom
 import { isLocalDev } from "@/dev/devMode";
 import { ensureLocalDummySession } from "@/dev/localDummyData";
 import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
+import { HealthCheckPanel } from "@/features/admin/HealthCheckPanel";
 
 // --- Interfaces ---
 interface Auction { 
@@ -72,7 +73,9 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminId, setAdminId] = useState<number | null>(null);
   
-  const [activeTab, setActiveTab] = useState<"USERS" | "REPORTS" | "SUPPORT" | "AUCTIONS">("USERS");
+  const [activeTab, setActiveTab] = useState<
+    "USERS" | "REPORTS" | "SUPPORT" | "AUCTIONS" | "HEALTH"
+  >("USERS");
   
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -332,7 +335,8 @@ export default function AdminDashboard() {
               { id: "USERS", label: "유저 관리" },
               { id: "REPORTS", label: "신고 관리" },
               { id: "SUPPORT", label: "상담 지원" },
-              { id: "AUCTIONS", label: "경매 감시" }
+              { id: "AUCTIONS", label: "경매 감시" },
+              { id: "HEALTH", label: "헬스체크" },
             ].map((tab) => (
               <button 
                 key={tab.id} 
@@ -598,6 +602,12 @@ export default function AdminDashboard() {
                       </div>
                     ))}
                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === "HEALTH" && (
+                <motion.div key="health" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <HealthCheckPanel triggerHaptic={triggerHaptic} />
                 </motion.div>
               )}
             </AnimatePresence>
