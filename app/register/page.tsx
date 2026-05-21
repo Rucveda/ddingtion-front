@@ -63,7 +63,7 @@ export default function RegisterPage() {
           <div className="text-center mb-8 md:mb-10">
             <h2 className="text-3xl font-black tracking-tighter uppercase text-zinc-100">회원가입</h2>
             <p className="mt-3 text-sm font-medium leading-relaxed text-zinc-500 break-keep">
-              가입 아이디로 로그인하고, 마인크래프트 닉네임은 서비스에 표시됩니다. 둘 다 나중에 다르게 설정할 수 있습니다.
+              아이디로 로그인하고, 마인크래프트 닉네임은 서비스에 표시됩니다.
             </p>
           </div>
 
@@ -73,7 +73,7 @@ export default function RegisterPage() {
           >
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">
-                가입 아이디
+                ID
               </label>
               <input
                 required
@@ -89,7 +89,7 @@ export default function RegisterPage() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-[0.14em] ml-2">
-                비밀번호
+                PW
               </label>
               <input
                 required
@@ -109,7 +109,7 @@ export default function RegisterPage() {
                 required
                 type="text"
                 autoComplete="nickname"
-                placeholder="예: Steve (3~16자)"
+                placeholder=""
                 className="w-full bg-white/[0.04] border border-white/10 p-4 sm:p-5 rounded-[20px] text-zinc-100 focus:border-blue-500/40 outline-none transition-all font-semibold text-base sm:text-lg placeholder:text-zinc-700"
                 value={form.ingameName}
                 onChange={handleLatinInput("ingameName")}
