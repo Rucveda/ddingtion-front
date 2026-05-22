@@ -389,7 +389,8 @@ export default function MyPage() {
     try {
       const data = await request("/api/auth/discord/authorize");
       if (data?.url) {
-        window.location.href = data.url as string;
+        // replace: OAuth 복귀 후 X(뒤로가기)가 Discord 인증 화면으로 가지 않도록
+        window.location.replace(data.url as string);
         return;
       }
       alert("인증 주소를 받지 못했습니다.");
@@ -467,7 +468,11 @@ export default function MyPage() {
   return (
     <div className="min-h-screen bg-[#010101] text-zinc-100 font-sans select-none relative overflow-x-hidden">
       <SiteBackground />
-      <SimpleTopBar onNavigate={triggerHaptic} closeHref="/?tab=AUCTION" />
+      <SimpleTopBar
+        onNavigate={triggerHaptic}
+        closeHref="/?tab=AUCTION"
+        preferBrowserBack={false}
+      />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-10 relative z-10">
         <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>

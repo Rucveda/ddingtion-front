@@ -27,6 +27,11 @@ export default function ChatWidget() {
   
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [pendingReviewData, setPendingReviewData] = useState<any>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  const REPORT_MIN_LENGTH = 10;
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const roomsRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,9 +64,12 @@ export default function ChatWidget() {
 
   // 채팅방 목록 불러오기
   const fetchRooms = useCallback(async () => {
-    if (isLocalDev()) ensureLocalDummySession();
-    const token = localStorage.getItem("token");
-    if (!token) return;
+    if (isLocalDev()) {
+      ensureLocalDummySession();
+    } else {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+    }
 
     try {
       const data = await request("/api/chat/rooms");
@@ -156,6 +164,36 @@ export default function ChatWidget() {
   };
 
   // 거래 확정: 양측이 모두 확인하면 거래가 완료되고 리뷰 단계로 넘어갑니다.
+  const submitReport = async () => {
+    if (!selectedRoom?.id) return;
+    const trimmed = reportReason.trim();
+    if (trimmed.length < REPORT_MIN_LENGTH) {
+      alert(`신고 사유는 ${REPORT_MIN_LENGTH}자 이상 입력해주세요.`);
+      return;
+    }
+    if (!confirm("이 거래를 신고하시겠습니까? 신고 접수 후 거래가 종료됩니다.")) return;
+
+    setIsSubmittingReport(true);
+    try {
+      const res = await request(`/api/chat/rooms/${selectedRoom.id}/report`, {
+        method: "POST",
+        body: JSON.stringify({ reason: trimmed }),
+      });
+      if (res) {
+        alert(res.message || "신고가 접수되었습니다.");
+        setShowReportModal(false);
+        setReportReason("");
+        setSelectedRoom(null);
+        setMessages([]);
+        void fetchRooms();
+      }
+    } catch (error: unknown) {
+      alert(error instanceof Error ? error.message : "신고 접수에 실패했습니다.");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   const closeTrade = async () => {
     if (!selectedRoom || !confirm("거래를 확정하시겠습니까? 양측이 모두 확정하면 거래가 완료됩니다.")) return;
     try {
@@ -293,7 +331,7 @@ export default function ChatWidget() {
 
   if (!isMounted) return null;
   const user = isLocalDev() ? ensureLocalDummySession() : JSON.parse(localStorage.getItem("user") || "{}");
-  if (!user.id) return null;
+  if (user?.id === undefined || user?.id === null) return null;
 
   const safeRooms = Array.isArray(rooms) ? rooms : [];
   const totalUnread = safeRooms.reduce((acc, room) => acc + (room._count?.messages || 0), 0);
@@ -305,6 +343,13 @@ export default function ChatWidget() {
     selectedRoom && !selectedRoom.isAdminChat
       ? (selectedRoom.sellerId === user.id ? selectedRoom.buyerConfirmed : selectedRoom.sellerConfirmed)
       : false;
+  const canReportTrade =
+    Boolean(
+      selectedRoom &&
+        !selectedRoom.isAdminChat &&
+        selectedRoom.auctionId &&
+        selectedRoom.auction?.status === "PENDING_TRADE",
+    );
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] font-sans select-none flex flex-col items-end">
@@ -332,13 +377,27 @@ export default function ChatWidget() {
                 </div>
               )}
               {selectedRoom && !selectedRoom.isAdminChat && (
-                <button
-                  onClick={closeTrade}
-                  disabled={Boolean(currentUserConfirmed)}
-                  className="site-btn site-btn-secondary site-btn-compact"
-                >
-                  {currentUserConfirmed ? "확정 완료" : "거래 확정"}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {canReportTrade && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic();
+                        setShowReportModal(true);
+                      }}
+                      className="site-btn site-btn-ghost site-btn-compact text-red-400"
+                    >
+                      신고
+                    </button>
+                  )}
+                  <button
+                    onClick={closeTrade}
+                    disabled={Boolean(currentUserConfirmed)}
+                    className="site-btn site-btn-secondary site-btn-compact"
+                  >
+                    {currentUserConfirmed ? "확정 완료" : "거래 확정"}
+                  </button>
+                </div>
               )}
               {!selectedRoom && <button onClick={() => setIsOpen(false)} className="site-btn site-btn-ghost h-8 w-8 rounded-full p-0">✕</button>}
             </header>
@@ -425,6 +484,56 @@ export default function ChatWidget() {
               </form>
             )}
 
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showReportModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4"
+            onClick={() => !isSubmittingReport && setShowReportModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-[24px] border border-white/10 bg-zinc-950 p-5 shadow-2xl"
+            >
+              <h3 className="text-sm font-extrabold text-zinc-100">거래 신고</h3>
+              <p className="mt-2 text-xs font-medium leading-relaxed text-zinc-500">
+                신고 접수 시 거래가 즉시 종료됩니다. 사유를 구체적으로 적어주세요. (최소 {REPORT_MIN_LENGTH}자)
+              </p>
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                rows={5}
+                placeholder="신고 사유를 입력하세요"
+                className="mt-4 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-medium text-zinc-200 outline-none focus:border-red-500/40"
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={isSubmittingReport}
+                  onClick={() => setShowReportModal(false)}
+                  className="site-btn site-btn-ghost site-btn-compact"
+                >
+                  취소
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmittingReport || reportReason.trim().length < REPORT_MIN_LENGTH}
+                  onClick={() => void submitReport()}
+                  className="site-btn site-btn-danger site-btn-compact"
+                >
+                  {isSubmittingReport ? "접수 중…" : "신고 접수"}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

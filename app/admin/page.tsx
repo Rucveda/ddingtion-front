@@ -10,6 +10,7 @@ import { SimpleTopBar, SiteBackground, SiteFooter } from "@/components/SiteChrom
 import { isLocalDev } from "@/dev/devMode";
 import { ensureLocalDummySession } from "@/dev/localDummyData";
 import { subscribeSessionIdle } from "@/lib/auth/authPreferences";
+import ReportReviewPanel from "@/features/admin/ReportReviewPanel";
 // --- Interfaces ---
 interface Auction { 
   id: number; 
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminId, setAdminId] = useState<number | null>(null);
   
-  const [activeTab, setActiveTab] = useState<"USERS" | "SUPPORT" | "AUCTIONS">("USERS");
+  const [activeTab, setActiveTab] = useState<"USERS" | "SUPPORT" | "REPORTS" | "AUCTIONS">("USERS");
   
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
@@ -261,13 +262,14 @@ export default function AdminDashboard() {
           <div className="mb-5">
             <p className="site-label text-red-400">Admin</p>
             <h1 className="mt-1 text-2xl font-extrabold tracking-[-0.04em] text-white md:text-3xl">관리자 도구</h1>
-            <p className="mt-2 text-xs font-medium text-zinc-500">유저, 상담, 경매 상태를 한 화면에서 관리합니다.</p>
+            <p className="mt-2 text-xs font-medium text-zinc-500">유저, 상담, 거래 신고, 경매 상태를 한 화면에서 관리합니다.</p>
           </div>
 
           <div className="mb-4 flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
             {[
               { id: "USERS", label: "유저 관리" },
               { id: "SUPPORT", label: "상담 지원" },
+              { id: "REPORTS", label: "거래 신고" },
               { id: "AUCTIONS", label: "경매 감시" },
             ].map((tab) => (
               <button 
@@ -383,6 +385,12 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   )}
+                </motion.div>
+              )}
+
+              {activeTab === "REPORTS" && (
+                <motion.div key="reports" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <ReportReviewPanel onHaptic={triggerHaptic} />
                 </motion.div>
               )}
 

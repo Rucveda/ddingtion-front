@@ -6,7 +6,6 @@ import { clearAuthSession } from "@/lib/auth/authPreferences";
 /** 로컬에서도 실제 API를 쓸 경매·입찰·등록 경로 (더미 목록이 DB 경매를 가리지 않도록) */
 const REAL_API_PATH_PREFIXES = [
   "/api/auctions",
-  "/api/chat",
   "/api/auth",
   "/api/notifications",
 ];

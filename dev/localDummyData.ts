@@ -1,5 +1,7 @@
 const now = Date.now();
 
+/** 로컬 채팅 오버레이: 우하단 FAB → 거래방 9201(PENDING_TRADE·신고 가능) / `localStorage.setItem("openChatId","9201")` 후 새로고침 */
+
 export const LOCAL_DUMMY_USER = {
   id: 0,
   loginId: "Steve",
@@ -15,13 +17,29 @@ export const LOCAL_DUMMY_USER = {
 
 export const ensureLocalDummySession = () => {
   if (typeof window === "undefined") return LOCAL_DUMMY_USER;
-  if (!localStorage.getItem("user")) {
-    localStorage.setItem("user", JSON.stringify(LOCAL_DUMMY_USER));
+
+  let user: typeof LOCAL_DUMMY_USER = LOCAL_DUMMY_USER;
+  try {
+    const raw = localStorage.getItem("user");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (typeof parsed?.id === "number") {
+        user = { ...LOCAL_DUMMY_USER, ...parsed, id: parsed.id };
+      }
+    }
+  } catch {
+    user = LOCAL_DUMMY_USER;
   }
+
+  if (typeof user.id !== "number") {
+    user = LOCAL_DUMMY_USER;
+  }
+
+  localStorage.setItem("user", JSON.stringify(user));
   if (!localStorage.getItem("token")) {
     localStorage.setItem("token", "local-dev-dummy-token");
   }
-  return LOCAL_DUMMY_USER;
+  return user;
 };
 
 /** 필터 업데이트 UI 확인용 — 아이템명이 archetype 판별에 사용됩니다 */
@@ -381,7 +399,7 @@ const LOCAL_DUMMY_AUCTIONS_CORE = [
     currentPrice: "2100000",
     buyNowPrice: "2800000",
     endTime: new Date(now + 1000 * 60 * 60 * 5).toISOString(),
-    status: "ACTIVE",
+    status: "PENDING_TRADE",
     enhancementLevel: 0,
     enhancementRank: null,
     quality: null,
@@ -390,7 +408,7 @@ const LOCAL_DUMMY_AUCTIONS_CORE = [
     imprint: null,
     skills: null,
     runes: null,
-    description: "[색상 테스트] 날카로움 Lv.7·약탈 Lv.4(상급·주황), 반격(파랑), 흡혈·학구열(빨강) 검 전용 경매입니다.",
+    description: "[로컬] 거래 채팅·신고 UI 테스트용 PENDING_TRADE 경매",
     lastBidder: "Alex",
     lastBidderId: 202,
     bidCount: 5,
@@ -533,21 +551,93 @@ export const LOCAL_DUMMY_POSTS = [
   },
 ];
 
-export const LOCAL_DUMMY_CHAT_ROOMS = [
+type LocalDummyReport = {
+  id: number;
+  roomId: number;
+  auctionId: number;
+  status: string;
+  resolution?: string | null;
+  reason: string;
+  reasonPreview: string;
+  createdAt: string;
+  messageCount: number;
+  reporter: { id: number; ingameName: string };
+  target: { id: number; ingameName: string; isBanned?: boolean; reputationScore?: number };
+  auction: {
+    id: number;
+    status: string;
+    currentPrice: string;
+    item: { name: string; iconUrl?: string | null };
+  };
+  previousAuctionStatus?: string;
+  resolvedAt?: string | null;
+  resolvedBy?: { id: number; ingameName: string } | null;
+};
+
+let localDummyReports: LocalDummyReport[] = [
   {
-    id: 9201,
-    auctionId: 9102,
-    sellerId: 102,
-    buyerId: 0,
-    status: "ACTIVE",
-    isAdminChat: false,
-    sellerConfirmed: true,
-    buyerConfirmed: false,
-    seller: { id: 102, ingameName: "IslandPro", reputationScore: 3.8 },
-    buyer: { id: 0, ingameName: "Steve", reputationScore: 0 },
-    messages: [{ id: 1, content: "거래 가능 시간 알려주세요.", createdAt: new Date(now - 1000 * 60 * 12).toISOString(), isRead: false, senderId: 102 }],
-    _count: { messages: 1 },
+    id: 8001,
+    roomId: 9299,
+    auctionId: 9105,
+    status: "PENDING",
+    reason: "로컬 더미: 상대방이 약속한 거래 시간에 미접속했습니다. 채팅으로도 응답이 없었습니다.",
+    reasonPreview: "로컬 더미: 상대방이 약속한 거래 시간에 미접속했습니다…",
+    createdAt: new Date(now - 1000 * 60 * 45).toISOString(),
+    messageCount: 4,
+    reporter: { id: 0, ingameName: "Steve" },
+    target: { id: 103, ingameName: "RaidMage", isBanned: false, reputationScore: 4.2 },
+    auction: {
+      id: 9105,
+      status: "EXPIRED",
+      currentPrice: "540000",
+      item: { name: "루트바인 스태프 +12", iconUrl: LOCAL_DUMMY_ITEMS[7]?.iconUrl },
+    },
+    previousAuctionStatus: "PENDING_TRADE",
   },
+];
+
+const LOCAL_DUMMY_TRADE_ROOM = {
+  id: 9201,
+  auctionId: 9102,
+  sellerId: 102,
+  buyerId: 0,
+  status: "ACTIVE",
+  isAdminChat: false,
+  sellerConfirmed: true,
+  buyerConfirmed: false,
+  auction: { id: 9102, status: "PENDING_TRADE" },
+  seller: { id: 102, ingameName: "IslandPro", reputationScore: 3.8 },
+  buyer: { id: 0, ingameName: "Steve", reputationScore: 0 },
+  messages: [
+    {
+      id: 1,
+      content: "거래 가능 시간 알려주세요.",
+      createdAt: new Date(now - 1000 * 60 * 12).toISOString(),
+      isRead: false,
+      senderId: 102,
+    },
+  ],
+  _count: { messages: 3 },
+};
+
+const ensureLocalDummyTradeRoom = () => {
+  const hasActiveTrade = LOCAL_DUMMY_CHAT_ROOMS.some(
+    (room) => room.id === LOCAL_DUMMY_TRADE_ROOM.id && room.status === "ACTIVE" && !room.isAdminChat,
+  );
+  if (!hasActiveTrade) {
+    const adminIndex = LOCAL_DUMMY_CHAT_ROOMS.findIndex((room) => room.isAdminChat);
+    if (adminIndex === -1) {
+      LOCAL_DUMMY_CHAT_ROOMS.unshift({ ...LOCAL_DUMMY_TRADE_ROOM });
+    } else {
+      LOCAL_DUMMY_CHAT_ROOMS.splice(adminIndex, 0, { ...LOCAL_DUMMY_TRADE_ROOM });
+    }
+    const auction = LOCAL_DUMMY_AUCTIONS.find((entry) => entry.id === 9102);
+    if (auction) auction.status = "PENDING_TRADE";
+  }
+};
+
+export const LOCAL_DUMMY_CHAT_ROOMS = [
+  { ...LOCAL_DUMMY_TRADE_ROOM },
   {
     id: 9202,
     auctionId: null,
@@ -649,6 +739,44 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
     if (path === "/api/auth/password-reset/discord/authorize") return { url: "/reset-password?token=local-dev-reset-token" };
     if (path === "/api/auth/password-reset/confirm") return { message: "로컬 더미 비밀번호 재설정 완료" };
     if (path === "/api/chat/rooms/admin") return LOCAL_DUMMY_CHAT_ROOMS[1];
+    if (path.includes("/report")) {
+      const parts = path.split("/");
+      const roomId = Number(parts[parts.length - 2]);
+      const roomIndex = LOCAL_DUMMY_CHAT_ROOMS.findIndex((r) => r.id === roomId);
+      if (roomIndex === -1) throw new Error("채팅방을 찾을 수 없습니다.");
+      const room = LOCAL_DUMMY_CHAT_ROOMS[roomIndex];
+      if (room.isAdminChat || !room.auctionId) throw new Error("거래 채팅만 신고할 수 있습니다.");
+      if (room.auction?.status !== "PENDING_TRADE") throw new Error("거래 진행 중인 경매만 신고할 수 있습니다.");
+      const targetId = room.sellerId === 0 ? room.buyerId : room.sellerId;
+      const targetName = room.sellerId === 0 ? room.buyer?.ingameName : room.seller?.ingameName;
+      const auction = LOCAL_DUMMY_AUCTIONS.find((a) => a.id === room.auctionId) || LOCAL_DUMMY_AUCTIONS[0];
+      const reason = "로컬 더미 신고 사유입니다. 채팅 오버레이에서 접수·종료 흐름을 확인합니다.";
+      const report: LocalDummyReport = {
+        id: 8000 + localDummyReports.length + 1,
+        roomId: room.id,
+        auctionId: room.auctionId,
+        status: "PENDING",
+        reason,
+        reasonPreview: `${reason.slice(0, 40)}…`,
+        createdAt: new Date().toISOString(),
+        messageCount: LOCAL_DUMMY_MESSAGES[room.id]?.length || 0,
+        reporter: { id: 0, ingameName: "Steve" },
+        target: { id: targetId, ingameName: targetName || "Unknown", reputationScore: 3.5 },
+        auction: {
+          id: auction.id,
+          status: "EXPIRED",
+          currentPrice: String(auction.currentPrice),
+          item: { name: auction.item.name, iconUrl: auction.item.iconUrl },
+        },
+        previousAuctionStatus: "PENDING_TRADE",
+      };
+      localDummyReports = [report, ...localDummyReports];
+      LOCAL_DUMMY_CHAT_ROOMS.splice(roomIndex, 1);
+      if (auction.id === room.auctionId) {
+        auction.status = "EXPIRED";
+      }
+      return { message: "신고가 접수되었습니다. 해당 거래는 종료 처리됩니다.", report };
+    }
     if (path.includes("/close")) return { completed: false, message: "로컬 더미 거래 확정이 기록되었습니다.", room: LOCAL_DUMMY_CHAT_ROOMS[0] };
     if (path.startsWith("/api/auctions/") && path.endsWith("/buy")) return { message: "로컬 더미 즉시 구매 완료", roomId: 9201 };
     if (path === "/api/auctions" && method === "POST") {
@@ -682,6 +810,22 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
       };
       localDevCreatedAuctions.unshift(row);
       return row;
+    }
+    if (path.startsWith("/api/admin/reports/") && path.endsWith("/resolve")) {
+      const reportId = Number(path.split("/")[path.split("/").length - 2]);
+      const idx = localDummyReports.findIndex((r) => r.id === reportId);
+      if (idx === -1) throw new Error("신고 내역을 찾을 수 없습니다.");
+      const action = "dismiss";
+      const entry = localDummyReports[idx];
+      const updated: LocalDummyReport = {
+        ...entry,
+        status: action === "dismiss" ? "DISMISSED" : "RESOLVED",
+        resolution: action === "dismiss" ? "DISMISS" : "BAN",
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: { id: 0, ingameName: "Steve" },
+      };
+      localDummyReports[idx] = updated;
+      return { message: "신고가 처리되었습니다.", report: updated };
     }
     if (path.includes("/read") || path.includes("/clear") || method === "DELETE" || method === "PATCH" || method === "POST") return { ok: true, id: 9999 };
   }
@@ -719,12 +863,35 @@ export const getLocalDummyResponse = (url: string, method = "GET") => {
       },
     };
   }
-  if (path === "/api/chat/rooms") return LOCAL_DUMMY_CHAT_ROOMS;
+  if (path === "/api/chat/rooms") {
+    ensureLocalDummyTradeRoom();
+    return LOCAL_DUMMY_CHAT_ROOMS.filter((room) => room.status === "ACTIVE");
+  }
   if (path === "/api/chat/rooms/admin") return LOCAL_DUMMY_CHAT_ROOMS[1];
   if (path.endsWith("/messages")) {
     const parts = path.split("/");
     const roomId = Number(parts[parts.length - 2]);
     return LOCAL_DUMMY_MESSAGES[roomId] || [];
+  }
+  if (path === "/api/admin/reports") {
+    const status = query?.get("status") || "PENDING";
+    const items =
+      status === "ALL"
+        ? localDummyReports
+        : localDummyReports.filter((r) => r.status === status);
+    return {
+      items,
+      pagination: { page: 1, limit: 20, total: items.length, hasMore: false },
+    };
+  }
+  if (path.startsWith("/api/admin/reports/") && path.endsWith("/messages")) {
+    const reportId = Number(path.split("/")[path.split("/").length - 2]);
+    const report = localDummyReports.find((r) => r.id === reportId);
+    return report ? LOCAL_DUMMY_MESSAGES[report.roomId] || [] : [];
+  }
+  if (path.startsWith("/api/admin/reports/")) {
+    const reportId = Number(path.split("/").pop());
+    return localDummyReports.find((r) => r.id === reportId) || null;
   }
   if (path === "/api/admin/users") return LOCAL_DUMMY_USERS;
   if (path === "/api/admin/support/rooms") return LOCAL_DUMMY_CHAT_ROOMS.filter((room) => room.isAdminChat);
